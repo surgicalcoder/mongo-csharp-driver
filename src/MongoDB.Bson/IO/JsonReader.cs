@@ -1856,7 +1856,8 @@ namespace MongoDB.Bson.IO
         private void VerifyToken(string expectedLexeme)
         {
             var token = PopToken();
-            if (token.Lexeme != expectedLexeme)
+            var lexeme = token.Type == JsonTokenType.String ? token.StringValue : token.Lexeme;
+            if (lexeme != expectedLexeme)
             {
                 var message = string.Format("JSON reader expected '{0}' but found '{1}'.", expectedLexeme, token.Lexeme);
                 throw new FormatException(message);

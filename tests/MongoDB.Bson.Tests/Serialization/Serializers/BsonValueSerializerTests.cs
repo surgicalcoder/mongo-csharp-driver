@@ -1182,7 +1182,7 @@ namespace MongoDB.Bson.Tests.Serialization
         {
             var obj = new TestClass(new BsonRegularExpression("abc", "imxs"));
             var json = obj.ToJson();
-            var expected = "{ 'B' : #, 'V' : # }".Replace("#", "/abc/imxs").Replace("'", "\"");
+            var expected = "{ 'B' : #, 'V' : # }".Replace("#", "/abc/imsx").Replace("'", "\"");
             Assert.Equal(expected, json);
 
             var bson = obj.ToBson();

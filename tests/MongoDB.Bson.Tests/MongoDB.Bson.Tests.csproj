@@ -274,6 +274,7 @@
     <Compile Include="Serialization\IdGenerators\IdGeneratorsTests.cs" />
     <Compile Include="Serialization\Serializers\VersionSerializerTests.cs" />
     <Compile Include="PowerOf2Tests.cs" />
+    <Compile Include="Specifications\bson-corpus\TestRunner.cs" />
     <Compile Include="Specifications\bson\TestRunner.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -315,7 +316,29 @@
     <EmbeddedResource Include="Specifications\bson\tests\decimal128-5.json" />
     <EmbeddedResource Include="Specifications\bson\tests\decimal128-6.json" />
     <EmbeddedResource Include="Specifications\bson\tests\decimal128-7.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\array.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\binary.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\boolean.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\code.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\code_w_scope.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\datetime.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\dbpointer.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\document.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\double.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\int32.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\int64.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\maxkey.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\minkey.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\null.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\oid.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\regex.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\string.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\symbol.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\timestamp.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\top.json" />
+    <EmbeddedResource Include="Specifications\bson-corpus\tests\undefined.json" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

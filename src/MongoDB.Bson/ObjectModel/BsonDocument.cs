@@ -374,7 +374,8 @@ namespace MongoDB.Bson
         /// <returns>A BsonDocument.</returns>
         public static BsonDocument Parse(string json)
         {
-            using (var jsonReader = new JsonReader(json))
+            var jsonReaderSettings = new JsonReaderSettings { GuidRepresentation = GuidRepresentation.Unspecified };
+            using (var jsonReader = new JsonReader(json, jsonReaderSettings))
             {
                 var context = BsonDeserializationContext.CreateRoot(jsonReader);
                 var document = BsonDocumentSerializer.Instance.Deserialize(context);
