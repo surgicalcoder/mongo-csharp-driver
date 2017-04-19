@@ -96,17 +96,54 @@
     <Compile Include="IO\IBsonWriter.cs" />
     <Compile Include="IO\IBsonWriterExtensions.cs" />
     <Compile Include="IO\IElementNameValidator.cs" />
+    <Compile Include="IO\IJsonConverter.cs" />
     <Compile Include="IO\INameDecoder.cs" />
     <Compile Include="IO\InputBufferChunkSource.cs" />
+    <Compile Include="IO\IStrictJsonWriter.cs" />
     <Compile Include="IO\JsonBuffer.cs" />
     <Compile Include="IO\ByteBufferFactory.cs" />
     <Compile Include="IO\ByteArrayBuffer.cs" />
     <Compile Include="IO\ByteBufferStream.cs" />
     <Compile Include="IO\IByteBuffer.cs" />
     <Compile Include="IO\JsonConvert.cs" />
+    <Compile Include="IO\JsonConverterSet.cs" />
+    <Compile Include="IO\JsonConverters\BooleanStrictJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonBinaryDataExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonBinaryShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonDateTimeExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonDateTimeShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonMaxKeyShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonMinKeyShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonNullStrictJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonRegularExpressionShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonTimestampShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonUndefinedShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Decimal128ExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Decimal128ShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\DoubleExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\DoubleStrictJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\DoubleWithDecimalPointJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Int32ExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Int32ShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Int32StrictJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Int64ExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonJavaScriptExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonMaxKeyExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonMinKeyExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\Int64ShellJsonRepresentation.cs" />
+    <Compile Include="IO\JsonConverters\Int64StrictJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\ObjectIdExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonRegularExpressionExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonSymbolExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonTimestampExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\BsonUndefinedExtendedJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\ObjectIdShellJsonConverter.cs" />
+    <Compile Include="IO\JsonConverters\StringStrictJsonConverter.cs" />
     <Compile Include="IO\MultiChunkBuffer.cs" />
     <Compile Include="IO\NoOpElementNameValidator.cs" />
     <Compile Include="IO\OutputBufferChunkSource.cs" />
+    <Compile Include="IO\StrictJsonWriter.cs" />
+    <Compile Include="IO\StrictJsonWriterSettings.cs" />
     <Compile Include="IO\TrieNameDecoder.cs" />
     <Compile Include="IO\Utf8Encodings.cs" />
     <Compile Include="IO\Utf8NameDecoder.cs" />
@@ -415,6 +452,7 @@
   <ItemGroup>
     <Analyzer Include="..\..\packages\AsyncUsageAnalyzers.1.0.0-alpha003\analyzers\dotnet\AsyncUsageAnalyzers.dll" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

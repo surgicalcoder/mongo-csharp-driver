@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2016 MongoDB Inc.
+﻿/* Copyright 2010-2017 MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ namespace MongoDB.Bson.IO
         private static JsonWriterSettings __defaults = null; // delay creation to pick up the latest default values
 
         // private fields
+        private bool _alwaysQuoteNames = true;
+        private JsonConverterSet _converters = JsonConverterSet.ShellJsonConverters;
         private Encoding _encoding = Encoding.UTF8;
         private bool _indent = false;
         private string _indentChars = "  ";
@@ -63,6 +65,32 @@ namespace MongoDB.Bson.IO
         }
 
         // public properties
+        /// <summary>
+        /// Gets or sets a value indicating whether to always quote names.
+        /// </summary>
+        public bool AlwaysQuoteNames
+        {
+            get { return _alwaysQuoteNames; }
+            set
+            {
+                if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
+                _alwaysQuoteNames = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the converters.
+        /// </summary>
+        public JsonConverterSet Converters
+        {
+            get { return _converters; }
+            set
+            {
+                if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
+                _converters = value;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the output Encoding.
         /// </summary>
@@ -126,6 +154,17 @@ namespace MongoDB.Bson.IO
             {
                 if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
                 _outputMode = value;
+                switch (value)
+                {
+                    case JsonOutputMode.Strict:
+                        _converters = JsonConverterSet.StrictJsonConverters;
+                        break;
+
+                    case JsonOutputMode.Shell:
+                    default:
+                        _converters = JsonConverterSet.ShellJsonConverters;
+                        break;
+                }
             }
         }
 
@@ -152,6 +191,20 @@ namespace MongoDB.Bson.IO
             return (JsonWriterSettings)CloneImplementation();
         }
 
+        /// <summary>
+        /// Creates a StrictJsonWriterSettings.
+        /// </summary>
+        /// <returns>A StrictJsonWriterSettings.</returns>
+        public StrictJsonWriterSettings ToStrictJsonWriterSettings()
+        {
+            return new StrictJsonWriterSettings(
+                _alwaysQuoteNames,
+                _encoding,
+                _indent,
+                _indentChars,
+                _newLineChars);
+        }
+
         // protected methods
         /// <summary>
         /// Creates a clone of the settings.
@@ -161,6 +214,8 @@ namespace MongoDB.Bson.IO
         {
             var clone = new JsonWriterSettings
             {
+                AlwaysQuoteNames = _alwaysQuoteNames,
+                Converters = _converters,
 #pragma warning disable 618
                 Encoding = _encoding,
 #pragma warning restore
