@@ -58,10 +58,16 @@ namespace MongoDB.Bson.IO
                 if (__defaults == null)
                 {
                     __defaults = new JsonWriterSettings();
+                    __defaults.Freeze();
                 }
                 return __defaults;
             }
-            set { __defaults = value; }
+            set
+            {
+                if (value == null) { throw new ArgumentNullException(nameof(value)); }
+                value.Freeze();
+                __defaults = value;
+            }
         }
 
         // public properties
@@ -86,6 +92,7 @@ namespace MongoDB.Bson.IO
             get { return _converters; }
             set
             {
+                if (value == null) { throw new ArgumentNullException(nameof(value)); }
                 if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
                 _converters = value;
             }
@@ -126,6 +133,7 @@ namespace MongoDB.Bson.IO
             get { return _indentChars; }
             set
             {
+                if (value == null) { throw new ArgumentNullException(nameof(value)); }
                 if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
                 _indentChars = value;
             }
@@ -139,6 +147,7 @@ namespace MongoDB.Bson.IO
             get { return _newLineChars; }
             set
             {
+                if (value == null) { throw new ArgumentNullException(nameof(value)); }
                 if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
                 _newLineChars = value;
             }
@@ -199,7 +208,6 @@ namespace MongoDB.Bson.IO
         {
             return new StrictJsonWriterSettings(
                 _alwaysQuoteNames,
-                _encoding,
                 _indent,
                 _indentChars,
                 _newLineChars);

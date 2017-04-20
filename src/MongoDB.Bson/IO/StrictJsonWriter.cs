@@ -50,6 +50,11 @@ namespace MongoDB.Bson.IO
 
         // public properties
         /// <summary>
+        /// Gets the settings.
+        /// </summary>
+        public StrictJsonWriterSettings Settings => _settings;
+
+        /// <summary>
         /// Gets the text writer.
         /// </summary>
         public TextWriter TextWriter => _writer;

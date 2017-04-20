@@ -25,7 +25,6 @@ namespace MongoDB.Bson.IO
     {
         // private fields
         private readonly bool _alwaysQuoteNames;
-        private readonly Encoding _encoding;
         private readonly bool _indent;
         private readonly string _indentChars;
         private readonly string _newLineChars;
@@ -35,22 +34,18 @@ namespace MongoDB.Bson.IO
         /// Initializes a new instance of the <see cref="StrictJsonWriterSettings" /> class.
         /// </summary>
         /// <param name="alwaysQuoteNames">If set to <c>true</c> always quote names.</param>
-        /// <param name="encoding">The encoding.</param>
         /// <param name="indent">if set to <c>true</c> [indent].</param>
         /// <param name="indentChars">The indent chars.</param>
         /// <param name="newLineChars">The new line chars.</param>
         public StrictJsonWriterSettings(
             bool alwaysQuoteNames,
-            Encoding encoding,
             bool indent,
             string indentChars,
             string newLineChars)
         {
-            if (encoding == null) { throw new ArgumentNullException(nameof(encoding)); }
             if (indentChars == null) { throw new ArgumentNullException(nameof(indentChars)); }
             if (newLineChars == null) { throw new ArgumentNullException(nameof(newLineChars)); }
             _alwaysQuoteNames = alwaysQuoteNames;
-            _encoding = encoding;
             _indent = indent;
             _indentChars = indentChars;
             _newLineChars = newLineChars;
@@ -61,11 +56,6 @@ namespace MongoDB.Bson.IO
         /// Gets a value indicating whether to always quote names.
         /// </summary>
         public bool AlwaysQuoteNames => _alwaysQuoteNames;
-
-        /// <summary>
-        /// Gets the encoding.
-        /// </summary>
-        public Encoding Encoding => _encoding;
 
         /// <summary>
         /// Gets a value indicating whether the JSON output should be indented.
