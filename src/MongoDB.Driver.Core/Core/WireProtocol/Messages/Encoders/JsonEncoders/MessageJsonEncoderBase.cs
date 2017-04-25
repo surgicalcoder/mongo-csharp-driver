@@ -90,7 +90,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
                 writerSettings.ShellVersion = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.ShellVersion, new Version(2, 6, 0));
             }
             return new JsonWriter(_textWriter, writerSettings);
-#pragma warning disable
+#pragma warning restore
         }
     }
 }

@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Int64 to strict JSON.
+    /// Represents a converter between Int64 values and strict JSON.
     /// </summary>
-    public class Int64StrictJsonConverter : IJsonConverter<long>
+    public class Int64StrictJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             writer.WriteInt64(value);
         }

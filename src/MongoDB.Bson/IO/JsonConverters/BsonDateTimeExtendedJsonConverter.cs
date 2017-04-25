@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonDateTime to extended JSON.
+    /// Represents a converter between BsonDateTime values and extended JSON.
     /// </summary>
-    public class BsonDateTimeExtendedJsonConverter : IJsonConverter<long>
+    public class BsonDateTimeExtendedJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$date");

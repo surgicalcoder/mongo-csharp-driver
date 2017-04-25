@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Int64 to shell JSON.
+    /// Represents a converter between Int64 values and shell JSON.
     /// </summary>
-    public class Int64ShellJsonConverter : IJsonConverter<long>
+    public class Int64ShellJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             string representation;
             if (value >= int.MinValue && value <= int.MaxValue)

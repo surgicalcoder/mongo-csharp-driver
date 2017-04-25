@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from ObjectId to extended JSON.
+    /// Represents a converter between ObjectId values and extended JSON.
     /// </summary>
-    public class ObjectIdExtendedJsonConverter : IJsonConverter<ObjectId>
+    public class ObjectIdExtendedJsonConverter : IJsonOutputConverter<ObjectId>
     {
         /// <inheritdoc/>
-        public void Convert(ObjectId value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, ObjectId value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$oid");

@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Boolean to strict JSON.
+    /// Represents a converter between Boolean values and strict JSON.
     /// </summary>
-    public class BooleanStrictJsonConverter : IJsonConverter<bool>
+    public class BooleanStrictJsonConverter : IJsonOutputConverter<bool>
     {
         /// <inheritdoc/>
-        public void Convert(bool value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, bool value)
         {
             writer.WriteBoolean(value);
         }

@@ -16,16 +16,17 @@
 namespace MongoDB.Bson.IO
 {
     /// <summary>
-    /// Represents a converter from T to JSON.
+    /// Represents a converter between T values and JSON.
+    /// T is conceptually a BsonValue, but primitive types are used where possible (for example, int instead of BsonInt32).
     /// </summary>
     /// <typeparam name="T">The value type.</typeparam>
-    public interface IJsonConverter<T>
+    public interface IJsonOutputConverter<T>
     {
         /// <summary>
-        /// Converts a value to JSON.
+        /// Writes a value to JSON.
         /// </summary>
-        /// <param name="value">The value.</param>
         /// <param name="writer">The writer.</param>
-        void Convert(T value, IStrictJsonWriter writer);
+        /// <param name="value">The value.</param>
+        void Write(IStrictJsonWriter writer, T value);
     }
 }

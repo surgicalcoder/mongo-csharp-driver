@@ -18,13 +18,13 @@ using System;
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonBinaryData to shell JSON.
+    /// Represents a converter between BsonBinaryData values and shell JSON.
     /// </summary>
-    public class BsonBinaryDataShellJsonConverter : IJsonConverter<BsonBinaryData>
+    public class BsonBinaryDataShellJsonConverter : IJsonOutputConverter<BsonBinaryData>
     {
         // public methods
         /// <inheritdoc/>
-        public void Convert(BsonBinaryData value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonBinaryData value)
         {
             string representation;
             switch (value.SubType)

@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Int64 to extended JSON.
+    /// Represents a converter between Int64 values and extended JSON.
     /// </summary>
-    public class Int64ExtendedJsonConverter : IJsonConverter<long>
+    public class Int64ExtendedJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$numberLong");

@@ -166,7 +166,7 @@ namespace MongoDB.Bson.Tests.IO
             };
             foreach (var test in tests)
             {
-                var json = new BsonDecimal128(test.Value).ToJson(new JsonWriterSettings { Converters = JsonConverterSet.Strict });
+                var json = new BsonDecimal128(test.Value).ToJson(new JsonWriterSettings { OutputConverters = JsonOutputConverters.Strict });
                 Assert.Equal(test.Expected, json);
                 Assert.Equal(test.Value, BsonSerializer.Deserialize<Decimal128>(json));
             }
@@ -256,7 +256,7 @@ namespace MongoDB.Bson.Tests.IO
                 new TestData<long>(int.MaxValue + 1L, "2147483648"),
                 new TestData<long>(long.MaxValue, "9223372036854775807")
             };
-            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
+            var jsonSettings = new JsonWriterSettings { OutputConverters = JsonOutputConverters.Strict };
             foreach (var test in tests)
             {
                 var json = test.Value.ToJson(jsonSettings);
@@ -332,7 +332,7 @@ namespace MongoDB.Bson.Tests.IO
                 new TestData<BsonBinaryData>(new byte[] { 1, 2, 3 }, "{ \"$binary\" : \"AQID\", \"$type\" : \"00\" }"),
                 new TestData<BsonBinaryData>(Guid.Empty, "{ \"$binary\" : \"AAAAAAAAAAAAAAAAAAAAAA==\", \"$type\" : \"03\" }")
             };
-            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
+            var jsonSettings = new JsonWriterSettings { OutputConverters = JsonOutputConverters.Strict };
             foreach (var test in tests)
             {
                 var json = test.Value.ToJson(jsonSettings);
@@ -382,7 +382,7 @@ namespace MongoDB.Bson.Tests.IO
                 new TestData<BsonDateTime>(new BsonDateTime(utcNowTruncated), strictDate),
                 new TestData<BsonDateTime>(new BsonDateTime(DateTime.MaxValue), "{ \"$date\" : 253402300799999 }"),
             };
-            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
+            var jsonSettings = new JsonWriterSettings { OutputConverters = JsonOutputConverters.Strict };
             foreach (var test in tests)
             {
                 var json = test.Value.ToJson(jsonSettings);
@@ -477,7 +477,7 @@ namespace MongoDB.Bson.Tests.IO
         public void TestObjectIdStrict()
         {
             var objectId = new ObjectId("4d0ce088e447ad08b4721a37");
-            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
+            var jsonSettings = new JsonWriterSettings { OutputConverters = JsonOutputConverters.Strict };
             var json = objectId.ToJson(jsonSettings);
             var expected = "{ \"$oid\" : \"4d0ce088e447ad08b4721a37\" }";
             Assert.Equal(expected, json);
@@ -522,7 +522,7 @@ namespace MongoDB.Bson.Tests.IO
                 new TestData<BsonRegularExpression>(new BsonRegularExpression("a", "s"), "{ \"$regex\" : \"a\", \"$options\" : \"s\" }"),
                 new TestData<BsonRegularExpression>(new BsonRegularExpression("a", "imxs"), "{ \"$regex\" : \"a\", \"$options\" : \"imxs\" }"),
             };
-            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
+            var jsonSettings = new JsonWriterSettings { OutputConverters = JsonOutputConverters.Strict };
             foreach (var test in tests)
             {
                 var json = test.Value.ToJson(jsonSettings);

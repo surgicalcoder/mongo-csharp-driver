@@ -111,7 +111,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteBinaryData", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.BinaryDataConverter.Convert(binaryData, _strictWriter);
+            _jsonWriterSettings.OutputConverters.BinaryDataConverter.Write(_strictWriter, binaryData);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -129,7 +129,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteBoolean", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.BooleanConverter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.BooleanConverter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -156,7 +156,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteDateTime", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.DateTimeConverter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.DateTimeConverter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -171,7 +171,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState(nameof(WriteDecimal128), BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.Decimal128Converter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.Decimal128Converter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -189,7 +189,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteDouble", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.DoubleConverter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.DoubleConverter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -259,7 +259,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteInt32", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.Int32Converter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.Int32Converter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -277,7 +277,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteInt64", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.Int64Converter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.Int64Converter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -295,7 +295,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteJavaScript", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.JavaScriptConverter.Convert(code, _strictWriter);
+            _jsonWriterSettings.OutputConverters.JavaScriptConverter.Write(_strictWriter, code);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -332,7 +332,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteMaxKey", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.MaxKeyConverter.Convert(BsonMaxKey.Value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.MaxKeyConverter.Write(_strictWriter, BsonMaxKey.Value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -349,7 +349,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteMinKey", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.MinKeyConverter.Convert(BsonMinKey.Value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.MinKeyConverter.Write(_strictWriter, BsonMinKey.Value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -373,7 +373,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteNull", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.NullConverter.Convert(BsonNull.Value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.NullConverter.Write(_strictWriter, BsonNull.Value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -391,7 +391,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteObjectId", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.ObjectIdConverter.Convert(objectId, _strictWriter);
+            _jsonWriterSettings.OutputConverters.ObjectIdConverter.Write(_strictWriter, objectId);
 
             _context.HasElements = true;
             State = GetNextState();
@@ -409,7 +409,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteRegularExpression", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.RegularExpressionConverter.Convert(regex, _strictWriter);
+            _jsonWriterSettings.OutputConverters.RegularExpressionConverter.Write(_strictWriter, regex);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -466,7 +466,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteString", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.StringConverter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.StringConverter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -484,7 +484,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteSymbol", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.SymbolConverter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.SymbolConverter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -502,7 +502,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteTimestamp", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.TimestampConverter.Convert(value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.TimestampConverter.Write(_strictWriter, value);
             _context.HasElements = true;
 
             State = GetNextState();
@@ -519,7 +519,7 @@ namespace MongoDB.Bson.IO
                 ThrowInvalidState("WriteUndefined", BsonWriterState.Value, BsonWriterState.Initial);
             }
 
-            _jsonWriterSettings.Converters.UndefinedConverter.Convert(BsonUndefined.Value, _strictWriter);
+            _jsonWriterSettings.OutputConverters.UndefinedConverter.Write(_strictWriter, BsonUndefined.Value);
 
             _context.HasElements = true;
             State = GetNextState();

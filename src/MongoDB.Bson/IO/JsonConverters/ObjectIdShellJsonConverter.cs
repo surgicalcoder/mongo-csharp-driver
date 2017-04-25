@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from ObjectId to shell JSON.
+    /// Represents a converter between ObjectId values and shell JSON.
     /// </summary>
-    public class ObjectIdShellJsonConverter : IJsonConverter<ObjectId>
+    public class ObjectIdShellJsonConverter : IJsonOutputConverter<ObjectId>
     {
         /// <inheritdoc/>
-        public void Convert(ObjectId value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, ObjectId value)
         {
             var representation = $"ObjectId(\"{BsonUtils.ToHexString(value.ToByteArray())}\")";
             writer.WriteValue(representation);

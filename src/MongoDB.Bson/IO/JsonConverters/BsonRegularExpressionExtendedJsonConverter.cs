@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonRegularExpression to extended JSON.
+    /// Represents a converter between BsonRegularExpression values and extended JSON.
     /// </summary>
-    public class BsonRegularExpressionExtendedJsonConverter : IJsonConverter<BsonRegularExpression>
+    public class BsonRegularExpressionExtendedJsonConverter : IJsonOutputConverter<BsonRegularExpression>
     {
         /// <inheritdoc/>
-        public void Convert(BsonRegularExpression value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonRegularExpression value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$regex");

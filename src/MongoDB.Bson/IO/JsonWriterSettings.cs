@@ -31,7 +31,7 @@ namespace MongoDB.Bson.IO
 
         // private fields
         private bool _alwaysQuoteNames = true;
-        private JsonConverterSet _converters = JsonConverterSet.Shell;
+        private JsonOutputConverterSet _converters = JsonOutputConverters.Shell;
         private Encoding _encoding = Encoding.UTF8;
         private bool _indent = false;
         private string _indentChars = "  ";
@@ -86,9 +86,9 @@ namespace MongoDB.Bson.IO
         }
 
         /// <summary>
-        /// Gets or sets the converters.
+        /// Gets or sets the output converters.
         /// </summary>
-        public JsonConverterSet Converters
+        public JsonOutputConverterSet OutputConverters
         {
             get { return _converters; }
             set
@@ -157,7 +157,7 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Gets or sets the output mode.
         /// </summary>
-        [Obsolete("Use Converters instead.")]
+        [Obsolete("Use OutputConverters instead.")]
         public JsonOutputMode OutputMode
         {
             get { return _outputMode; }
@@ -168,12 +168,12 @@ namespace MongoDB.Bson.IO
                 switch (value)
                 {
                     case JsonOutputMode.Strict:
-                        _converters = JsonConverterSet.Strict;
+                        _converters = JsonOutputConverters.Strict;
                         break;
 
                     case JsonOutputMode.Shell:
                     default:
-                        _converters = JsonConverterSet.Shell;
+                        _converters = JsonOutputConverters.Shell;
                         break;
                 }
             }
@@ -226,14 +226,14 @@ namespace MongoDB.Bson.IO
             var clone = new JsonWriterSettings
             {
                 AlwaysQuoteNames = _alwaysQuoteNames,
-                OutputMode = _outputMode, // must be set before Converters
-                Converters = _converters,
                 Encoding = _encoding,
                 GuidRepresentation = GuidRepresentation,
                 Indent = _indent,
                 IndentChars = _indentChars,
                 MaxSerializationDepth = MaxSerializationDepth,
                 NewLineChars = _newLineChars,
+                OutputMode = _outputMode, // must be set before OutputConverters
+                OutputConverters = _converters,
                 ShellVersion = _shellVersion
             };
 #pragma warning restore

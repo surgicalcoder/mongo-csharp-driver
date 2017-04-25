@@ -23,96 +23,30 @@ using Xunit;
 
 namespace MongoDB.Bson.Tests.IO
 {
-    public class JsonConverterSetTests
+    public class JsonOutputConverterSetTests
     {
-        [Fact]
-        public void Shell_get_should_return_expected_result()
-        {
-            var result = JsonConverterSet.Shell;
-
-            result.BinaryDataConverter.Should().BeOfType<BsonBinaryDataShellJsonConverter>();
-            result.BooleanConverter.Should().BeOfType<BooleanStrictJsonConverter>();
-            result.DateTimeConverter.Should().BeOfType<BsonDateTimeShellJsonConverter>();
-            result.Decimal128Converter.Should().BeOfType<Decimal128ShellJsonConverter>();
-            result.DoubleConverter.Should().BeOfType<DoubleWithDecimalPointJsonConverter>();
-            result.Int32Converter.Should().BeOfType<Int32StrictJsonConverter>();
-            result.Int64Converter.Should().BeOfType<Int64ShellJsonConverter>();
-            result.JavaScriptConverter.Should().BeOfType<BsonJavaScriptExtendedJsonConverter>();
-            result.MaxKeyConverter.Should().BeOfType<BsonMaxKeyShellJsonConverter>();
-            result.MinKeyConverter.Should().BeOfType<BsonMinKeyShellJsonConverter>();
-            result.NullConverter.Should().BeOfType<BsonNullStrictJsonConverter>();
-            result.ObjectIdConverter.Should().BeOfType<ObjectIdShellJsonConverter>();
-            result.RegularExpressionConverter.Should().BeOfType<BsonRegularExpressionShellJsonConverter>();
-            result.StringConverter.Should().BeOfType<StringStrictJsonConverter>();
-            result.SymbolConverter.Should().BeOfType<BsonSymbolExtendedJsonConverter>();
-            result.TimestampConverter.Should().BeOfType<BsonTimestampShellJsonConverter>();
-            result.UndefinedConverter.Should().BeOfType<BsonUndefinedShellJsonConverter>();
-        }
-
-        [Fact]
-        public void Shell_get_should_return_same_instance()
-        {
-            var result1 = JsonConverterSet.Shell;
-            var result2 = JsonConverterSet.Shell;
-
-            result2.Should().BeSameAs(result1);
-        }
-
-        [Fact]
-        public void Strict_get_should_return_expected_result()
-        {
-            var result = JsonConverterSet.Strict;
-
-            result.BinaryDataConverter.Should().BeOfType<BsonBinaryDataExtendedJsonConverter>();
-            result.BooleanConverter.Should().BeOfType<BooleanStrictJsonConverter>();
-            result.DateTimeConverter.Should().BeOfType<BsonDateTimeExtendedJsonConverter>();
-            result.Decimal128Converter.Should().BeOfType<Decimal128ExtendedJsonConverter>();
-            result.DoubleConverter.Should().BeOfType<DoubleWithDecimalPointJsonConverter>();
-            result.Int32Converter.Should().BeOfType<Int32StrictJsonConverter>();
-            result.Int64Converter.Should().BeOfType<Int64StrictJsonConverter>();
-            result.JavaScriptConverter.Should().BeOfType<BsonJavaScriptExtendedJsonConverter>();
-            result.MaxKeyConverter.Should().BeOfType<BsonMaxKeyExtendedJsonConverter>();
-            result.MinKeyConverter.Should().BeOfType<BsonMinKeyExtendedJsonConverter>();
-            result.NullConverter.Should().BeOfType<BsonNullStrictJsonConverter>();
-            result.ObjectIdConverter.Should().BeOfType<ObjectIdExtendedJsonConverter>();
-            result.RegularExpressionConverter.Should().BeOfType<BsonRegularExpressionExtendedJsonConverter>();
-            result.StringConverter.Should().BeOfType<StringStrictJsonConverter>();
-            result.SymbolConverter.Should().BeOfType<BsonSymbolExtendedJsonConverter>();
-            result.TimestampConverter.Should().BeOfType<BsonTimestampExtendedJsonConverter>();
-            result.UndefinedConverter.Should().BeOfType<BsonUndefinedExtendedJsonConverter>();
-        }
-
-        [Fact]
-        public void Strict_get_should_return_same_instance()
-        {
-            var result1 = JsonConverterSet.Strict;
-            var result2 = JsonConverterSet.Strict;
-
-            result2.Should().BeSameAs(result1);
-        }
-
         [Fact]
         public void constructor_should_initialize_instance()
         {
-            var binaryDataConverter = new Mock<IJsonConverter<BsonBinaryData>>().Object;
-            var booleanConverter = new Mock<IJsonConverter<bool>>().Object;
-            var dateTimeConverter = new Mock<IJsonConverter<long>>().Object;
-            var decimal128Converter = new Mock<IJsonConverter<Decimal128>>().Object;
-            var doubleConverter = new Mock<IJsonConverter<double>>().Object;
-            var int32Converter = new Mock<IJsonConverter<int>>().Object;
-            var int64Converter = new Mock<IJsonConverter<long>>().Object;
-            var javaScriptConverter = new Mock<IJsonConverter<string>>().Object;
-            var maxKeyConverter = new Mock<IJsonConverter<BsonMaxKey>>().Object;
-            var minKeyConverter = new Mock<IJsonConverter<BsonMinKey>>().Object;
-            var nullConverter = new Mock<IJsonConverter<BsonNull>>().Object;
-            var objectIdConverter = new Mock<IJsonConverter<ObjectId>>().Object;
-            var regularExpressionConverter = new Mock<IJsonConverter<BsonRegularExpression>>().Object;
-            var stringConverter = new Mock<IJsonConverter<string>>().Object;
-            var symbolConverter = new Mock<IJsonConverter<string>>().Object;
-            var timestampConverter = new Mock<IJsonConverter<long>>().Object;
-            var undefinedConverter = new Mock<IJsonConverter<BsonUndefined>>().Object;
+            var binaryDataConverter = new Mock<IJsonOutputConverter<BsonBinaryData>>().Object;
+            var booleanConverter = new Mock<IJsonOutputConverter<bool>>().Object;
+            var dateTimeConverter = new Mock<IJsonOutputConverter<long>>().Object;
+            var decimal128Converter = new Mock<IJsonOutputConverter<Decimal128>>().Object;
+            var doubleConverter = new Mock<IJsonOutputConverter<double>>().Object;
+            var int32Converter = new Mock<IJsonOutputConverter<int>>().Object;
+            var int64Converter = new Mock<IJsonOutputConverter<long>>().Object;
+            var javaScriptConverter = new Mock<IJsonOutputConverter<string>>().Object;
+            var maxKeyConverter = new Mock<IJsonOutputConverter<BsonMaxKey>>().Object;
+            var minKeyConverter = new Mock<IJsonOutputConverter<BsonMinKey>>().Object;
+            var nullConverter = new Mock<IJsonOutputConverter<BsonNull>>().Object;
+            var objectIdConverter = new Mock<IJsonOutputConverter<ObjectId>>().Object;
+            var regularExpressionConverter = new Mock<IJsonOutputConverter<BsonRegularExpression>>().Object;
+            var stringConverter = new Mock<IJsonOutputConverter<string>>().Object;
+            var symbolConverter = new Mock<IJsonOutputConverter<string>>().Object;
+            var timestampConverter = new Mock<IJsonOutputConverter<long>>().Object;
+            var undefinedConverter = new Mock<IJsonOutputConverter<BsonUndefined>>().Object;
 
-            var result = new JsonConverterSet(
+            var result = new JsonOutputConverterSet(
                 binaryDataConverter,
                 booleanConverter,
                 dateTimeConverter,
@@ -170,25 +104,25 @@ namespace MongoDB.Bson.Tests.IO
         [InlineData("undefinedConverter")]
         public void constructor_should_throw_when_parameter_is_null(string nullParameterName)
         {
-            var binaryDataConverter = nullParameterName == "binaryDataConverter" ? null : new Mock<IJsonConverter<BsonBinaryData>>().Object;
-            var booleanConverter = nullParameterName == "booleanConverter" ? null : new Mock<IJsonConverter<bool>>().Object;
-            var dateTimeConverter = nullParameterName == "dateTimeConverter" ? null : new Mock<IJsonConverter<long>>().Object;
-            var decimal128Converter = nullParameterName == "decimal128Converter" ? null : new Mock<IJsonConverter<Decimal128>>().Object;
-            var doubleConverter = nullParameterName == "doubleConverter" ? null : new Mock<IJsonConverter<double>>().Object;
-            var int32Converter = nullParameterName == "int32Converter" ? null : new Mock<IJsonConverter<int>>().Object;
-            var int64Converter = nullParameterName == "int64Converter" ? null : new Mock<IJsonConverter<long>>().Object;
-            var javaScriptConverter = nullParameterName == "javaScriptConverter" ? null : new Mock<IJsonConverter<string>>().Object;
-            var maxKeyConverter = nullParameterName == "maxKeyConverter" ? null : new Mock<IJsonConverter<BsonMaxKey>>().Object;
-            var minKeyConverter = nullParameterName == "minKeyConverter" ? null : new Mock<IJsonConverter<BsonMinKey>>().Object;
-            var nullConverter = nullParameterName == "nullConverter" ? null : new Mock<IJsonConverter<BsonNull>>().Object;
-            var objectIdConverter = nullParameterName == "objectIdConverter" ? null : new Mock<IJsonConverter<ObjectId>>().Object;
-            var regularExpressionConverter = nullParameterName == "regularExpressionConverter" ? null : new Mock<IJsonConverter<BsonRegularExpression>>().Object;
-            var stringConverter = nullParameterName == "stringConverter" ? null : new Mock<IJsonConverter<string>>().Object;
-            var symbolConverter = nullParameterName == "symbolConverter" ? null : new Mock<IJsonConverter<string>>().Object;
-            var timestampConverter = nullParameterName == "timestampConverter" ? null : new Mock<IJsonConverter<long>>().Object;
-            var undefinedConverter = nullParameterName == "undefinedConverter" ? null : new Mock<IJsonConverter<BsonUndefined>>().Object;
+            var binaryDataConverter = nullParameterName == "binaryDataConverter" ? null : new Mock<IJsonOutputConverter<BsonBinaryData>>().Object;
+            var booleanConverter = nullParameterName == "booleanConverter" ? null : new Mock<IJsonOutputConverter<bool>>().Object;
+            var dateTimeConverter = nullParameterName == "dateTimeConverter" ? null : new Mock<IJsonOutputConverter<long>>().Object;
+            var decimal128Converter = nullParameterName == "decimal128Converter" ? null : new Mock<IJsonOutputConverter<Decimal128>>().Object;
+            var doubleConverter = nullParameterName == "doubleConverter" ? null : new Mock<IJsonOutputConverter<double>>().Object;
+            var int32Converter = nullParameterName == "int32Converter" ? null : new Mock<IJsonOutputConverter<int>>().Object;
+            var int64Converter = nullParameterName == "int64Converter" ? null : new Mock<IJsonOutputConverter<long>>().Object;
+            var javaScriptConverter = nullParameterName == "javaScriptConverter" ? null : new Mock<IJsonOutputConverter<string>>().Object;
+            var maxKeyConverter = nullParameterName == "maxKeyConverter" ? null : new Mock<IJsonOutputConverter<BsonMaxKey>>().Object;
+            var minKeyConverter = nullParameterName == "minKeyConverter" ? null : new Mock<IJsonOutputConverter<BsonMinKey>>().Object;
+            var nullConverter = nullParameterName == "nullConverter" ? null : new Mock<IJsonOutputConverter<BsonNull>>().Object;
+            var objectIdConverter = nullParameterName == "objectIdConverter" ? null : new Mock<IJsonOutputConverter<ObjectId>>().Object;
+            var regularExpressionConverter = nullParameterName == "regularExpressionConverter" ? null : new Mock<IJsonOutputConverter<BsonRegularExpression>>().Object;
+            var stringConverter = nullParameterName == "stringConverter" ? null : new Mock<IJsonOutputConverter<string>>().Object;
+            var symbolConverter = nullParameterName == "symbolConverter" ? null : new Mock<IJsonOutputConverter<string>>().Object;
+            var timestampConverter = nullParameterName == "timestampConverter" ? null : new Mock<IJsonOutputConverter<long>>().Object;
+            var undefinedConverter = nullParameterName == "undefinedConverter" ? null : new Mock<IJsonOutputConverter<BsonUndefined>>().Object;
 
-            var exception = Record.Exception(() => new JsonConverterSet(
+            var exception = Record.Exception(() => new JsonOutputConverterSet(
                 binaryDataConverter,
                 booleanConverter,
                 dateTimeConverter,
@@ -215,7 +149,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_binaryDataConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var binaryDataConverter = new Mock<IJsonConverter<BsonBinaryData>>().Object;
+            var binaryDataConverter = new Mock<IJsonOutputConverter<BsonBinaryData>>().Object;
 
             var result = subject.With(binaryDataConverter: binaryDataConverter);
 
@@ -227,7 +161,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_booleanConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var booleanConverter = new Mock<IJsonConverter<bool>>().Object;
+            var booleanConverter = new Mock<IJsonOutputConverter<bool>>().Object;
 
             var result = subject.With(booleanConverter: booleanConverter);
 
@@ -239,7 +173,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_dateTimeConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var dateTimeConverter = new Mock<IJsonConverter<long>>().Object;
+            var dateTimeConverter = new Mock<IJsonOutputConverter<long>>().Object;
 
             var result = subject.With(dateTimeConverter: dateTimeConverter);
 
@@ -251,7 +185,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_decimal128Converter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var decimal128Converter = new Mock<IJsonConverter<Decimal128>>().Object;
+            var decimal128Converter = new Mock<IJsonOutputConverter<Decimal128>>().Object;
 
             var result = subject.With(decimal128Converter: decimal128Converter);
 
@@ -263,7 +197,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_doubleConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var doubleConverter = new Mock<IJsonConverter<double>>().Object;
+            var doubleConverter = new Mock<IJsonOutputConverter<double>>().Object;
 
             var result = subject.With(doubleConverter: doubleConverter);
 
@@ -275,7 +209,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_int32Converter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var int32Converter = new Mock<IJsonConverter<int>>().Object;
+            var int32Converter = new Mock<IJsonOutputConverter<int>>().Object;
 
             var result = subject.With(int32Converter: int32Converter);
 
@@ -287,7 +221,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_int64Converter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var int64Converter = new Mock<IJsonConverter<long>>().Object;
+            var int64Converter = new Mock<IJsonOutputConverter<long>>().Object;
 
             var result = subject.With(int64Converter: int64Converter);
 
@@ -299,7 +233,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_javaScriptConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var javaScriptConverter = new Mock<IJsonConverter<string>>().Object;
+            var javaScriptConverter = new Mock<IJsonOutputConverter<string>>().Object;
 
             var result = subject.With(javaScriptConverter: javaScriptConverter);
 
@@ -311,7 +245,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_maxKeyConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var maxKeyConverter = new Mock<IJsonConverter<BsonMaxKey>>().Object;
+            var maxKeyConverter = new Mock<IJsonOutputConverter<BsonMaxKey>>().Object;
 
             var result = subject.With(maxKeyConverter: maxKeyConverter);
 
@@ -323,7 +257,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_minKeyConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var minKeyConverter = new Mock<IJsonConverter<BsonMinKey>>().Object;
+            var minKeyConverter = new Mock<IJsonOutputConverter<BsonMinKey>>().Object;
 
             var result = subject.With(minKeyConverter: minKeyConverter);
 
@@ -335,7 +269,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_nullConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var nullConverter = new Mock<IJsonConverter<BsonNull>>().Object;
+            var nullConverter = new Mock<IJsonOutputConverter<BsonNull>>().Object;
 
             var result = subject.With(nullConverter: nullConverter);
 
@@ -347,7 +281,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_objectIdConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var objectIdConverter = new Mock<IJsonConverter<ObjectId>>().Object;
+            var objectIdConverter = new Mock<IJsonOutputConverter<ObjectId>>().Object;
 
             var result = subject.With(objectIdConverter: objectIdConverter);
 
@@ -359,7 +293,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_regularExpressionConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var regularExpressionConverter = new Mock<IJsonConverter<BsonRegularExpression>>().Object;
+            var regularExpressionConverter = new Mock<IJsonOutputConverter<BsonRegularExpression>>().Object;
 
             var result = subject.With(regularExpressionConverter: regularExpressionConverter);
 
@@ -371,7 +305,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_stringConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var stringConverter = new Mock<IJsonConverter<string>>().Object;
+            var stringConverter = new Mock<IJsonOutputConverter<string>>().Object;
 
             var result = subject.With(stringConverter: stringConverter);
 
@@ -383,7 +317,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_symbolConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var symbolConverter = new Mock<IJsonConverter<string>>().Object;
+            var symbolConverter = new Mock<IJsonOutputConverter<string>>().Object;
 
             var result = subject.With(symbolConverter: symbolConverter);
 
@@ -395,7 +329,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_timestampConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var timestampConverter = new Mock<IJsonConverter<long>>().Object;
+            var timestampConverter = new Mock<IJsonOutputConverter<long>>().Object;
 
             var result = subject.With(timestampConverter: timestampConverter);
 
@@ -407,7 +341,7 @@ namespace MongoDB.Bson.Tests.IO
         public void With_undefinedConverter_should_return_expected_result()
         {
             var subject = CreateSubject();
-            var undefinedConverter = new Mock<IJsonConverter<BsonUndefined>>().Object;
+            var undefinedConverter = new Mock<IJsonOutputConverter<BsonUndefined>>().Object;
 
             var result = subject.With(undefinedConverter: undefinedConverter);
 
@@ -416,29 +350,29 @@ namespace MongoDB.Bson.Tests.IO
         }
 
         // private methods
-        private JsonConverterSet CreateSubject()
+        private JsonOutputConverterSet CreateSubject()
         {
-            return new JsonConverterSet(
-                new Mock<IJsonConverter<BsonBinaryData>>().Object,
-                new Mock<IJsonConverter<bool>>().Object,
-                new Mock<IJsonConverter<long>>().Object,
-                new Mock<IJsonConverter<Decimal128>>().Object,
-                new Mock<IJsonConverter<double>>().Object,
-                new Mock<IJsonConverter<int>>().Object,
-                new Mock<IJsonConverter<long>>().Object,
-                new Mock<IJsonConverter<string>>().Object,
-                new Mock<IJsonConverter<BsonMaxKey>>().Object,
-                new Mock<IJsonConverter<BsonMinKey>>().Object,
-                new Mock<IJsonConverter<BsonNull>>().Object,
-                new Mock<IJsonConverter<ObjectId>>().Object,
-                new Mock<IJsonConverter<BsonRegularExpression>>().Object,
-                new Mock<IJsonConverter<string>>().Object,
-                new Mock<IJsonConverter<string>>().Object,
-                new Mock<IJsonConverter<long>>().Object,
-                new Mock<IJsonConverter<BsonUndefined>>().Object);
+            return new JsonOutputConverterSet(
+                new Mock<IJsonOutputConverter<BsonBinaryData>>().Object,
+                new Mock<IJsonOutputConverter<bool>>().Object,
+                new Mock<IJsonOutputConverter<long>>().Object,
+                new Mock<IJsonOutputConverter<Decimal128>>().Object,
+                new Mock<IJsonOutputConverter<double>>().Object,
+                new Mock<IJsonOutputConverter<int>>().Object,
+                new Mock<IJsonOutputConverter<long>>().Object,
+                new Mock<IJsonOutputConverter<string>>().Object,
+                new Mock<IJsonOutputConverter<BsonMaxKey>>().Object,
+                new Mock<IJsonOutputConverter<BsonMinKey>>().Object,
+                new Mock<IJsonOutputConverter<BsonNull>>().Object,
+                new Mock<IJsonOutputConverter<ObjectId>>().Object,
+                new Mock<IJsonOutputConverter<BsonRegularExpression>>().Object,
+                new Mock<IJsonOutputConverter<string>>().Object,
+                new Mock<IJsonOutputConverter<string>>().Object,
+                new Mock<IJsonOutputConverter<long>>().Object,
+                new Mock<IJsonOutputConverter<BsonUndefined>>().Object);
         }
 
-        private List<string> FindDifferences(JsonConverterSet x, JsonConverterSet y)
+        private List<string> FindDifferences(JsonOutputConverterSet x, JsonOutputConverterSet y)
         {
             var result = new List<string>();
             if (x.BinaryDataConverter != y.BinaryDataConverter) { result.Add("BinaryDataConverter"); }

@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonJavaScript to extended JSON.
+    /// Represents a converter between BsonJavaScript values and extended JSON.
     /// </summary>
-    public class BsonJavaScriptExtendedJsonConverter : IJsonConverter<string>
+    public class BsonJavaScriptExtendedJsonConverter : IJsonOutputConverter<string>
     {
         /// <inheritdoc/>
-        public void Convert(string code, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, string code)
         {
             writer.WriteStartDocument();
             writer.WriteName("$code");

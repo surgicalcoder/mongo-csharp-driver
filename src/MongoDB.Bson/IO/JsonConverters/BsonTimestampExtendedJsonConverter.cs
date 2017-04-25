@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonTimestamp to extended JSON.
+    /// Represents a converter between BsonTimestamp values and extended JSON.
     /// </summary>
-    public class BsonTimestampExtendedJsonConverter : IJsonConverter<long>
+    public class BsonTimestampExtendedJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             var timestamp = (int)((value >> 32) & 0xffffffff);
             var increment = (int)(value & 0xffffffff);

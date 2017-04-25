@@ -96,7 +96,7 @@
     <Compile Include="IO\IBsonWriter.cs" />
     <Compile Include="IO\IBsonWriterExtensions.cs" />
     <Compile Include="IO\IElementNameValidator.cs" />
-    <Compile Include="IO\IJsonConverter.cs" />
+    <Compile Include="IO\IJsonOutputConverter.cs" />
     <Compile Include="IO\INameDecoder.cs" />
     <Compile Include="IO\InputBufferChunkSource.cs" />
     <Compile Include="IO\IStrictJsonWriter.cs" />
@@ -106,7 +106,8 @@
     <Compile Include="IO\ByteBufferStream.cs" />
     <Compile Include="IO\IByteBuffer.cs" />
     <Compile Include="IO\JsonConvert.cs" />
-    <Compile Include="IO\JsonConverterSet.cs" />
+    <Compile Include="IO\JsonOutputConverters.cs" />
+    <Compile Include="IO\JsonOutputConverterSet.cs" />
     <Compile Include="IO\JsonConverters\BooleanStrictJsonConverter.cs" />
     <Compile Include="IO\JsonConverters\BsonBinaryDataExtendedJsonConverter.cs" />
     <Compile Include="IO\JsonConverters\BsonBinaryShellJsonConverter.cs" />

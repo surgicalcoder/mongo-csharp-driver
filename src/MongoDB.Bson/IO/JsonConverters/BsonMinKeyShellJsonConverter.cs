@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonMinKey to shell JSON.
+    /// Represents a converter between BsonMinKey values and shell JSON.
     /// </summary>
-    public class BsonMinKeyShellJsonConverter : IJsonConverter<BsonMinKey>
+    public class BsonMinKeyShellJsonConverter : IJsonOutputConverter<BsonMinKey>
     {
         /// <inheritdoc/>
-        public void Convert(BsonMinKey value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonMinKey value)
         {
             writer.WriteValue("MinKey");
         }

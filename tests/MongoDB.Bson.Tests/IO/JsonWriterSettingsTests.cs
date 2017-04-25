@@ -31,7 +31,7 @@ namespace MongoDB.Bson.Tests.IO
             var result = JsonWriterSettings.Defaults;
 
             result.AlwaysQuoteNames.Should().BeTrue();
-            result.Converters.Should().BeSameAs(JsonConverterSet.Shell);
+            result.OutputConverters.Should().BeSameAs(JsonOutputConverters.Shell);
             result.Encoding.Should().BeOfType<UTF8Encoding>();
             result.GuidRepresentation.Should().Be(GuidRepresentation.CSharpLegacy);
             result.Indent.Should().BeFalse();
@@ -81,7 +81,7 @@ namespace MongoDB.Bson.Tests.IO
             var result = new JsonWriterSettings();
 
             result.AlwaysQuoteNames.Should().BeTrue();
-            result.Converters.Should().BeSameAs(JsonConverterSet.Shell);
+            result.OutputConverters.Should().BeSameAs(JsonOutputConverters.Shell);
             result.Encoding.Should().BeOfType<UTF8Encoding>();
             result.GuidRepresentation.Should().Be(GuidRepresentation.CSharpLegacy);
             result.Indent.Should().BeFalse();
@@ -123,8 +123,8 @@ namespace MongoDB.Bson.Tests.IO
             var subject = new JsonWriterSettings();
             var value = CreateConverterSet();
 
-            subject.Converters = value;
-            var result = subject.Converters;
+            subject.OutputConverters = value;
+            var result = subject.OutputConverters;
 
             result.Should().BeSameAs(value);
         }
@@ -135,7 +135,7 @@ namespace MongoDB.Bson.Tests.IO
             var subject = CreateFrozenSubject();
             var value = CreateConverterSet();
 
-            var exception = Record.Exception(() => { subject.Converters = value; });
+            var exception = Record.Exception(() => { subject.OutputConverters = value; });
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -145,7 +145,7 @@ namespace MongoDB.Bson.Tests.IO
         {
             var subject = CreateFrozenSubject();
 
-            var exception = Record.Exception(() => { subject.Converters = null; });
+            var exception = Record.Exception(() => { subject.OutputConverters = null; });
 
             var argumentNullException = exception.Should().BeOfType<ArgumentNullException>().Subject;
             argumentNullException.ParamName.Should().Be("value");
@@ -276,13 +276,13 @@ namespace MongoDB.Bson.Tests.IO
         {
 #pragma warning disable 618
             var subject = new JsonWriterSettings();
-            subject.Converters = CreateConverterSet();
+            subject.OutputConverters = CreateConverterSet();
 
             subject.OutputMode = value;
             var result = subject.OutputMode;
 
             result.Should().Be(value);
-            subject.Converters.Should().BeSameAs(value == JsonOutputMode.Strict ? JsonConverterSet.Strict : JsonConverterSet.Shell);
+            subject.OutputConverters.Should().BeSameAs(value == JsonOutputMode.Strict ? JsonOutputConverters.Strict : JsonOutputConverters.Shell);
 #pragma warning restore
         }
 
@@ -315,14 +315,14 @@ namespace MongoDB.Bson.Tests.IO
 #pragma warning disable 618
             var subject = new JsonWriterSettings();
             subject.AlwaysQuoteNames = !subject.AlwaysQuoteNames;
-            subject.OutputMode = subject.OutputMode == JsonOutputMode.Shell ? JsonOutputMode.Strict : JsonOutputMode.Shell; // set OutputMode before Converters
-            subject.Converters = subject.Converters == JsonConverterSet.Shell ? JsonConverterSet.Strict : JsonConverterSet.Shell;
             subject.Encoding = new UTF8Encoding();
             subject.GuidRepresentation = (GuidRepresentation)((int)subject.GuidRepresentation + 1);
             subject.Indent = !subject.Indent;
             subject.IndentChars = subject.IndentChars + " ";
             subject.MaxSerializationDepth = subject.MaxSerializationDepth + 1;
             subject.NewLineChars = subject.NewLineChars + "\r\n";
+            subject.OutputMode = subject.OutputMode == JsonOutputMode.Shell ? JsonOutputMode.Strict : JsonOutputMode.Shell; // set OutputMode before OutputConverters
+            subject.OutputConverters = subject.OutputConverters == JsonOutputConverters.Shell ? JsonOutputConverters.Strict : JsonOutputConverters.Shell;
             subject.ShellVersion = new Version(1, 3, 2);
             subject.Freeze();
 
@@ -355,10 +355,10 @@ namespace MongoDB.Bson.Tests.IO
         }
 
         // private methods
-        private JsonConverterSet CreateConverterSet()
+        private JsonOutputConverterSet CreateConverterSet()
         {
             var doubleConverter = new DoubleStrictJsonConverter();
-            return JsonConverterSet.Shell.With(doubleConverter: doubleConverter);
+            return JsonOutputConverters.Shell.With(doubleConverter: doubleConverter);
         }
 
         private JsonWriterSettings CreateFrozenSubject()
@@ -373,7 +373,7 @@ namespace MongoDB.Bson.Tests.IO
 #pragma warning disable 618
             return
                 x.AlwaysQuoteNames == y.AlwaysQuoteNames &&
-                x.Converters == y.Converters &&
+                x.OutputConverters == y.OutputConverters &&
                 x.Encoding == y.Encoding &&
                 x.GuidRepresentation == y.GuidRepresentation &&
                 x.Indent == y.Indent &&

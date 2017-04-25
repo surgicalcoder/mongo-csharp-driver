@@ -14,96 +14,36 @@
 */
 
 using System;
-using MongoDB.Bson.IO.JsonConverters;
 
 namespace MongoDB.Bson.IO
 {
     /// <summary>
-    /// Represents a set of JsonConverters.
+    /// Represents a set of JsonOutputConverters.
     /// </summary>
-    public class JsonConverterSet
+    public class JsonOutputConverterSet
     {
-        #region static
-        // private static fields
-        private static readonly JsonConverterSet __shell;
-        private static readonly JsonConverterSet __strict;
-
-        // static constructor
-        static JsonConverterSet()
-        {
-            __shell = new JsonConverterSet(
-                new BsonBinaryDataShellJsonConverter(),
-                new BooleanStrictJsonConverter(),
-                new BsonDateTimeShellJsonConverter(),
-                new Decimal128ShellJsonConverter(),
-                new DoubleWithDecimalPointJsonConverter(),
-                new Int32StrictJsonConverter(),
-                new Int64ShellJsonConverter(),
-                new BsonJavaScriptExtendedJsonConverter(),
-                new BsonMaxKeyShellJsonConverter(),
-                new BsonMinKeyShellJsonConverter(),
-                new BsonNullStrictJsonConverter(),
-                new ObjectIdShellJsonConverter(),
-                new BsonRegularExpressionShellJsonConverter(),
-                new StringStrictJsonConverter(),
-                new BsonSymbolExtendedJsonConverter(),
-                new BsonTimestampShellJsonConverter(),
-                new BsonUndefinedShellJsonConverter());
-
-            __strict = new JsonConverterSet(
-                new BsonBinaryDataExtendedJsonConverter(),
-                new BooleanStrictJsonConverter(),
-                new BsonDateTimeExtendedJsonConverter(),
-                new Decimal128ExtendedJsonConverter(),
-                new DoubleWithDecimalPointJsonConverter(),
-                new Int32StrictJsonConverter(),
-                new Int64StrictJsonConverter(),
-                new BsonJavaScriptExtendedJsonConverter(),
-                new BsonMaxKeyExtendedJsonConverter(),
-                new BsonMinKeyExtendedJsonConverter(),
-                new BsonNullStrictJsonConverter(),
-                new ObjectIdExtendedJsonConverter(),
-                new BsonRegularExpressionExtendedJsonConverter(),
-                new StringStrictJsonConverter(),
-                new BsonSymbolExtendedJsonConverter(),
-                new BsonTimestampExtendedJsonConverter(),
-                new BsonUndefinedExtendedJsonConverter());
-        }
-
-        // public static properties
-        /// <summary>
-        /// Gets the shell json converters.
-        /// </summary>
-        public static JsonConverterSet Shell => __shell;
-
-        /// <summary>
-        /// Gets the strict json converters.
-        /// </summary>
-        public static JsonConverterSet Strict => __strict;
-        #endregion
-
         // private fields
-        private readonly IJsonConverter<BsonBinaryData> _binaryDataConverter;
-        private readonly IJsonConverter<bool> _booleanConverter;
-        private readonly IJsonConverter<long> _dateTimeConverter;
-        private readonly IJsonConverter<Decimal128> _decimal128Converter;
-        private readonly IJsonConverter<double> _doubleConverter;
-        private readonly IJsonConverter<int> _int32Converter;
-        private readonly IJsonConverter<long> _int64Converter;
-        private readonly IJsonConverter<string> _javaScriptConverter;
-        private readonly IJsonConverter<BsonMaxKey> _maxKeyConverter;
-        private readonly IJsonConverter<BsonMinKey> _minKeyConverter;
-        private readonly IJsonConverter<BsonNull> _nullConverter;
-        private readonly IJsonConverter<ObjectId> _objectIdConverter;
-        private readonly IJsonConverter<BsonRegularExpression> _regularExpressionConverter;
-        private readonly IJsonConverter<string> _stringConverter;
-        private readonly IJsonConverter<string> _symbolConverter;
-        private readonly IJsonConverter<long> _timestampConverter;
-        private readonly IJsonConverter<BsonUndefined> _undefinedConverter;
+        private readonly IJsonOutputConverter<BsonBinaryData> _binaryDataConverter;
+        private readonly IJsonOutputConverter<bool> _booleanConverter;
+        private readonly IJsonOutputConverter<long> _dateTimeConverter;
+        private readonly IJsonOutputConverter<Decimal128> _decimal128Converter;
+        private readonly IJsonOutputConverter<double> _doubleConverter;
+        private readonly IJsonOutputConverter<int> _int32Converter;
+        private readonly IJsonOutputConverter<long> _int64Converter;
+        private readonly IJsonOutputConverter<string> _javaScriptConverter;
+        private readonly IJsonOutputConverter<BsonMaxKey> _maxKeyConverter;
+        private readonly IJsonOutputConverter<BsonMinKey> _minKeyConverter;
+        private readonly IJsonOutputConverter<BsonNull> _nullConverter;
+        private readonly IJsonOutputConverter<ObjectId> _objectIdConverter;
+        private readonly IJsonOutputConverter<BsonRegularExpression> _regularExpressionConverter;
+        private readonly IJsonOutputConverter<string> _stringConverter;
+        private readonly IJsonOutputConverter<string> _symbolConverter;
+        private readonly IJsonOutputConverter<long> _timestampConverter;
+        private readonly IJsonOutputConverter<BsonUndefined> _undefinedConverter;
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="JsonConverterSet"/> class.
+        /// Initializes a new instance of the <see cref="JsonOutputConverterSet"/> class.
         /// </summary>
         /// <param name="binaryDataConverter">The BsonBinaryData converter.</param>
         /// <param name="booleanConverter">The Boolean converter.</param>
@@ -122,24 +62,24 @@ namespace MongoDB.Bson.IO
         /// <param name="symbolConverter">The BsonSymbol converter.</param>
         /// <param name="timestampConverter">The BsonTimestamp converter.</param>
         /// <param name="undefinedConverter">The BsonUndefined converter.</param>
-        public JsonConverterSet(
-            IJsonConverter<BsonBinaryData> binaryDataConverter,
-            IJsonConverter<bool> booleanConverter,
-            IJsonConverter<long> dateTimeConverter,
-            IJsonConverter<Decimal128> decimal128Converter,
-            IJsonConverter<double> doubleConverter,
-            IJsonConverter<int> int32Converter,
-            IJsonConverter<long> int64Converter,
-            IJsonConverter<string> javaScriptConverter,
-            IJsonConverter<BsonMaxKey> maxKeyConverter,
-            IJsonConverter<BsonMinKey> minKeyConverter,
-            IJsonConverter<BsonNull> nullConverter,
-            IJsonConverter<ObjectId> objectIdConverter,
-            IJsonConverter<BsonRegularExpression> regularExpressionConverter,
-            IJsonConverter<string> stringConverter,
-            IJsonConverter<string> symbolConverter,
-            IJsonConverter<long> timestampConverter,
-            IJsonConverter<BsonUndefined> undefinedConverter)
+        public JsonOutputConverterSet(
+            IJsonOutputConverter<BsonBinaryData> binaryDataConverter,
+            IJsonOutputConverter<bool> booleanConverter,
+            IJsonOutputConverter<long> dateTimeConverter,
+            IJsonOutputConverter<Decimal128> decimal128Converter,
+            IJsonOutputConverter<double> doubleConverter,
+            IJsonOutputConverter<int> int32Converter,
+            IJsonOutputConverter<long> int64Converter,
+            IJsonOutputConverter<string> javaScriptConverter,
+            IJsonOutputConverter<BsonMaxKey> maxKeyConverter,
+            IJsonOutputConverter<BsonMinKey> minKeyConverter,
+            IJsonOutputConverter<BsonNull> nullConverter,
+            IJsonOutputConverter<ObjectId> objectIdConverter,
+            IJsonOutputConverter<BsonRegularExpression> regularExpressionConverter,
+            IJsonOutputConverter<string> stringConverter,
+            IJsonOutputConverter<string> symbolConverter,
+            IJsonOutputConverter<long> timestampConverter,
+            IJsonOutputConverter<BsonUndefined> undefinedConverter)
         {
             if (binaryDataConverter == null) { throw new ArgumentNullException(nameof(binaryDataConverter)); }
             if (booleanConverter == null) { throw new ArgumentNullException(nameof(booleanConverter)); }
@@ -182,91 +122,91 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Gets the converter for BsonBinaryData values.
         /// </summary>
-        public IJsonConverter<BsonBinaryData> BinaryDataConverter => _binaryDataConverter;
+        public IJsonOutputConverter<BsonBinaryData> BinaryDataConverter => _binaryDataConverter;
 
         /// <summary>
         /// Gets the converter for Boolean values.
         /// </summary>
-        public IJsonConverter<bool> BooleanConverter => _booleanConverter;
+        public IJsonOutputConverter<bool> BooleanConverter => _booleanConverter;
 
         /// <summary>
         /// Gets the converter for BsonDateTime values.
         /// </summary>
-        public IJsonConverter<long> DateTimeConverter => _dateTimeConverter;
+        public IJsonOutputConverter<long> DateTimeConverter => _dateTimeConverter;
 
         /// <summary>
         /// Gets the converter for Decimal128 values.
         /// </summary>
-        public IJsonConverter<Decimal128> Decimal128Converter => _decimal128Converter;
+        public IJsonOutputConverter<Decimal128> Decimal128Converter => _decimal128Converter;
 
         /// <summary>
         /// Gets the converter for Double values.
         /// </summary>
-        public IJsonConverter<double> DoubleConverter => _doubleConverter;
+        public IJsonOutputConverter<double> DoubleConverter => _doubleConverter;
 
         /// <summary>
         /// Gets the converter for Int32 values.
         /// </summary>
-        public IJsonConverter<int> Int32Converter => _int32Converter;
+        public IJsonOutputConverter<int> Int32Converter => _int32Converter;
 
         /// <summary>
         /// Gets the converter for Int64 values.
         /// </summary>
-        public IJsonConverter<long> Int64Converter => _int64Converter;
+        public IJsonOutputConverter<long> Int64Converter => _int64Converter;
 
         /// <summary>
         /// Gets the converter for BsonJavaScript values.
         /// </summary>
-        public IJsonConverter<string> JavaScriptConverter => _javaScriptConverter;
+        public IJsonOutputConverter<string> JavaScriptConverter => _javaScriptConverter;
 
         /// <summary>
         /// Gets the converter for BsonMaxKey values.
         /// </summary>
-        public IJsonConverter<BsonMaxKey> MaxKeyConverter => _maxKeyConverter;
+        public IJsonOutputConverter<BsonMaxKey> MaxKeyConverter => _maxKeyConverter;
 
         /// <summary>
         /// Gets the converter for BsonMinKey values.
         /// </summary>
-        public IJsonConverter<BsonMinKey> MinKeyConverter => _minKeyConverter;
+        public IJsonOutputConverter<BsonMinKey> MinKeyConverter => _minKeyConverter;
 
         /// <summary>
         /// Gets the converter for BsonNull values.
         /// </summary>
-        public IJsonConverter<BsonNull> NullConverter => _nullConverter;
+        public IJsonOutputConverter<BsonNull> NullConverter => _nullConverter;
 
         /// <summary>
         /// Gets the converter for ObjectId values.
         /// </summary>
-        public IJsonConverter<ObjectId> ObjectIdConverter => _objectIdConverter;
+        public IJsonOutputConverter<ObjectId> ObjectIdConverter => _objectIdConverter;
 
         /// <summary>
         /// Gets the converter for BsonRegularExpression values.
         /// </summary>
-        public IJsonConverter<BsonRegularExpression> RegularExpressionConverter => _regularExpressionConverter;
+        public IJsonOutputConverter<BsonRegularExpression> RegularExpressionConverter => _regularExpressionConverter;
 
         /// <summary>
         /// Gets the converter for String values.
         /// </summary>
-        public IJsonConverter<string> StringConverter => _stringConverter;
+        public IJsonOutputConverter<string> StringConverter => _stringConverter;
 
         /// <summary>
         /// Gets the converter for BsonSymbol values.
         /// </summary>
-        public IJsonConverter<string> SymbolConverter => _symbolConverter;
+        public IJsonOutputConverter<string> SymbolConverter => _symbolConverter;
 
         /// <summary>
         /// Gets the converter for BsonTimestamp values.
         /// </summary>
-        public IJsonConverter<long> TimestampConverter => _timestampConverter;
+        public IJsonOutputConverter<long> TimestampConverter => _timestampConverter;
 
         /// <summary>
         /// Gets the converter for BsonUndefined values.
         /// </summary>
-        public IJsonConverter<BsonUndefined> UndefinedConverter => _undefinedConverter;
+        public IJsonOutputConverter<BsonUndefined> UndefinedConverter => _undefinedConverter;
 
         // public methods
         /// <summary>
-        /// Returns a new instance of the <see cref="JsonConverterSet"/> class with some converters replaced.
+        /// Returns a new instance of the <see cref="JsonOutputConverterSet"/> class with some converters replaced.
         /// </summary>
         /// <param name="binaryDataConverter">The BsonBinaryData converter.</param>
         /// <param name="booleanConverter">The Boolean converter.</param>
@@ -285,26 +225,26 @@ namespace MongoDB.Bson.IO
         /// <param name="symbolConverter">The BsonSymbol converter.</param>
         /// <param name="timestampConverter">The BsonTimestamp converter.</param>
         /// <param name="undefinedConverter">The BsonUndefined converter.</param>
-        public JsonConverterSet With(
-            IJsonConverter<BsonBinaryData> binaryDataConverter = null,
-            IJsonConverter<bool> booleanConverter = null,
-            IJsonConverter<long> dateTimeConverter = null,
-            IJsonConverter<Decimal128> decimal128Converter = null,
-            IJsonConverter<double> doubleConverter = null,
-            IJsonConverter<int> int32Converter = null,
-            IJsonConverter<long> int64Converter = null,
-            IJsonConverter<string> javaScriptConverter = null,
-            IJsonConverter<BsonMaxKey> maxKeyConverter = null,
-            IJsonConverter<BsonMinKey> minKeyConverter = null,
-            IJsonConverter<BsonNull> nullConverter = null,
-            IJsonConverter<ObjectId> objectIdConverter = null,
-            IJsonConverter<BsonRegularExpression> regularExpressionConverter = null,
-            IJsonConverter<string> stringConverter = null,
-            IJsonConverter<string> symbolConverter = null,
-            IJsonConverter<long> timestampConverter = null,
-            IJsonConverter<BsonUndefined> undefinedConverter = null)
+        public JsonOutputConverterSet With(
+            IJsonOutputConverter<BsonBinaryData> binaryDataConverter = null,
+            IJsonOutputConverter<bool> booleanConverter = null,
+            IJsonOutputConverter<long> dateTimeConverter = null,
+            IJsonOutputConverter<Decimal128> decimal128Converter = null,
+            IJsonOutputConverter<double> doubleConverter = null,
+            IJsonOutputConverter<int> int32Converter = null,
+            IJsonOutputConverter<long> int64Converter = null,
+            IJsonOutputConverter<string> javaScriptConverter = null,
+            IJsonOutputConverter<BsonMaxKey> maxKeyConverter = null,
+            IJsonOutputConverter<BsonMinKey> minKeyConverter = null,
+            IJsonOutputConverter<BsonNull> nullConverter = null,
+            IJsonOutputConverter<ObjectId> objectIdConverter = null,
+            IJsonOutputConverter<BsonRegularExpression> regularExpressionConverter = null,
+            IJsonOutputConverter<string> stringConverter = null,
+            IJsonOutputConverter<string> symbolConverter = null,
+            IJsonOutputConverter<long> timestampConverter = null,
+            IJsonOutputConverter<BsonUndefined> undefinedConverter = null)
         {
-            return new JsonConverterSet(
+            return new JsonOutputConverterSet(
                 binaryDataConverter ?? _binaryDataConverter,
                 booleanConverter ?? _booleanConverter,
                 dateTimeConverter ?? _dateTimeConverter,

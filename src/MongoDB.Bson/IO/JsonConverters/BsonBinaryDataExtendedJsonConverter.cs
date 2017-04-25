@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonBinaryData to extended JSON.
+    /// Represents a converter between BsonBinaryData values and extended JSON.
     /// </summary>
-    public class BsonBinaryDataExtendedJsonConverter : IJsonConverter<BsonBinaryData>
+    public class BsonBinaryDataExtendedJsonConverter : IJsonOutputConverter<BsonBinaryData>
     {
         /// <inheritdoc/>
-        public void Convert(BsonBinaryData value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonBinaryData value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$binary");

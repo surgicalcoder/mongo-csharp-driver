@@ -18,12 +18,12 @@ using System.Text.RegularExpressions;
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Double to strict JSON.
+    /// Represents a converter between Double values and strict JSON.
     /// </summary>
-    public class DoubleWithDecimalPointJsonConverter : IJsonConverter<double>
+    public class DoubleWithDecimalPointJsonConverter : IJsonOutputConverter<double>
     {
         /// <inheritdoc/>
-        public void Convert(double value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, double value)
         {
             var representation = JsonConvert.ToString(value);
             if (Regex.IsMatch(representation, @"^[+-]?\d+$"))

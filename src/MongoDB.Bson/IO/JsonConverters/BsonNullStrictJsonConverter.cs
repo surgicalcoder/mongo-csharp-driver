@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonNull to strict JSON.
+    /// Represents a converter between BsonNull values and strict JSON.
     /// </summary>
-    public class BsonNullStrictJsonConverter : IJsonConverter<BsonNull>
+    public class BsonNullStrictJsonConverter : IJsonOutputConverter<BsonNull>
     {
         /// <inheritdoc/>
-        public void Convert(BsonNull value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonNull value)
         {
             writer.WriteNull();
         }

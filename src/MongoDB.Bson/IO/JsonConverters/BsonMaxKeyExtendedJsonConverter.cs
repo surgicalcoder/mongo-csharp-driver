@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonMaxKey to extended JSON.
+    /// Represents a converter between BsonMaxKey values and extended JSON.
     /// </summary>
-    public class BsonMaxKeyExtendedJsonConverter : IJsonConverter<BsonMaxKey>
+    public class BsonMaxKeyExtendedJsonConverter : IJsonOutputConverter<BsonMaxKey>
     {
         /// <inheritdoc/>
-        public void Convert(BsonMaxKey value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonMaxKey value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$maxKey");

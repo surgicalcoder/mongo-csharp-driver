@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonDateTime to shell JSON.
+    /// Represents a converter between BsonDateTime values and shell JSON.
     /// </summary>
-    public class BsonDateTimeShellJsonConverter : IJsonConverter<long>
+    public class BsonDateTimeShellJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             string representation;
             if (value >= BsonConstants.DateTimeMinValueMillisecondsSinceEpoch &&

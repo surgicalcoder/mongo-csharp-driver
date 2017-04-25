@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonMaxKey to shell JSON.
+    /// Represents a converter between BsonMaxKey values and shell JSON.
     /// </summary>
-    public class BsonMaxKeyShellJsonConverter : IJsonConverter<BsonMaxKey>
+    public class BsonMaxKeyShellJsonConverter : IJsonOutputConverter<BsonMaxKey>
     {
         /// <inheritdoc/>
-        public void Convert(BsonMaxKey value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonMaxKey value)
         {
             writer.WriteValue("MaxKey");
         }

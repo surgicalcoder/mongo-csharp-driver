@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Int32 to strict JSON.
+    /// Represents a converter between Int32 values and strict JSON.
     /// </summary>
-    public class Int32StrictJsonConverter : IJsonConverter<int>
+    public class Int32StrictJsonConverter : IJsonOutputConverter<int>
     {
         /// <inheritdoc/>
-        public void Convert(int value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, int value)
         {
             writer.WriteInt32(value);
         }

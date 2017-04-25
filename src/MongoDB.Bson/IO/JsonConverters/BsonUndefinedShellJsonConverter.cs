@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonUndefined to shell JSON.
+    /// Represents a converter between BsonUndefined values and shell JSON.
     /// </summary>
-    public class BsonUndefinedShellJsonConverter : IJsonConverter<BsonUndefined>
+    public class BsonUndefinedShellJsonConverter : IJsonOutputConverter<BsonUndefined>
     {
         /// <inheritdoc/>
-        public void Convert(BsonUndefined value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonUndefined value)
         {
             writer.WriteValue("undefined");
         }

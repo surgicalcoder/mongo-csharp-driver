@@ -108,7 +108,8 @@
     <Compile Include="IO\ByteBufferStreamTests.cs" />
     <Compile Include="IO\CStringUtf8EncodingTests.cs" />
     <Compile Include="IO\InputBufferChunkSourceTests.cs" />
-    <Compile Include="IO\JsonConverterSetTests.cs" />
+    <Compile Include="IO\JsonOutputConverterSetTests.cs" />
+    <Compile Include="IO\JsonOutputConvertersTests.cs" />
     <Compile Include="IO\JsonWriterSettingsTests.cs" />
     <Compile Include="IO\MultiChunkBufferTests.cs" />
     <Compile Include="IO\OutputBufferChunkSourceTests.cs" />

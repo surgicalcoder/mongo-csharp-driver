@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonRegularExpression to shell JSON.
+    /// Represents a converter between BsonRegularExpression values and shell JSON.
     /// </summary>
-    public class BsonRegularExpressionShellJsonConverter : IJsonConverter<BsonRegularExpression>
+    public class BsonRegularExpressionShellJsonConverter : IJsonOutputConverter<BsonRegularExpression>
     {
         /// <inheritdoc/>
-        public void Convert(BsonRegularExpression value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, BsonRegularExpression value)
         {
             var escapedPattern = value.Pattern == "" ? "(?:)" : value.Pattern.Replace("/", @"\/");
             var representation = $"/{escapedPattern}/{value.Options}";

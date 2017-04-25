@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Decimal128 to shell JSON.
+    /// Represents a converter between Decimal128 values and shell JSON.
     /// </summary>
-    public class Decimal128ShellJsonConverter : IJsonConverter<Decimal128>
+    public class Decimal128ShellJsonConverter : IJsonOutputConverter<Decimal128>
     {
         /// <inheritdoc/>
-        public void Convert(Decimal128 value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, Decimal128 value)
         {
             var representation = $"NumberDecimal(\"{value.ToString()}\")";
             writer.WriteValue(representation);

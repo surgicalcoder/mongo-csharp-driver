@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from BsonTimestamp to shell JSON.
+    /// Represents a converter between BsonTimestamp values and shell JSON.
     /// </summary>
-    public class BsonTimestampShellJsonConverter : IJsonConverter<long>
+    public class BsonTimestampShellJsonConverter : IJsonOutputConverter<long>
     {
         /// <inheritdoc/>
-        public void Convert(long value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, long value)
         {
             var timestamp = (int)((value >> 32) & 0xffffffff);
             var increment = (int)(value & 0xffffffff);

@@ -16,12 +16,12 @@
 namespace MongoDB.Bson.IO.JsonConverters
 {
     /// <summary>
-    /// Represents a converter from Double to extended JSON.
+    /// Represents a converter between Double values and extended JSON.
     /// </summary>
-    public class DoubleExtendedJsonConverter : IJsonConverter<double>
+    public class DoubleExtendedJsonConverter : IJsonOutputConverter<double>
     {
         /// <inheritdoc/>
-        public void Convert(double value, IStrictJsonWriter writer)
+        public void Write(IStrictJsonWriter writer, double value)
         {
             writer.WriteStartDocument();
             writer.WriteName("$numberDouble");
