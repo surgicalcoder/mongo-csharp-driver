@@ -1,4 +1,4 @@
-﻿/* Copyright 2016 MongoDB Inc.
+﻿/* Copyright 2016-2017 MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ namespace MongoDB.Bson.Specifications.bson
 
         private string EncodeExtjson(BsonDocument document)
         {
-            var json = document.ToJson(new JsonWriterSettings { OutputMode = JsonOutputMode.Strict });
+            var json = document.ToJson(new JsonWriterSettings { Converters = JsonConverterSet.Strict });
             return json.Replace(" ", "");
         }
 

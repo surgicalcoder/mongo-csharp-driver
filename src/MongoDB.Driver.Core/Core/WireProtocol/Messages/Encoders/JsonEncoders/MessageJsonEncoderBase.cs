@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 MongoDB Inc.
+/* Copyright 2013-2017 MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
         /// <returns>A JsonWriter.</returns>
         public JsonWriter CreateJsonWriter()
         {
+#pragma warning disable 618
             if (_textWriter == null)
             {
                 throw new InvalidOperationException("No TextWriter was provided.");
@@ -89,6 +90,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
                 writerSettings.ShellVersion = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.ShellVersion, new Version(2, 6, 0));
             }
             return new JsonWriter(_textWriter, writerSettings);
+#pragma warning disable
         }
     }
 }

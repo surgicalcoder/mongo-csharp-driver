@@ -53,7 +53,8 @@ namespace MongoDB.Bson.IO
 
         // public properties
         /// <summary>
-        /// Gets a value indicating whether to always quote names.
+        /// Gets or sets a value indicating whether to always quote names. When false, quotes are omitted for simple names that contain only
+        /// letters, digits and underscore (and don't start with a digit).
         /// </summary>
         public bool AlwaysQuoteNames => _alwaysQuoteNames;
 

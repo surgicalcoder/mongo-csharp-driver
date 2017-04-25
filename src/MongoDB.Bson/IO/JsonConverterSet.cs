@@ -25,13 +25,13 @@ namespace MongoDB.Bson.IO
     {
         #region static
         // private static fields
-        private static readonly JsonConverterSet __shellJsonConverters;
-        private static readonly JsonConverterSet __strictJsonConverters;
+        private static readonly JsonConverterSet __shell;
+        private static readonly JsonConverterSet __strict;
 
         // static constructor
         static JsonConverterSet()
         {
-            __shellJsonConverters = new JsonConverterSet(
+            __shell = new JsonConverterSet(
                 new BsonBinaryDataShellJsonConverter(),
                 new BooleanStrictJsonConverter(),
                 new BsonDateTimeShellJsonConverter(),
@@ -50,7 +50,7 @@ namespace MongoDB.Bson.IO
                 new BsonTimestampShellJsonConverter(),
                 new BsonUndefinedShellJsonConverter());
 
-            __strictJsonConverters = new JsonConverterSet(
+            __strict = new JsonConverterSet(
                 new BsonBinaryDataExtendedJsonConverter(),
                 new BooleanStrictJsonConverter(),
                 new BsonDateTimeExtendedJsonConverter(),
@@ -74,12 +74,12 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Gets the shell json converters.
         /// </summary>
-        public static JsonConverterSet ShellJsonConverters => __shellJsonConverters;
+        public static JsonConverterSet Shell => __shell;
 
         /// <summary>
         /// Gets the strict json converters.
         /// </summary>
-        public static JsonConverterSet StrictJsonConverters => __strictJsonConverters;
+        public static JsonConverterSet Strict => __strict;
         #endregion
 
         // private fields

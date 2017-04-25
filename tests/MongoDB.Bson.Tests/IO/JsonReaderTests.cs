@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2016 MongoDB Inc.
+﻿/* Copyright 2010-2017 MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -322,7 +322,7 @@ namespace MongoDB.Bson.Tests.IO
                 Assert.Equal(expectedResult, _bsonReader.ReadDateTime());
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
             }
-            var jsonSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Shell };
+            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Shell };
             Assert.Equal(canonicalJson, BsonSerializer.Deserialize<DateTime>(json).ToJson(jsonSettings));
         }
 
@@ -336,7 +336,7 @@ namespace MongoDB.Bson.Tests.IO
                 Assert.Equal(0, _bsonReader.ReadDateTime());
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
             }
-            var jsonSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
+            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
             Assert.Equal(json, BsonSerializer.Deserialize<DateTime>(json).ToJson(jsonSettings));
         }
 
@@ -351,7 +351,7 @@ namespace MongoDB.Bson.Tests.IO
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
             }
             var expected = "{ \"$date\" : 0 }"; // it's still not ISO8601 on the way out
-            var jsonSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
+            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
             Assert.Equal(expected, BsonSerializer.Deserialize<DateTime>(json).ToJson(jsonSettings));
         }
 
@@ -875,7 +875,7 @@ namespace MongoDB.Bson.Tests.IO
                 Assert.Equal("4d0ce088e447ad08b4721a37", objectId.ToString());
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
             }
-            var jsonSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
+            var jsonSettings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
             Assert.Equal(json, BsonSerializer.Deserialize<ObjectId>(json).ToJson(jsonSettings));
         }
 
@@ -922,7 +922,7 @@ namespace MongoDB.Bson.Tests.IO
                 Assert.Equal("imxs", regex.Options);
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
             }
-            var settings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
+            var settings = new JsonWriterSettings { Converters = JsonConverterSet.Strict };
             Assert.Equal(json, BsonSerializer.Deserialize<BsonRegularExpression>(json).ToJson(settings));
         }
 

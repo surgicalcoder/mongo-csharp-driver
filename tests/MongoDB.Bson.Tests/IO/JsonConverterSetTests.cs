@@ -26,9 +26,9 @@ namespace MongoDB.Bson.Tests.IO
     public class JsonConverterSetTests
     {
         [Fact]
-        public void ShellJsonConverters_get_should_return_expected_result()
+        public void Shell_get_should_return_expected_result()
         {
-            var result = JsonConverterSet.ShellJsonConverters;
+            var result = JsonConverterSet.Shell;
 
             result.BinaryDataConverter.Should().BeOfType<BsonBinaryDataShellJsonConverter>();
             result.BooleanConverter.Should().BeOfType<BooleanStrictJsonConverter>();
@@ -50,18 +50,18 @@ namespace MongoDB.Bson.Tests.IO
         }
 
         [Fact]
-        public void ShellJsonConverters_get_should_return_same_instance()
+        public void Shell_get_should_return_same_instance()
         {
-            var result1 = JsonConverterSet.ShellJsonConverters;
-            var result2 = JsonConverterSet.ShellJsonConverters;
+            var result1 = JsonConverterSet.Shell;
+            var result2 = JsonConverterSet.Shell;
 
             result2.Should().BeSameAs(result1);
         }
 
         [Fact]
-        public void StrictJsonConverters_get_should_return_expected_result()
+        public void Strict_get_should_return_expected_result()
         {
-            var result = JsonConverterSet.StrictJsonConverters;
+            var result = JsonConverterSet.Strict;
 
             result.BinaryDataConverter.Should().BeOfType<BsonBinaryDataExtendedJsonConverter>();
             result.BooleanConverter.Should().BeOfType<BooleanStrictJsonConverter>();
@@ -83,10 +83,10 @@ namespace MongoDB.Bson.Tests.IO
         }
 
         [Fact]
-        public void StrictJsonConverters_get_should_return_same_instance()
+        public void Strict_get_should_return_same_instance()
         {
-            var result1 = JsonConverterSet.StrictJsonConverters;
-            var result2 = JsonConverterSet.StrictJsonConverters;
+            var result1 = JsonConverterSet.Strict;
+            var result2 = JsonConverterSet.Strict;
 
             result2.Should().BeSameAs(result1);
         }

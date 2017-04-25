@@ -31,7 +31,7 @@ namespace MongoDB.Bson.IO
 
         // private fields
         private bool _alwaysQuoteNames = true;
-        private JsonConverterSet _converters = JsonConverterSet.ShellJsonConverters;
+        private JsonConverterSet _converters = JsonConverterSet.Shell;
         private Encoding _encoding = Encoding.UTF8;
         private bool _indent = false;
         private string _indentChars = "  ";
@@ -72,7 +72,8 @@ namespace MongoDB.Bson.IO
 
         // public properties
         /// <summary>
-        /// Gets or sets a value indicating whether to always quote names.
+        /// Gets or sets a value indicating whether to always quote names. When false, quotes are omitted for simple names that contain only
+        /// letters, digits and underscore (and don't start with a digit).
         /// </summary>
         public bool AlwaysQuoteNames
         {
@@ -156,6 +157,7 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Gets or sets the output mode.
         /// </summary>
+        [Obsolete("Use Converters instead.")]
         public JsonOutputMode OutputMode
         {
             get { return _outputMode; }
@@ -166,12 +168,12 @@ namespace MongoDB.Bson.IO
                 switch (value)
                 {
                     case JsonOutputMode.Strict:
-                        _converters = JsonConverterSet.StrictJsonConverters;
+                        _converters = JsonConverterSet.Strict;
                         break;
 
                     case JsonOutputMode.Shell:
                     default:
-                        _converters = JsonConverterSet.ShellJsonConverters;
+                        _converters = JsonConverterSet.Shell;
                         break;
                 }
             }
@@ -220,21 +222,21 @@ namespace MongoDB.Bson.IO
         /// <returns>A clone of the settings.</returns>
         protected override BsonWriterSettings CloneImplementation()
         {
+#pragma warning disable 618
             var clone = new JsonWriterSettings
             {
                 AlwaysQuoteNames = _alwaysQuoteNames,
+                OutputMode = _outputMode, // must be set before Converters
                 Converters = _converters,
-#pragma warning disable 618
                 Encoding = _encoding,
-#pragma warning restore
                 GuidRepresentation = GuidRepresentation,
                 Indent = _indent,
                 IndentChars = _indentChars,
                 MaxSerializationDepth = MaxSerializationDepth,
                 NewLineChars = _newLineChars,
-                OutputMode = _outputMode,
                 ShellVersion = _shellVersion
             };
+#pragma warning restore
             return clone;
         }
     }
