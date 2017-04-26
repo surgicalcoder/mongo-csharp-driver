@@ -31,11 +31,11 @@ namespace MongoDB.Bson.IO
 
         // private fields
         private bool _alwaysQuoteNames = true;
-        private JsonOutputConverterSet _converters = JsonOutputConverters.Shell;
         private Encoding _encoding = Encoding.UTF8;
         private bool _indent = false;
         private string _indentChars = "  ";
         private string _newLineChars = "\r\n";
+        private JsonOutputConverterSet _outputConverters = JsonOutputConverters.Shell;
         private JsonOutputMode _outputMode = JsonOutputMode.Shell;
         private Version _shellVersion;
 
@@ -82,20 +82,6 @@ namespace MongoDB.Bson.IO
             {
                 if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
                 _alwaysQuoteNames = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the output converters.
-        /// </summary>
-        public JsonOutputConverterSet OutputConverters
-        {
-            get { return _converters; }
-            set
-            {
-                if (value == null) { throw new ArgumentNullException(nameof(value)); }
-                if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
-                _converters = value;
             }
         }
 
@@ -155,6 +141,20 @@ namespace MongoDB.Bson.IO
         }
 
         /// <summary>
+        /// Gets or sets the output converters.
+        /// </summary>
+        public JsonOutputConverterSet OutputConverters
+        {
+            get { return _outputConverters; }
+            set
+            {
+                if (value == null) { throw new ArgumentNullException(nameof(value)); }
+                if (IsFrozen) { throw new InvalidOperationException("JsonWriterSettings is frozen."); }
+                _outputConverters = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the output mode.
         /// </summary>
         [Obsolete("Use OutputConverters instead.")]
@@ -168,12 +168,12 @@ namespace MongoDB.Bson.IO
                 switch (value)
                 {
                     case JsonOutputMode.Strict:
-                        _converters = JsonOutputConverters.Strict;
+                        _outputConverters = JsonOutputConverters.Strict;
                         break;
 
                     case JsonOutputMode.Shell:
                     default:
-                        _converters = JsonOutputConverters.Shell;
+                        _outputConverters = JsonOutputConverters.Shell;
                         break;
                 }
             }
@@ -233,7 +233,7 @@ namespace MongoDB.Bson.IO
                 MaxSerializationDepth = MaxSerializationDepth,
                 NewLineChars = _newLineChars,
                 OutputMode = _outputMode, // must be set before OutputConverters
-                OutputConverters = _converters,
+                OutputConverters = _outputConverters,
                 ShellVersion = _shellVersion
             };
 #pragma warning restore
