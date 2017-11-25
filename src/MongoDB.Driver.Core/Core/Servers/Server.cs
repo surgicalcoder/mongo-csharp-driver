@@ -424,42 +424,6 @@ namespace MongoDB.Driver.Core.Servers
                 }
             }
 
-            public WriteConcernResult Delete(
-                CollectionNamespace collectionNamespace,
-                BsonDocument query,
-                bool isMulti,
-                MessageEncoderSettings messageEncoderSettings,
-                WriteConcern writeConcern,
-                CancellationToken cancellationToken)
-            {
-                var protocol = new DeleteWireProtocol(
-                    collectionNamespace,
-                    query,
-                    isMulti,
-                    messageEncoderSettings,
-                    writeConcern);
-
-                return ExecuteProtocol(protocol, cancellationToken);
-            }
-
-            public Task<WriteConcernResult> DeleteAsync(
-                CollectionNamespace collectionNamespace,
-                BsonDocument query,
-                bool isMulti,
-                MessageEncoderSettings messageEncoderSettings,
-                WriteConcern writeConcern,
-                CancellationToken cancellationToken)
-            {
-                var protocol = new DeleteWireProtocol(
-                    collectionNamespace,
-                    query,
-                    isMulti,
-                    messageEncoderSettings,
-                    writeConcern);
-
-                return ExecuteProtocolAsync(protocol, cancellationToken);
-            }
-
             public CursorBatch<TDocument> GetMore<TDocument>(
                 CollectionNamespace collectionNamespace,
                 BsonDocument query,

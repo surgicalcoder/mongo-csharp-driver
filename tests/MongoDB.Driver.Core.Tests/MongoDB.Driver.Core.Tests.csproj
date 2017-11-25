@@ -252,15 +252,12 @@
     <Compile Include="Core\Servers\ServerFactoryTests.cs" />
     <Compile Include="Core\Servers\ServerIdTests.cs" />
     <Compile Include="Core\Servers\ServerTests.cs" />
-    <Compile Include="Core\WireProtocol\Messages\DeleteMessageTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\BinaryMessageEncoderFactoryTests.cs" />
-    <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\DeleteMessageBinaryEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\GetMoreMessageBinaryEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\InsertMessageBinaryEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\KillCursorsMessageBinaryEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\QueryMessageBinaryEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\ReplyMessageBinaryEncoderTests.cs" />
-    <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\DeleteMessageJsonEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\GetMoreJsonEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\InsertMessageJsonEncoderTests.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\JsonMessageEncoderFactoryTests.cs" />

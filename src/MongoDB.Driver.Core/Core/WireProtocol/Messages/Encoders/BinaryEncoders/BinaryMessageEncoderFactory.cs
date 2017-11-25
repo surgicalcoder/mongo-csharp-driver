@@ -43,12 +43,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
 
         // methods
         /// <inheritdoc/>
-        public IMessageEncoder GetDeleteMessageEncoder()
-        {
-            return new DeleteMessageBinaryEncoder(_stream, _encoderSettings);
-        }
-
-        /// <inheritdoc/>
         public IMessageEncoder GetGetMoreMessageEncoder()
         {
             return new GetMoreMessageBinaryEncoder(_stream, _encoderSettings);

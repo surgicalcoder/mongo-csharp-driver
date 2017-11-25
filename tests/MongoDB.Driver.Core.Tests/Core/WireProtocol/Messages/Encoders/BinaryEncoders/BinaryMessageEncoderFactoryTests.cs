@@ -44,17 +44,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
         }
 
         [Fact]
-        public void GetDeleteMessageEncoder_should_return_a_DeleteMessageBinaryEncoder()
-        {
-            using (var stream = new MemoryStream())
-            {
-                var encoderFactory = new BinaryMessageEncoderFactory(stream, null);
-                var encoder = encoderFactory.GetDeleteMessageEncoder();
-                encoder.Should().BeOfType<DeleteMessageBinaryEncoder>();
-            }
-        }
-
-        [Fact]
         public void GetGetMoreMessageEncoder_should_return_a_GetMoreMessageBinaryEncoder()
         {
             using (var stream = new MemoryStream())

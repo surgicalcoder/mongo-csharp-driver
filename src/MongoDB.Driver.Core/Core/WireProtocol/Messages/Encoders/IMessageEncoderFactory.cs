@@ -28,12 +28,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders
     public interface IMessageEncoderFactory
     {
         /// <summary>
-        /// Gets an encoder for a Delete message.
-        /// </summary>
-        /// <returns>An encoder.</returns>
-        IMessageEncoder GetDeleteMessageEncoder();
-
-        /// <summary>
         /// Gets an encoder for a GetMore message.
         /// </summary>
         /// <returns>An encoder.</returns>

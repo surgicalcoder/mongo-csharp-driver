@@ -22,10 +22,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages
     public enum MongoDBMessageType
     {
         /// <summary>
-        /// OP_DELETE
-        /// </summary>
-        Delete,
-        /// <summary>
         /// OP_GETMORE
         /// </summary>
         GetMore,
@@ -44,10 +40,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages
         /// <summary>
         /// OP_REPLY
         /// </summary>
-        Reply,
-        /// <summary>
-        /// OP_UPDATE
-        /// </summary>
-        Update
+        Reply
     }
 }

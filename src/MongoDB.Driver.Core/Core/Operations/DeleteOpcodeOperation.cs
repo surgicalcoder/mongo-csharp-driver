@@ -109,15 +109,8 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelSource = binding.GetWriteChannelSource(cancellationToken))
             using (var channel = channelSource.GetChannel(cancellationToken))
             {
-                if (Feature.WriteCommands.IsSupported(channel.ConnectionDescription.ServerVersion) && _writeConcern.IsAcknowledged)
-                {
-                    var emulator = CreateEmulator();
-                    return emulator.Execute(channel, channelSource.Session, cancellationToken);
-                }
-                else
-                {
-                    return ExecuteProtocol(channel, cancellationToken);
-                }
+                var emulator = CreateEmulator();
+                return emulator.Execute(channel, channelSource.Session, cancellationToken);
             }
         }
 
@@ -130,15 +123,8 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelSource = await binding.GetWriteChannelSourceAsync(cancellationToken).ConfigureAwait(false))
             using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
             {
-                if (Feature.WriteCommands.IsSupported(channel.ConnectionDescription.ServerVersion) && _writeConcern.IsAcknowledged)
-                {
-                    var emulator = CreateEmulator();
-                    return await emulator.ExecuteAsync(channel, channelSource.Session, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    return await ExecuteProtocolAsync(channel, cancellationToken).ConfigureAwait(false);
-                }
+                var emulator = CreateEmulator();
+                return await emulator.ExecuteAsync(channel, channelSource.Session, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -149,38 +135,6 @@ namespace MongoDB.Driver.Core.Operations
             {
                 WriteConcern = _writeConcern
             };
-        }
-
-        private WriteConcernResult ExecuteProtocol(IChannelHandle channel, CancellationToken cancellationToken)
-        {
-            if (_request.Collation != null)
-            {
-                throw new NotSupportedException("OP_DELETE does not support collations.");
-            }
-
-            return channel.Delete(
-                _collectionNamespace,
-                _request.Filter,
-                _request.Limit != 1,
-                _messageEncoderSettings,
-                _writeConcern,
-                cancellationToken);
-        }
-
-        private Task<WriteConcernResult> ExecuteProtocolAsync(IChannelHandle channel, CancellationToken cancellationToken)
-        {
-            if (_request.Collation != null)
-            {
-                throw new NotSupportedException("OP_DELETE does not support collations.");
-            }
-
-            return channel.DeleteAsync(
-                _collectionNamespace,
-                _request.Filter,
-                _request.Limit != 1,
-                _messageEncoderSettings,
-                _writeConcern,
-                cancellationToken);
         }
     }
 }

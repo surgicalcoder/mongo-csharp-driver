@@ -66,12 +66,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
 
         // methods
         /// <inheritdoc/>
-        public IMessageEncoder GetDeleteMessageEncoder()
-        {
-            return new DeleteMessageJsonEncoder(_textReader, _textWriter, _encoderSettings);
-        }
-
-        /// <inheritdoc/>
         public IMessageEncoder GetGetMoreMessageEncoder()
         {
             return new GetMoreMessageJsonEncoder(_textReader, _textWriter, _encoderSettings);

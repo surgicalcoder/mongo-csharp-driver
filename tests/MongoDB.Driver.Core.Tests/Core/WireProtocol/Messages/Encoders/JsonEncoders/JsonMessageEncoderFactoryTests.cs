@@ -95,17 +95,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
         }
 
         [Fact]
-        public void GetDeleteMessageEncoder_should_return_a_DeleteMessageJsonEncoder()
-        {
-            using (var textWriter = new StringWriter())
-            {
-                var encoderFactory = new JsonMessageEncoderFactory(null, textWriter, __messageEncoderSettings);
-                var encoder = encoderFactory.GetDeleteMessageEncoder();
-                encoder.Should().BeOfType<DeleteMessageJsonEncoder>();
-            }
-        }
-
-        [Fact]
         public void GetGetMoreMessageEncoder_should_return_a_GetMoreMessageJsonEncoder()
         {
             using (var textWriter = new StringWriter())

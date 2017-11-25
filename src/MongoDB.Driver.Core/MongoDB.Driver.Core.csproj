@@ -334,7 +334,6 @@
     <Compile Include="Core\Misc\IdGenerator.cs" />
     <Compile Include="Core\Misc\InterlockedInt32.cs" />
     <Compile Include="Core\Operations\BulkDeleteOperation.cs" />
-    <Compile Include="Core\Operations\BulkDeleteOperationEmulator.cs" />
     <Compile Include="Core\Operations\BulkInsertOperation.cs" />
     <Compile Include="Core\Operations\BulkInsertOperationEmulator.cs" />
     <Compile Include="Core\Operations\BulkMixedWriteOperation.cs" />
@@ -413,15 +412,12 @@
     <Compile Include="Core\Servers\ServerType.cs" />
     <Compile Include="Core\WireProtocol\CommandWireProtocol.cs" />
     <Compile Include="Core\WireProtocol\CursorBatch.cs" />
-    <Compile Include="Core\WireProtocol\DeleteWireProtocol.cs" />
     <Compile Include="Core\WireProtocol\GetMoreWireProtocol.cs" />
     <Compile Include="Core\WireProtocol\InsertWireProtocol.cs" />
     <Compile Include="Core\WireProtocol\IWireProtocol.cs" />
     <Compile Include="Core\WireProtocol\KillCursorsWireProtocol.cs" />
-    <Compile Include="Core\WireProtocol\Messages\DeleteMessage.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\Opcode.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\BinaryMessageEncoderFactory.cs" />
-    <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\DeleteMessageBinaryEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\GetMoreMessageBinaryEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\InsertMessageBinaryEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\BinaryEncoders\KillCursorsMessageBinaryEncoder.cs" />
@@ -430,7 +426,6 @@
     <Compile Include="Core\WireProtocol\Messages\Encoders\IEncodableMessage.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\IMessageEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\IMessageEncoderFactory.cs" />
-    <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\DeleteMessageJsonEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\GetMoreMessageJsonEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\InsertMessageJsonEncoder.cs" />
     <Compile Include="Core\WireProtocol\Messages\Encoders\JsonEncoders\JsonMessageEncoderFactory.cs" />

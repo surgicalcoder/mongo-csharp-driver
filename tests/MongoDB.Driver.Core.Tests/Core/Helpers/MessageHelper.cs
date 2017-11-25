@@ -99,19 +99,6 @@ namespace MongoDB.Driver.Core.Helpers
                 awaitData: false);
         }
 
-        public static DeleteMessage BuildDelete(
-            BsonDocument query,
-            CollectionNamespace collectionNamespace = null,
-            int requestId = 0,
-            bool isMulti = false)
-        {
-            return new DeleteMessage(
-                requestId,
-                collectionNamespace ?? __defaultCollectionNamespace,
-                query,
-                isMulti);
-        }
-
         public static GetMoreMessage BuildGetMore(
             int requestId = 0,
             CollectionNamespace collectionNamespace = null,
