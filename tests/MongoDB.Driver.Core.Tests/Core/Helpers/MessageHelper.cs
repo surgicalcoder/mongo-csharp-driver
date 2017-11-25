@@ -127,21 +127,6 @@ namespace MongoDB.Driver.Core.Helpers
             return new KillCursorsMessage(requestId, new[] { cursorId });
         }
 
-        public static InsertMessage<T> BuildInsert<T>(
-            IEnumerable<T> documents,
-            CollectionNamespace collectionNamespace = null,
-            int requestId = 0)
-        {
-            return new InsertMessage<T>(
-                requestId,
-                collectionNamespace ?? __defaultCollectionNamespace,
-                BsonSerializer.SerializerRegistry.GetSerializer<T>(),
-                new BatchableSource<T>(documents),
-                int.MaxValue,
-                int.MaxValue,
-                false);
-        }
-
         public static ReplyMessage<T> BuildQueryFailedReply<T>(
             BsonDocument queryFailureDocument,
             int responseTo = 0)

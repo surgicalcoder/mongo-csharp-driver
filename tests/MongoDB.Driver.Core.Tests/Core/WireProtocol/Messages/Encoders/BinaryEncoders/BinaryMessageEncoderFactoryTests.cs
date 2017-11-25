@@ -55,17 +55,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
         }
 
         [Fact]
-        public void GetInsertMessageEncoder_should_return_a_InsertMessageBinaryEncoder()
-        {
-            using (var stream = new MemoryStream())
-            {
-                var encoderFactory = new BinaryMessageEncoderFactory(stream, null);
-                var encoder = encoderFactory.GetInsertMessageEncoder<BsonDocument>(BsonDocumentSerializer.Instance);
-                encoder.Should().BeOfType<InsertMessageBinaryEncoder<BsonDocument>>();
-            }
-        }
-
-        [Fact]
         public void GetKillCursorsMessageEncoder_should_return_a_KillCursorsMessageBinaryEncoder()
         {
             using (var stream = new MemoryStream())

@@ -49,12 +49,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
         }
 
         /// <inheritdoc/>
-        public IMessageEncoder GetInsertMessageEncoder<TDocument>(IBsonSerializer<TDocument> serializer)
-        {
-            return new InsertMessageBinaryEncoder<TDocument>(_stream, _encoderSettings, serializer);
-        }
-
-        /// <inheritdoc/>
         public IMessageEncoder GetKillCursorsMessageEncoder()
         {
             return new KillCursorsMessageBinaryEncoder(_stream, _encoderSettings);

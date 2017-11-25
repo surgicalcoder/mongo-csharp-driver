@@ -228,9 +228,6 @@ namespace MongoDB.Driver.Core.Connections
                 case MongoDBMessageType.GetMore:
                     ProcessGetMoreMessage((GetMoreMessage)message, connectionId, stopwatch);
                     break;
-                case MongoDBMessageType.Insert:
-                    ProcessInsertMessage(message, messageQueue, connectionId, new InsertMessageBinaryEncoder<RawBsonDocument>(stream, encoderSettings, RawBsonDocumentSerializer.Instance), stopwatch);
-                    break;
                 case MongoDBMessageType.KillCursors:
                     ProcessKillCursorsMessages((KillCursorsMessage)message, connectionId, stopwatch);
                     break;
@@ -275,76 +272,6 @@ namespace MongoDB.Driver.Core.Connections
                     Stopwatch = stopwatch,
                     QueryNamespace = originalMessage.CollectionNamespace,
                     ExpectedResponseType = ExpectedResponseType.Query
-                });
-            }
-        }
-
-        private void ProcessInsertMessage(RequestMessage message, Queue<RequestMessage> messageQueue, ConnectionId connectionId, InsertMessageBinaryEncoder<RawBsonDocument> encoder, Stopwatch stopwatch)
-        {
-            var commandName = "insert";
-            var operationId = EventContext.OperationId;
-            var requestId = message.RequestId;
-            var expectedResponseType = ExpectedResponseType.None;
-            int numberOfDocuments = 0;
-            int gleRequestId;
-            WriteConcern writeConcern;
-            if (TryGetWriteConcernFromGLE(messageQueue, out gleRequestId, out writeConcern))
-            {
-                requestId = gleRequestId;
-                expectedResponseType = ExpectedResponseType.GLE;
-            }
-
-            if (_startedEvent != null)
-            {
-                // InsertMessage is generic, and we don't know the generic type... 
-                // Plus, for this we really want BsonDocuments, not whatever the generic type is.
-                var decodedMessage = encoder.ReadMessage();
-
-                var documents = decodedMessage.DocumentSource.GetRemainingItems().ToList();
-                numberOfDocuments = documents.Count;
-                try
-                {
-                    var command = new BsonDocument
-                    {
-                        { commandName, decodedMessage.CollectionNamespace.CollectionName },
-                        { "documents", new BsonArray(documents) },
-                        { "ordered", !decodedMessage.ContinueOnError }
-                    };
-
-                    if (writeConcern == null)
-                    {
-                        command["writeConcern"] = WriteConcern.Unacknowledged.ToBsonDocument();
-                    }
-                    else if (!writeConcern.IsServerDefault)
-                    {
-                        command["writeConcern"] = writeConcern.ToBsonDocument();
-                    }
-
-                    var @event = new CommandStartedEvent(
-                        commandName,
-                        command,
-                        decodedMessage.CollectionNamespace.DatabaseNamespace,
-                        operationId,
-                        requestId,
-                        connectionId);
-
-                    _startedEvent(@event);
-                }
-                finally
-                {
-                    documents.ForEach(d => d.Dispose());
-                }
-            }
-
-            if (_shouldTrackState)
-            {
-                _state.TryAdd(requestId, new CommandState
-                {
-                    CommandName = commandName,
-                    OperationId = operationId,
-                    Stopwatch = stopwatch,
-                    ExpectedResponseType = expectedResponseType,
-                    NumberOfInsertedDocuments = numberOfDocuments
                 });
             }
         }
@@ -821,7 +748,7 @@ namespace MongoDB.Driver.Core.Connections
             public long? OperationId;
             public Stopwatch Stopwatch;
             public CollectionNamespace QueryNamespace;
-            public int NumberOfInsertedDocuments;
+            public int NumberOfInsertedDocuments = 0;
             public ExpectedResponseType ExpectedResponseType;
             public BsonDocument NoResponseResponse;
             public BsonValue UpsertedId = null;

@@ -34,14 +34,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders
         IMessageEncoder GetGetMoreMessageEncoder();
 
         /// <summary>
-        /// Gets an encoder for an Insert message.
-        /// </summary>
-        /// <typeparam name="TDocument">The type of the document.</typeparam>
-        /// <param name="serializer">The serializer.</param>
-        /// <returns>An encoder.</returns>
-        IMessageEncoder GetInsertMessageEncoder<TDocument>(IBsonSerializer<TDocument> serializer);
-
-        /// <summary>
         /// Gets an encoder for a KillCursors message.
         /// </summary>
         /// <returns>An encoder.</returns>
