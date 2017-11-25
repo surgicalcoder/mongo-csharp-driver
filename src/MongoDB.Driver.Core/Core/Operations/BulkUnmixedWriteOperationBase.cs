@@ -110,15 +110,7 @@ namespace MongoDB.Driver.Core.Operations
         {
             using (EventContext.BeginOperation())
             {
-                if (Feature.WriteCommands.IsSupported(channel.ConnectionDescription.ServerVersion))
-                {
-                    return ExecuteBatches(channel, session, cancellationToken);
-                }
-                else
-                {
-                    var emulator = CreateEmulator();
-                    return emulator.Execute(channel, cancellationToken);
-                }
+                return ExecuteBatches(channel, session, cancellationToken);
             }
         }
 
@@ -135,15 +127,7 @@ namespace MongoDB.Driver.Core.Operations
         {
             using (EventContext.BeginOperation())
             {
-                if (Feature.WriteCommands.IsSupported(channel.ConnectionDescription.ServerVersion))
-                {
-                    return await ExecuteBatchesAsync(channel, session, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    var emulator = CreateEmulator();
-                    return await emulator.ExecuteAsync(channel, cancellationToken).ConfigureAwait(false);
-                }
+                return await ExecuteBatchesAsync(channel, session, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -176,8 +160,6 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         protected abstract BatchSerializer CreateBatchSerializer(ConnectionDescription connectionDescription, int maxBatchCount, int maxBatchLength);
-
-        protected abstract BulkUnmixedWriteOperationEmulatorBase CreateEmulator();
 
         private BsonDocument CreateWriteCommand(BatchSerializer batchSerializer, BatchableSource<WriteRequest> requestSource, SemanticVersion serverVersion)
         {

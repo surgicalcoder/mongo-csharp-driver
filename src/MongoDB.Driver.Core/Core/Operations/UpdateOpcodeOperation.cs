@@ -132,20 +132,8 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (EventContext.BeginOperation())
-            using (var channelSource = binding.GetWriteChannelSource(cancellationToken))
-            using (var channel = channelSource.GetChannel(cancellationToken))
-            {
-                if (Feature.WriteCommands.IsSupported(channel.ConnectionDescription.ServerVersion) && _writeConcern.IsAcknowledged)
-                {
-                    var emulator = CreateEmulator();
-                    return emulator.Execute(channel, channelSource.Session, cancellationToken);
-                }
-                else
-                {
-                    return ExecuteProtocol(channel, cancellationToken);
-                }
-            }
+            var emulator = CreateEmulator();
+            return emulator.Execute(binding, cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -153,20 +141,8 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (EventContext.BeginOperation())
-            using (var channelSource = await binding.GetWriteChannelSourceAsync(cancellationToken).ConfigureAwait(false))
-            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
-            {
-                if (Feature.WriteCommands.IsSupported(channel.ConnectionDescription.ServerVersion) && _writeConcern.IsAcknowledged)
-                {
-                    var emulator = CreateEmulator();
-                    return await emulator.ExecuteAsync(channel, channelSource.Session, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    return await ExecuteProtocolAsync(channel, cancellationToken).ConfigureAwait(false);
-                }
-            }
+            var emulator = CreateEmulator();
+            return await emulator.ExecuteAsync(binding, cancellationToken).ConfigureAwait(false);
         }
 
         // private methods
@@ -178,52 +154,6 @@ namespace MongoDB.Driver.Core.Operations
                 MaxDocumentSize = _maxDocumentSize,
                 WriteConcern = _writeConcern
             };
-        }
-
-        private WriteConcernResult ExecuteProtocol(IChannelHandle channel, CancellationToken cancellationToken)
-        {
-            if (_request.Collation != null)
-            {
-                throw new NotSupportedException("OP_UPDATE does not support collations.");
-            }
-            if (_request.ArrayFilters != null)
-            {
-                throw new NotSupportedException("OP_UPDATE does not support arrayFilters.");
-            }
-
-            return channel.Update(
-                _collectionNamespace,
-                _messageEncoderSettings,
-                _writeConcern,
-                _request.Filter,
-                _request.Update,
-                ElementNameValidatorFactory.ForUpdateType(_request.UpdateType),
-                _request.IsMulti,
-                _request.IsUpsert,
-                cancellationToken);
-        }
-
-        private Task<WriteConcernResult> ExecuteProtocolAsync(IChannelHandle channel, CancellationToken cancellationToken)
-        {
-            if (_request.Collation != null)
-            {
-                throw new NotSupportedException("OP_UPDATE does not support collations.");
-            }
-            if (_request.ArrayFilters != null)
-            {
-                throw new NotSupportedException("OP_UPDATE does not support arrayFilters.");
-            }
-
-            return channel.UpdateAsync(
-                _collectionNamespace,
-                _messageEncoderSettings,
-                _writeConcern,
-                _request.Filter,
-                _request.Update,
-                ElementNameValidatorFactory.ForUpdateType(_request.UpdateType),
-                _request.IsMulti,
-                _request.IsUpsert,
-                cancellationToken);
         }
     }
 }

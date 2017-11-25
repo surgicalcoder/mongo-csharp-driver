@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 MongoDB Inc.
+/* Copyright 2013-2017 MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -375,54 +375,6 @@ namespace MongoDB.Driver.Core.Bindings
             bool awaitData,
             IBsonSerializer<TDocument> serializer,
             MessageEncoderSettings messageEncoderSettings,
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes an Update protocol.
-        /// </summary>
-        /// <param name="collectionNamespace">The collection namespace.</param>
-        /// <param name="messageEncoderSettings">The message encoder settings.</param>
-        /// <param name="writeConcern">The write concern.</param>
-        /// <param name="query">The query.</param>
-        /// <param name="update">The update.</param>
-        /// <param name="updateValidator">The update validator.</param>
-        /// <param name="isMulti">if set to <c>true</c> the Update can affect multiple documents.</param>
-        /// <param name="isUpsert">if set to <c>true</c> the document will be inserted if it is not found.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The result of the Update protocol.</returns>
-        WriteConcernResult Update(
-            CollectionNamespace collectionNamespace,
-            MessageEncoderSettings messageEncoderSettings,
-            WriteConcern writeConcern,
-            BsonDocument query,
-            BsonDocument update,
-            IElementNameValidator updateValidator,
-            bool isMulti,
-            bool isUpsert,
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes an Update protocol.
-        /// </summary>
-        /// <param name="collectionNamespace">The collection namespace.</param>
-        /// <param name="messageEncoderSettings">The message encoder settings.</param>
-        /// <param name="writeConcern">The write concern.</param>
-        /// <param name="query">The query.</param>
-        /// <param name="update">The update.</param>
-        /// <param name="updateValidator">The update validator.</param>
-        /// <param name="isMulti">if set to <c>true</c> the Update can affect multiple documents.</param>
-        /// <param name="isUpsert">if set to <c>true</c> the document will be inserted if it is not found.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A Task whose result is the result of the Update protocol.</returns>
-        Task<WriteConcernResult> UpdateAsync(
-            CollectionNamespace collectionNamespace,
-            MessageEncoderSettings messageEncoderSettings,
-            WriteConcern writeConcern,
-            BsonDocument query,
-            BsonDocument update,
-            IElementNameValidator updateValidator,
-            bool isMulti,
-            bool isUpsert,
             CancellationToken cancellationToken);
     }
 

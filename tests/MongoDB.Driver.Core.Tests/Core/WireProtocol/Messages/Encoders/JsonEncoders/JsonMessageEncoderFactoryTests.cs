@@ -159,16 +159,5 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
                 encoder.Should().BeOfType<ReplyMessageJsonEncoder<BsonDocument>>();
             }
         }
-
-        [Fact]
-        public void GetUpdateMessageEncoder_should_return_a_UpdateMessageJsonEncoder()
-        {
-            using (var textWriter = new StringWriter())
-            {
-                var encoderFactory = new JsonMessageEncoderFactory(null, textWriter, __messageEncoderSettings);
-                var encoder = encoderFactory.GetUpdateMessageEncoder();
-                encoder.Should().BeOfType<UpdateMessageJsonEncoder>();
-            }
-        }
     }
 }

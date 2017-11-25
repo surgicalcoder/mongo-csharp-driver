@@ -59,17 +59,6 @@ namespace MongoDB.Driver.Core.Operations
             return new UpdateBatchSerializer(connectionDescription, maxBatchCount, maxBatchLength);
         }
 
-        protected override BulkUnmixedWriteOperationEmulatorBase CreateEmulator()
-        {
-            return new BulkUpdateOperationEmulator(CollectionNamespace, Requests, MessageEncoderSettings)
-            {
-                MaxBatchCount = MaxBatchCount,
-                MaxBatchLength = MaxBatchLength,
-                IsOrdered = IsOrdered,
-                WriteConcern = WriteConcern
-            };
-        }
-
         // nested types
         private class UpdateBatchSerializer : BatchSerializer
         {
