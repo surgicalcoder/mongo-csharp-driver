@@ -168,14 +168,11 @@ namespace MongoDB.Driver.Core.Operations
             result.Should().BeTrue();
         }
 
-        [Theory]
-        [ParameterAttributeData]
-        public void CreateCommand_should_return_the_expected_result(
-            [Values(false, true)]
-            bool useServerVersionSupportingAggregateCursorResult)
+        [Fact]
+        public void CreateCommand_should_return_the_expected_result()
         {
             var subject = new AggregateOperation<BsonDocument>(_collectionNamespace, __pipeline, __resultSerializer, _messageEncoderSettings);
-            var serverVersion = Feature.AggregateCursorResult.SupportedOrNotSupportedVersion(useServerVersionSupportingAggregateCursorResult);
+            var serverVersion = Feature.AggregateCursorResult.FirstSupportedVersion;
 
             var result = subject.CreateCommand(serverVersion);
 
@@ -183,7 +180,7 @@ namespace MongoDB.Driver.Core.Operations
             {
                 { "aggregate", _collectionNamespace.CollectionName },
                 { "pipeline", new BsonArray(__pipeline) },
-                { "cursor", () => new BsonDocument(), Feature.AggregateCursorResult.IsSupported(serverVersion) }
+                { "cursor", new BsonDocument() }
             };
             result.Should().Be(expectedResult);
         }
@@ -215,26 +212,20 @@ namespace MongoDB.Driver.Core.Operations
         [ParameterAttributeData]
         public void CreateCommand_should_return_the_expected_result_when_BatchSize_is_set(
             [Values(null, 1)]
-            int? batchSize,
-            [Values(false, true)]
-            bool useServerVersionSupportingAggregateCursorResult)
+            int? batchSize)
         {
             var subject = new AggregateOperation<BsonDocument>(_collectionNamespace, __pipeline, __resultSerializer, _messageEncoderSettings)
             {
                 BatchSize = batchSize
             };
-            var serverVersion = Feature.AggregateCursorResult.SupportedOrNotSupportedVersion(useServerVersionSupportingAggregateCursorResult);
+            var serverVersion = Feature.AggregateCursorResult.FirstSupportedVersion;
 
             var result = subject.CreateCommand(serverVersion);
 
-            BsonDocument cursor = null;
-            if (Feature.AggregateCursorResult.IsSupported(serverVersion))
+            var cursor = new BsonDocument
             {
-                cursor = new BsonDocument
-                {
-                    { "batchSize", () => batchSize.Value, batchSize != null }
-                };
-            }
+                { "batchSize", () => batchSize.Value, batchSize != null }
+            };
             var expectedResult = new BsonDocument
             {
                 { "aggregate", _collectionNamespace.CollectionName },
@@ -346,15 +337,13 @@ namespace MongoDB.Driver.Core.Operations
         [ParameterAttributeData]
         public void CreateCommand_should_return_the_expected_result_when_UseCursor_is_set(
             [Values(null, false, true)]
-            bool? useCursor,
-            [Values(false, true)]
-            bool useServerVersionSupportingAggregateCursorResult)
+            bool? useCursor)
         {
             var subject = new AggregateOperation<BsonDocument>(_collectionNamespace, __pipeline, __resultSerializer, _messageEncoderSettings)
             {
                 UseCursor = useCursor
             };
-            var serverVersion = Feature.AggregateCursorResult.SupportedOrNotSupportedVersion(useServerVersionSupportingAggregateCursorResult);
+            var serverVersion = Feature.AggregateCursorResult.FirstSupportedVersion;
 
             var result = subject.CreateCommand(serverVersion);
 
@@ -362,7 +351,7 @@ namespace MongoDB.Driver.Core.Operations
             {
                 { "aggregate", _collectionNamespace.CollectionName },
                 { "pipeline", new BsonArray(__pipeline) },
-                { "cursor", () => new BsonDocument(), useCursor.GetValueOrDefault(true) && Feature.AggregateCursorResult.IsSupported(serverVersion) }
+                { "cursor", () => new BsonDocument(), useCursor.GetValueOrDefault(true) }
             };
             result.Should().Be(expectedResult);
         }

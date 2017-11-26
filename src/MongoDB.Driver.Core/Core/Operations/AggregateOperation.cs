@@ -255,16 +255,13 @@ namespace MongoDB.Driver.Core.Operations
                 { "collation", () => _collation.ToBsonDocument(), _collation != null }
             };
 
-            if (Feature.AggregateCursorResult.IsSupported(serverVersion))
+            var useCursor = _useCursor.GetValueOrDefault(true) || serverVersion >= new SemanticVersion(3, 5, 0);
+            if (useCursor)
             {
-                var useCursor = _useCursor.GetValueOrDefault(true) || serverVersion >= new SemanticVersion(3, 5, 0);
-                if (useCursor)
-                {
-                    command["cursor"] = new BsonDocument
+                command["cursor"] = new BsonDocument
                     {
                         { "batchSize", () => _batchSize.Value, _batchSize.HasValue }
                     };
-                }
             }
 
             return command;
