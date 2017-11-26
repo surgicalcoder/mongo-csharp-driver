@@ -109,6 +109,7 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelSource = binding.GetWriteChannelSource(cancellationToken))
             using (var channel = channelSource.GetChannel(cancellationToken))
             {
+                // TODO: implement { w : 0 }
                 var emulator = CreateEmulator();
                 return emulator.Execute(channel, channelSource.Session, cancellationToken);
             }
@@ -123,6 +124,7 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelSource = await binding.GetWriteChannelSourceAsync(cancellationToken).ConfigureAwait(false))
             using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
             {
+                // TODO: implement { w : 0 }
                 var emulator = CreateEmulator();
                 return await emulator.ExecuteAsync(channel, channelSource.Session, cancellationToken).ConfigureAwait(false);
             }

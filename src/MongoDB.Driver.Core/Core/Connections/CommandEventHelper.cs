@@ -441,9 +441,6 @@ namespace MongoDB.Driver.Core.Connections
                         case ExpectedResponseType.Command:
                             ProcessCommandReplyMessage(state, replyMessage, connectionId);
                             break;
-                        case ExpectedResponseType.GLE:
-                            ProcessGLEReplyMessage(state, replyMessage, connectionId);
-                            break;
                         case ExpectedResponseType.Query:
                             ProcessQueryReplyMessage(state, replyMessage, connectionId);
                             break;
@@ -497,99 +494,6 @@ namespace MongoDB.Driver.Core.Connections
                 _succeededEvent(new CommandSucceededEvent(
                     state.CommandName,
                     reply,
-                    state.OperationId,
-                    replyMessage.ResponseTo,
-                    connectionId,
-                    state.Stopwatch.Elapsed));
-            }
-        }
-
-        private void ProcessGLEReplyMessage(CommandState state, ReplyMessage<RawBsonDocument> replyMessage, ConnectionId connectionId)
-        {
-            var reply = replyMessage.Documents[0];
-            BsonValue ok;
-            if (!reply.TryGetValue("ok", out ok))
-            {
-                // this is a degenerate case with the server and 
-                // we don't really know what to do here...
-            }
-            else if (!ok.ToBoolean())
-            {
-                if (_failedEvent != null)
-                {
-                    _failedEvent(new CommandFailedEvent(
-                        state.CommandName,
-                        new MongoCommandException(
-                            connectionId,
-                            string.Format("{0} command failed", state.CommandName),
-                            null,
-                            reply),
-                        state.OperationId,
-                        replyMessage.ResponseTo,
-                        connectionId,
-                        state.Stopwatch.Elapsed));
-                }
-            }
-            else if (_succeededEvent != null)
-            {
-                var fakeReply = new BsonDocument("ok", 1);
-
-                BsonValue n;
-                if (reply.TryGetValue("n", out n))
-                {
-                    fakeReply["n"] = n;
-                }
-
-                BsonValue err;
-                if (reply.TryGetValue("err", out err) && err != BsonNull.Value)
-                {
-                    var code = reply.GetValue("code", -1);
-                    var errmsg = err.ToString();
-                    var isWriteConcernError = __writeConcernIndicators.Any(x => errmsg.Contains(x));
-                    if (isWriteConcernError)
-                    {
-                        fakeReply["writeConcernError"] = new BsonDocument
-                        {
-                            { "code", code },
-                            { "errmsg", err }
-                        };
-                    }
-                    else
-                    {
-                        fakeReply["writeErrors"] = new BsonArray(new[] { new BsonDocument
-                        {
-                            { "index", 0 },
-                            { "code", code },
-                            { "errmsg", err }
-                        }});
-                    }
-                }
-                else if (state.CommandName == "insert")
-                {
-                    fakeReply["n"] = state.NumberOfInsertedDocuments;
-                }
-                else if (state.CommandName == "update")
-                {
-                    // Unfortunately v2.4 GLE does not include the upserted field when
-                    // the upserted _id is non-OID type.  We can detect this by the
-                    // updatedExisting field + an n of 1
-                    BsonValue upsertedValue;
-                    var upserted = reply.TryGetValue("upserted", out upsertedValue) ||
-                        (n == 1 && !reply.GetValue("updatedExisting", false).ToBoolean());
-
-                    if (upserted)
-                    {
-                        fakeReply["upserted"] = new BsonArray(new[] { new BsonDocument
-                        {
-                            { "index", 0 },
-                            { "_id", upsertedValue ?? state.UpsertedId ?? BsonUndefined.Value }
-                        }});
-                    }
-                }
-
-                _succeededEvent(new CommandSucceededEvent(
-                    state.CommandName,
-                    fakeReply,
                     state.OperationId,
                     replyMessage.ResponseTo,
                     connectionId,
@@ -737,7 +641,6 @@ namespace MongoDB.Driver.Core.Connections
         private enum ExpectedResponseType
         {
             None,
-            GLE,
             Query,
             Command
         }
@@ -748,10 +651,8 @@ namespace MongoDB.Driver.Core.Connections
             public long? OperationId;
             public Stopwatch Stopwatch;
             public CollectionNamespace QueryNamespace;
-            public int NumberOfInsertedDocuments = 0;
             public ExpectedResponseType ExpectedResponseType;
             public BsonDocument NoResponseResponse;
-            public BsonValue UpsertedId = null;
         }
     }
 }

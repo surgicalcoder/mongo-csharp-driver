@@ -132,8 +132,14 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            var emulator = CreateEmulator();
-            return emulator.Execute(binding, cancellationToken);
+            using (EventContext.BeginOperation())
+            using (var channelSource = binding.GetWriteChannelSource(cancellationToken))
+            using (var channel = channelSource.GetChannel(cancellationToken))
+            {
+                // TODO: implement { w : 0 }
+                var emulator = CreateEmulator();
+                return emulator.Execute(channel, channelSource.Session, cancellationToken);
+            }
         }
 
         /// <inheritdoc/>
@@ -141,8 +147,14 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            var emulator = CreateEmulator();
-            return await emulator.ExecuteAsync(binding, cancellationToken).ConfigureAwait(false);
+            using (EventContext.BeginOperation())
+            using (var channelSource = await binding.GetWriteChannelSourceAsync(cancellationToken).ConfigureAwait(false))
+            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
+            {
+                // TODO: implement { w : 0 }
+                var emulator = CreateEmulator();
+                return await emulator.ExecuteAsync(channel, channelSource.Session, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         // private methods

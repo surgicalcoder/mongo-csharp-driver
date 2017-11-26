@@ -23,7 +23,7 @@ using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 
 namespace MongoDB.Driver.Core.Operations
 {
-    internal class UpdateOpcodeOperationEmulator : IWriteOperation<WriteConcernResult>
+    internal class UpdateOpcodeOperationEmulator
     {
         // fields
         private bool? _bypassDocumentValidation;
@@ -85,52 +85,44 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // public methods
-        public WriteConcernResult Execute(IWriteBinding binding, CancellationToken cancellationToken)
+        public WriteConcernResult Execute(IChannelHandle channel, ICoreSessionHandle session, CancellationToken cancellationToken)
         {
-            Ensure.IsNotNull(binding, nameof(binding));
+            Ensure.IsNotNull(channel, nameof(channel));
 
-            using (var channelSource = binding.GetWriteChannelSource(cancellationToken))
-            using (var channel = channelSource.GetChannel(cancellationToken))
+            var operation = CreateOperation();
+            BulkWriteOperationResult result;
+            MongoBulkWriteOperationException exception = null;
+            try
             {
-                var operation = CreateOperation();
-                BulkWriteOperationResult result;
-                MongoBulkWriteOperationException exception = null;
-                try
-                {
-                    result = operation.Execute(channel, channelSource.Session, cancellationToken);
-                }
-                catch (MongoBulkWriteOperationException ex)
-                {
-                    result = ex.Result;
-                    exception = ex;
-                }
-
-                return CreateResultOrThrow(channel, result, exception);
+                result = operation.Execute(channel, session, cancellationToken);
             }
+            catch (MongoBulkWriteOperationException ex)
+            {
+                result = ex.Result;
+                exception = ex;
+            }
+
+            return CreateResultOrThrow(channel, result, exception);
         }
 
-        public async Task<WriteConcernResult> ExecuteAsync(IWriteBinding binding, CancellationToken cancellationToken)
+        public async Task<WriteConcernResult> ExecuteAsync(IChannelHandle channel, ICoreSessionHandle session, CancellationToken cancellationToken)
         {
-            Ensure.IsNotNull(binding, nameof(binding));
+            Ensure.IsNotNull(channel, nameof(channel));
 
-            using (var channelSource = await binding.GetWriteChannelSourceAsync(cancellationToken).ConfigureAwait(false))
-            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
+            var operation = CreateOperation();
+            BulkWriteOperationResult result;
+            MongoBulkWriteOperationException exception = null;
+            try
             {
-                var operation = CreateOperation();
-                BulkWriteOperationResult result;
-                MongoBulkWriteOperationException exception = null;
-                try
-                {
-                    result = await operation.ExecuteAsync(channel, channelSource.Session, cancellationToken).ConfigureAwait(false);
-                }
-                catch (MongoBulkWriteOperationException ex)
-                {
-                    result = ex.Result;
-                    exception = ex;
-                }
-
-                return CreateResultOrThrow(channel, result, exception);
+                result = await operation.ExecuteAsync(channel, session, cancellationToken).ConfigureAwait(false);
             }
+            catch (MongoBulkWriteOperationException ex)
+            {
+                result = ex.Result;
+                exception = ex;
+            }
+
+            return CreateResultOrThrow(channel, result, exception);
         }
 
         // private methods
