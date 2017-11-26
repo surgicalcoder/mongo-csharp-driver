@@ -112,7 +112,6 @@
     <Compile Include="Core\Operations\CreateCollectionOperationTests.cs" />
     <Compile Include="Core\Operations\CreateIndexesOperationTests.cs" />
     <Compile Include="Core\Operations\CreateIndexesUsingCommandOperationTests.cs" />
-    <Compile Include="Core\Operations\CreateIndexesUsingInsertOperationTests.cs" />
     <Compile Include="Core\Operations\CreateIndexRequestTests.cs" />
     <Compile Include="Core\Operations\CursorBatchDeserializationHelperTests.cs" />
     <Compile Include="Core\Operations\DatabaseExistsOperationTests.cs" />

@@ -187,7 +187,6 @@
     <Compile Include="Core\Misc\SemaphoreSlimRequest.cs" />
     <Compile Include="Core\Operations\AsyncCursorEnumerator.cs" />
     <Compile Include="Core\Operations\CreateIndexesUsingCommandOperation.cs" />
-    <Compile Include="Core\Operations\CreateIndexesUsingInsertOperation.cs" />
     <Compile Include="DocumentValidationAction.cs" />
     <Compile Include="DocumentValidationLevel.cs" />
     <Compile Include="Core\Operations\AsyncCursorEnumerableOneTimeAdapter.cs" />
