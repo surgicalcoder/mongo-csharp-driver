@@ -151,7 +151,6 @@
     <Compile Include="MongoUser.cs" />
     <Compile Include="NoClientSession.cs" />
     <Compile Include="Operations\AddUserOperation.cs" />
-    <Compile Include="Operations\AddUserUsingSystemUsersCollectionOperation.cs" />
     <Compile Include="Operations\AddUserUsingUserManagementCommandsOperation.cs" />
     <Compile Include="Operations\BulkUpdateRequestBuilder.cs" />
     <Compile Include="Operations\BulkWriteOperation.cs" />
@@ -160,10 +159,8 @@
     <Compile Include="Operations\CurrentOpUsingCommandOperation.cs" />
     <Compile Include="Operations\CurrentOpUsingFindOperation.cs" />
     <Compile Include="Operations\DropUserOperation.cs" />
-    <Compile Include="Operations\DropUserUsingSystemUsersCollectionOperation.cs" />
     <Compile Include="Operations\DropUserUsingUserManagementCommandsOperation.cs" />
     <Compile Include="Operations\FindUsersOperation.cs" />
-    <Compile Include="Operations\FindUsersUsingSystemUsersCollectionOperation.cs" />
     <Compile Include="Operations\FindUsersUsingUserManagementCommandsOperation.cs" />
     <Compile Include="ParallelScanArgs.cs" />
     <Compile Include="ProfilingLevel.cs" />
