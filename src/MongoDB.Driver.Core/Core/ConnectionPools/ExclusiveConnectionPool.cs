@@ -712,77 +712,54 @@ namespace MongoDB.Driver.Core.ConnectionPools
 
         private class ListConnectionHolder
         {
-            private readonly object _lock = new object();
-            private readonly List<PooledConnection> _connections;
+            private readonly LifoPool<PooledConnection> _connections;
 
             private readonly Action<ConnectionPoolRemovingConnectionEvent> _removingConnectionEventHandler;
             private readonly Action<ConnectionPoolRemovedConnectionEvent> _removedConnectionEventHandler;
 
             public ListConnectionHolder(IEventSubscriber eventSubscriber)
             {
-                _connections = new List<PooledConnection>();
+                _connections = new LifoPool<PooledConnection>();
 
                 eventSubscriber.TryGetEventHandler(out _removingConnectionEventHandler);
                 eventSubscriber.TryGetEventHandler(out _removedConnectionEventHandler);
             }
 
-            public int Count
-            {
-                get
-                {
-                    lock (_lock)
-                    {
-                        return _connections.Count;
-                    }
-                }
-            }
+            public int Count => _connections.Count;
 
             public void Clear()
             {
-                lock (_lock)
+                PooledConnection connection;
+                while (_connections.TryAcquire(out connection))
                 {
-                    foreach (var connection in _connections)
-                    {
-                        RemoveConnection(connection);
-                    }
-                    _connections.Clear();
+                    DisposeConnection(connection);
                 }
             }
 
             public void Prune()
             {
-                lock (_lock)
+                PooledConnection expiredConnection;
+                while (_connections.TryRemoveMatchingLeastRecentlyUsed(c => c.IsExpired, out expiredConnection))
                 {
-                    for (int i = 0; i < _connections.Count; i++)
-                    {
-                        if (_connections[i].IsExpired)
-                        {
-                            RemoveConnection(_connections[i]);
-                            _connections.RemoveAt(i);
-                            break;
-                        }
-                    }
+                    DisposeConnection(expiredConnection);
                 }
             }
 
             public PooledConnection Acquire()
             {
-                lock (_lock)
+                PooledConnection connection;
+                if (_connections.TryAcquire(out connection))
                 {
-                    if (_connections.Count > 0)
+                    if (connection.IsExpired)
                     {
-                        var connection = _connections[_connections.Count - 1];
-                        _connections.RemoveAt(_connections.Count - 1);
-                        if (connection.IsExpired)
-                        {
-                            RemoveConnection(connection);
-                        }
-                        else
-                        {
-                            return connection;
-                        }
+                        DisposeConnection(connection);
+                    }
+                    else
+                    {
+                        return connection;
                     }
                 }
+
                 return null;
             }
 
@@ -790,17 +767,15 @@ namespace MongoDB.Driver.Core.ConnectionPools
             {
                 if (connection.IsExpired)
                 {
-                    RemoveConnection(connection);
+                    DisposeConnection(connection);
                     return;
                 }
 
-                lock (_lock)
-                {
-                    _connections.Add(connection);
-                }
+                _connections.Release(connection);
             }
 
-            private void RemoveConnection(PooledConnection connection)
+            // private methods
+            private void DisposeConnection(PooledConnection connection)
             {
                 if (_removingConnectionEventHandler != null)
                 {

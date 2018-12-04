@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.Collections.Generic;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 
@@ -24,8 +23,7 @@ namespace MongoDB.Driver
     {
         // private fields
         private readonly ICluster _cluster;
-        private readonly object _lock = new object();
-        private readonly List<ICoreServerSession> _pool = new List<ICoreServerSession>();
+        private readonly LifoPool<ICoreServerSession> _pool = new LifoPool<ICoreServerSession>();
 
         // constructors
         public CoreServerSessionPool(ICluster cluster)
@@ -36,24 +34,17 @@ namespace MongoDB.Driver
         /// <inheritdoc />
         public ICoreServerSession AcquireSession()
         {
-            lock (_lock)
+            ICoreServerSession pooledSession;
+            while (_pool.TryAcquire(out pooledSession))
             {
-                for (var i = _pool.Count - 1; i >= 0; i--)
+                if (IsAboutToExpire(pooledSession))
                 {
-                    var pooledSession = _pool[i];
-                    if (IsAboutToExpire(pooledSession))
-                    {
-                        pooledSession.Dispose();
-                    }
-                    else
-                    {
-                        var removeCount = _pool.Count - i; // the one we're about to return and any about to expire ones we skipped over
-                        _pool.RemoveRange(i, removeCount);
-                        return new ReleaseOnDisposeCoreServerSession(pooledSession, this);
-                    }
+                    pooledSession.Dispose();
                 }
-
-                _pool.Clear(); // they're all about to expire
+                else
+                {
+                    return new ReleaseOnDisposeCoreServerSession(pooledSession, this);
+                }
             }
 
             return new ReleaseOnDisposeCoreServerSession(new CoreServerSession(), this);
@@ -62,31 +53,16 @@ namespace MongoDB.Driver
         /// <inheritdoc />
         public void ReleaseSession(ICoreServerSession session)
         {
-            lock (_lock)
+            if (IsAboutToExpire(session))
             {
-                var removeCount = 0;
-                for (var i = 0; i < _pool.Count; i++)
+                session.Dispose();
+            }
+            else
+            {
+                ICoreServerSession expiredSession;
+                if (_pool.ReleaseAndTryRemoveMatchingLeastRecentlyUsed(session, IsAboutToExpire, out expiredSession))
                 {
-                    var pooledSession = _pool[i];
-                    if (IsAboutToExpire(pooledSession))
-                    {
-                        pooledSession.Dispose();
-                        removeCount++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                _pool.RemoveRange(0, removeCount);
-
-                if (IsAboutToExpire(session))
-                {
-                    session.Dispose();
-                }
-                else
-                {
-                    _pool.Add(session);
+                    expiredSession.Dispose();
                 }
             }
         }
