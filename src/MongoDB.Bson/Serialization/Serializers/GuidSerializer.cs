@@ -27,6 +27,7 @@ namespace MongoDB.Bson.Serialization.Serializers
     public class GuidSerializer : StructSerializerBase<Guid>, IRepresentationConfigurable<GuidSerializer>
     {
         // private fields
+        private readonly GuidRepresentation _guidRepresentation;
         private readonly BsonType _representation;
 
         // constructors
@@ -47,6 +48,9 @@ namespace MongoDB.Bson.Serialization.Serializers
             switch (representation)
             {
                 case BsonType.Binary:
+                    _guidRepresentation = GuidRepresentation.Standard;
+                    break;
+
                 case BsonType.String:
                     break;
 
@@ -58,7 +62,28 @@ namespace MongoDB.Bson.Serialization.Serializers
             _representation = representation;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GuidSerializer"/> class.
+        /// </summary>
+        /// <param name="guidRepresentation">The Guid representation.</param>
+        public GuidSerializer(GuidRepresentation guidRepresentation)
+        {
+            _guidRepresentation = guidRepresentation;
+            _representation = BsonType.Binary;
+        }
+
         // public properties
+        /// <summary>
+        /// Gets the Guid representation.
+        /// </summary>
+        /// <value>
+        /// The Guid representation.
+        /// </value>
+        public GuidRepresentation GuidRepresentation
+        {
+            get { return _guidRepresentation; }
+        }
+
         /// <summary>
         /// Gets the representation.
         /// </summary>
@@ -89,22 +114,31 @@ namespace MongoDB.Bson.Serialization.Serializers
                     var binaryData = bsonReader.ReadBinaryData();
                     var bytes = binaryData.Bytes;
                     var subType = binaryData.SubType;
-                    var guidRepresentation = binaryData.GuidRepresentation;
                     if (bytes.Length != 16)
                     {
                         message = string.Format("Expected length to be 16, not {0}.", bytes.Length);
                         throw new FormatException(message);
                     }
-                    if (subType != BsonBinarySubType.UuidStandard && subType != BsonBinarySubType.UuidLegacy)
+                    switch (subType)
                     {
-                        message = string.Format("Expected binary sub type to be UuidStandard or UuidLegacy, not {0}.", subType);
-                        throw new FormatException(message);
+                        case BsonBinarySubType.UuidStandard:
+                            return GuidConverter.FromBytes(bytes, GuidRepresentation.Standard);
+
+                        case BsonBinarySubType.UuidLegacy:
+                            switch (_guidRepresentation)
+                            {
+                                case GuidRepresentation.CSharpLegacy:
+                                case GuidRepresentation.JavaLegacy:
+                                case GuidRepresentation.PythonLegacy:
+                                    return GuidConverter.FromBytes(bytes, _guidRepresentation);
+
+                                default:
+                                    throw new BsonSerializationException($"GuidSerializer cannot deserialize a Guid from BsonBinarySubType UuidLegacy when GuidRepresentation is {_guidRepresentation}.");
+                            }
+
+                        default:
+                            throw new FormatException($"Expected binary sub type to be UuidStandard or UuidLegacy, not: {subType}.");
                     }
-                    if (guidRepresentation == GuidRepresentation.Unspecified)
-                    {
-                        throw new BsonSerializationException("GuidSerializer cannot deserialize a Guid when GuidRepresentation is Unspecified.");
-                    }
-                    return GuidConverter.FromBytes(bytes, guidRepresentation);
 
                 case BsonType.String:
                     return new Guid(bsonReader.ReadString());
@@ -127,14 +161,27 @@ namespace MongoDB.Bson.Serialization.Serializers
             switch (_representation)
             {
                 case BsonType.Binary:
-                    var writerGuidRepresentation = bsonWriter.Settings.GuidRepresentation;
-                    if (writerGuidRepresentation == GuidRepresentation.Unspecified)
+                    byte[] bytes;
+                    BsonBinarySubType subType;
+                    switch (_guidRepresentation)
                     {
-                        throw new BsonSerializationException("GuidSerializer cannot serialize a Guid when GuidRepresentation is Unspecified.");
+                        case GuidRepresentation.Standard:
+                            bytes = GuidConverter.ToBytes(value, GuidRepresentation.Standard);
+                            subType = BsonBinarySubType.UuidStandard;
+                            break;
+
+                        case GuidRepresentation.CSharpLegacy:
+                        case GuidRepresentation.JavaLegacy:
+                        case GuidRepresentation.PythonLegacy:
+                            bytes = GuidConverter.ToBytes(value, _guidRepresentation);
+                            subType = BsonBinarySubType.UuidLegacy;
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"Cannot serialize a Guid when GuidRepresentation is: {_guidRepresentation}.");
                     }
-                    var bytes = GuidConverter.ToBytes(value, writerGuidRepresentation);
-                    var subType = (writerGuidRepresentation == GuidRepresentation.Standard) ? BsonBinarySubType.UuidStandard : BsonBinarySubType.UuidLegacy;
-                    bsonWriter.WriteBinaryData(new BsonBinaryData(bytes, subType, writerGuidRepresentation));
+                    var binaryData = new BsonBinaryData(bytes, subType);
+                    bsonWriter.WriteBinaryData(binaryData);
                     break;
 
                 case BsonType.String:

@@ -141,7 +141,7 @@ namespace MongoDB.Bson.Tests.Serialization
         {
             C c = new C { Guid = Guid.Empty };
             var json = c.ToJson();
-            var expected = _template.Replace("'Guid' : null", "'Guid' : CSUUID('00000000-0000-0000-0000-000000000000')").Replace("'", "\"");
+            var expected = _template.Replace("'Guid' : null", "'Guid' : UUID('00000000-0000-0000-0000-000000000000')").Replace("'", "\"");
             Assert.Equal(expected, json);
 
             var bson = c.ToBson();

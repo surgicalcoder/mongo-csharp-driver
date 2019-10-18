@@ -98,7 +98,7 @@ namespace MongoDB.Bson.Serialization.Serializers
                     var idBinaryData = id as BsonBinaryData;
                     if (idBinaryData != null && (idBinaryData.SubType == BsonBinarySubType.UuidLegacy || idBinaryData.SubType == BsonBinarySubType.UuidStandard))
                     {
-                        idGenerator = BsonBinaryDataGuidGenerator.GetInstance(idBinaryData.GuidRepresentation);
+                        idGenerator = BsonBinaryDataGuidGenerator.GetInstance(GuidRepresentation.Standard);
                     }
                 }
             }

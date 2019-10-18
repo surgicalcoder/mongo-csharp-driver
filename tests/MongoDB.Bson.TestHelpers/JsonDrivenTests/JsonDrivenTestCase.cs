@@ -80,9 +80,8 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 
         private string SerializeBsonDocument(BsonDocument value)
         {
-            var jsonWriterSettings = new JsonWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
             using (var stringWriter = new StringWriter())
-            using (var jsonWriter = new JsonWriter(stringWriter, jsonWriterSettings))
+            using (var jsonWriter = new JsonWriter(stringWriter))
             {
                 var context = BsonSerializationContext.CreateRoot(jsonWriter);
                 BsonDocumentSerializer.Instance.Serialize(context, value);

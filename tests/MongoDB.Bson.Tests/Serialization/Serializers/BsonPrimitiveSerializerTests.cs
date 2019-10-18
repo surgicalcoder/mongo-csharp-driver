@@ -759,7 +759,7 @@ namespace MongoDB.Bson.Tests.Serialization
                 String = guid
             };
             var json = obj.ToJson();
-            var expected = "{ 'Binary' : CSUUID('#B'), 'String' : '#S' }";
+            var expected = "{ 'Binary' : UUID('#B'), 'String' : '#S' }";
             expected = expected.Replace("#B", "00000000-0000-0000-0000-000000000000");
             expected = expected.Replace("#S", "00000000-0000-0000-0000-000000000000");
             expected = expected.Replace("'", "\"");
@@ -781,7 +781,7 @@ namespace MongoDB.Bson.Tests.Serialization
                 String = guid
             };
             var json = obj.ToJson();
-            var expected = "{ 'Binary' : CSUUID('#B'), 'String' : '#S' }";
+            var expected = "{ 'Binary' : UUID('#B'), 'String' : '#S' }";
             expected = expected.Replace("#B", s);
             expected = expected.Replace("#S", s);
             expected = expected.Replace("'", "\"");

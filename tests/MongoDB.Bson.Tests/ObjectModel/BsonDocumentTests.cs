@@ -1081,11 +1081,11 @@ namespace MongoDB.Bson.Tests
         public void TestToDictionaryOneGuidLegacy()
         {
             var guid = Guid.NewGuid();
-            var document = new BsonDocument("x", new BsonBinaryData(guid, GuidRepresentation.CSharpLegacy));
+            var binaryData = new BsonBinaryData(guid, GuidRepresentation.CSharpLegacy);
+            var document = new BsonDocument("x", binaryData);
             var dictionary = document.ToDictionary();
             Assert.Equal(1, dictionary.Count);
-            Assert.IsType<Guid>(dictionary["x"]);
-            Assert.Equal(guid, dictionary["x"]);
+            Assert.Equal(binaryData, dictionary["x"]);
         }
 
         [Fact]
@@ -1263,11 +1263,11 @@ namespace MongoDB.Bson.Tests
         public void TestToHashtableOneGuidLegacy()
         {
             var guid = Guid.NewGuid();
-            var hashtable = new BsonDocument("x", new BsonBinaryData(guid, GuidRepresentation.CSharpLegacy));
+            var binaryData = new BsonBinaryData(guid, GuidRepresentation.CSharpLegacy);
+            var hashtable = new BsonDocument("x", binaryData);
             var dictionary = hashtable.ToHashtable();
             Assert.Equal(1, dictionary.Count);
-            Assert.IsType<Guid>(dictionary["x"]);
-            Assert.Equal(guid, dictionary["x"]);
+            Assert.Equal(binaryData, dictionary["x"]);
         }
 
         [Fact]

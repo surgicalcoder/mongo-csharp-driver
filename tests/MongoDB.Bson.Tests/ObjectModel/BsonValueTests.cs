@@ -757,8 +757,8 @@ namespace MongoDB.Bson.Tests
             BsonValue v = guid;
             Assert.IsType<BsonBinaryData>(v);
             var b = (BsonBinaryData)v;
-            Assert.True(guid.ToByteArray().SequenceEqual(b.AsByteArray));
-            Assert.Equal(BsonBinarySubType.UuidLegacy, b.SubType);
+            Assert.True(GuidConverter.ToBytes(guid, GuidRepresentation.Standard).SequenceEqual(b.AsByteArray));
+            Assert.Equal(BsonBinarySubType.UuidStandard, b.SubType);
         }
 
         [Fact]
@@ -872,8 +872,8 @@ namespace MongoDB.Bson.Tests
             Assert.IsType<BsonBinaryData>(v);
             Assert.IsType<BsonNull>(n);
             var b = (BsonBinaryData)v;
-            Assert.True(guid.ToByteArray().SequenceEqual(b.AsByteArray));
-            Assert.Equal(BsonBinarySubType.UuidLegacy, b.SubType);
+            Assert.True(GuidConverter.ToBytes(guid, GuidRepresentation.Standard).SequenceEqual(b.AsByteArray));
+            Assert.Equal(BsonBinarySubType.UuidStandard, b.SubType);
         }
 
         [Fact]

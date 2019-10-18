@@ -64,34 +64,6 @@ namespace MongoDB.Bson.Serialization.Serializers
         protected override void SerializeValue(BsonSerializationContext context, BsonSerializationArgs args, BsonBinaryData value)
         {
             var bsonWriter = context.Writer;
-
-            var subType = value.SubType;
-            if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
-            {
-                var writerGuidRepresentation = bsonWriter.Settings.GuidRepresentation;
-                if (writerGuidRepresentation != GuidRepresentation.Unspecified)
-                {
-                    var bytes = value.Bytes;
-                    var guidRepresentation = value.GuidRepresentation;
-
-                    if (guidRepresentation == GuidRepresentation.Unspecified)
-                    {
-                        var message = string.Format(
-                            "Cannot serialize BsonBinaryData with GuidRepresentation Unspecified to destination with GuidRepresentation {0}.",
-                            writerGuidRepresentation);
-                        throw new BsonSerializationException(message);
-                    }
-                    if (guidRepresentation != writerGuidRepresentation)
-                    {
-                        var guid = GuidConverter.FromBytes(bytes, guidRepresentation);
-                        bytes = GuidConverter.ToBytes(guid, writerGuidRepresentation);
-                        subType = (writerGuidRepresentation == GuidRepresentation.Standard) ? BsonBinarySubType.UuidStandard : BsonBinarySubType.UuidLegacy;
-                        guidRepresentation = writerGuidRepresentation;
-                        value = new BsonBinaryData(bytes, subType, guidRepresentation);
-                    }
-                }
-            }
-
             bsonWriter.WriteBinaryData(value);
         }
     }

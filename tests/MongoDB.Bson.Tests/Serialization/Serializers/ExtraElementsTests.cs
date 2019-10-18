@@ -19,6 +19,7 @@ using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Shared;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Serialization
@@ -159,7 +160,7 @@ namespace MongoDB.Bson.Tests.Serialization
                 new string[] { "XDateTime", "ISODate('2012-03-16T11:19:00Z')" },
                 new string[] { "XDocument", "{ 'a' : 1 }" },
                 new string[] { "XDouble", "1.0" },
-                new string[] { "XGuidLegacy", "HexData(3, '33221100554477668899aabbccddeeff')" },
+                new string[] { "XGuidLegacy", "HexData(3, '030201000504070608090a0b0c0d0e0f')" },
                 new string[] { "XGuidStandard", "HexData(4, '00112233445566778899aabbccddeeff')" },
                 new string[] { "XInt32", "1" },
                 new string[] { "XInt64", "NumberLong(1)" },
@@ -190,7 +191,7 @@ namespace MongoDB.Bson.Tests.Serialization
             Assert.IsType<DateTime>(c.X["XDateTime"]);
             Assert.IsType<Dictionary<string, object>>(c.X["XDocument"]);
             Assert.IsType<double>(c.X["XDouble"]);
-            Assert.IsType<Guid>(c.X["XGuidLegacy"]);
+            Assert.IsType<BsonBinaryData>(c.X["XGuidLegacy"]);
             Assert.IsType<Guid>(c.X["XGuidStandard"]);
             Assert.IsType<int>(c.X["XInt32"]);
             Assert.IsType<long>(c.X["XInt64"]);
@@ -218,7 +219,8 @@ namespace MongoDB.Bson.Tests.Serialization
             Assert.Equal(1, ((IDictionary<string, object>)c.X["XDocument"]).Count);
             Assert.Equal(1, ((IDictionary<string, object>)c.X["XDocument"])["a"]);
             Assert.Equal(1.0, c.X["XDouble"]);
-            Assert.Equal(new Guid("00112233-4455-6677-8899-aabbccddeeff"), c.X["XGuidLegacy"]);
+            Assert.Equal(new byte[] { 3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15 }, ((BsonBinaryData)c.X["XGuidLegacy"]).Bytes);
+            Assert.Equal(BsonBinarySubType.UuidLegacy, ((BsonBinaryData)c.X["XGuidLegacy"]).SubType);
             Assert.Equal(new Guid("00112233-4455-6677-8899-aabbccddeeff"), c.X["XGuidStandard"]);
             Assert.Equal(1, c.X["XInt32"]);
             Assert.Equal(1L, c.X["XInt64"]);

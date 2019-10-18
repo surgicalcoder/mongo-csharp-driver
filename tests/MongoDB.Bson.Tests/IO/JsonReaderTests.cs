@@ -24,6 +24,7 @@ using FluentAssertions;
 using Xunit;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Bson.TestHelpers;
+using MongoDB.Bson.Serialization.Serializers;
 
 namespace MongoDB.Bson.Tests.IO
 {
@@ -683,12 +684,17 @@ namespace MongoDB.Bson.Tests.IO
                 var binaryData = _bsonReader.ReadBinaryData();
                 Assert.True(binaryData.Bytes.SequenceEqual(guid.ToByteArray()));
                 Assert.Equal(BsonBinarySubType.UuidLegacy, binaryData.SubType);
-                Assert.Equal(GuidRepresentation.CSharpLegacy, binaryData.GuidRepresentation);
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
                 Assert.True(_bsonReader.IsAtEndOfFile());
             }
-            var expected = "CSUUID(\"b5f21e0c-2a0d-42d6-ad03-d827008d8ab6\")";
-            Assert.Equal(expected, BsonSerializer.Deserialize<Guid>(json).ToJson());
+
+            var serializer = new GuidSerializer(GuidRepresentation.CSharpLegacy);
+            using (var reader = new JsonReader(json))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+                var deserializedGuid = serializer.Deserialize(context);
+                Assert.Equal(guid, deserializedGuid);
+            }
         }
 
         [Fact]

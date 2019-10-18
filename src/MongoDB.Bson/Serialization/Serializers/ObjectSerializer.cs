@@ -202,8 +202,7 @@ namespace MongoDB.Bson.Serialization.Serializers
                                 if (actualType == typeof(Guid))
                                 {
                                     var guid = (Guid)value;
-                                    var guidRepresentation = bsonWriter.Settings.GuidRepresentation;
-                                    var binaryData = new BsonBinaryData(guid, guidRepresentation);
+                                    var binaryData = new BsonBinaryData(guid, GuidRepresentation.Standard);
                                     bsonWriter.WriteBinaryData(binaryData);
                                     return;
                                 }

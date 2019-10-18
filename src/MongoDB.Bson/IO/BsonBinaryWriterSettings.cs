@@ -124,7 +124,6 @@ namespace MongoDB.Bson.IO
             {
                 Encoding = _encoding,
                 FixOldBinarySubTypeOnOutput = _fixOldBinarySubTypeOnOutput,
-                GuidRepresentation = GuidRepresentation,
                 MaxDocumentSize = _maxDocumentSize,
                 MaxSerializationDepth = MaxSerializationDepth
             };

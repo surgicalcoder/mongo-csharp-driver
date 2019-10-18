@@ -369,7 +369,7 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
                 { "C", "1.5" }, 
                 { "D", "1" }, 
                 { "E", "NumberLong(2)" },
-                { "F", "CSUUID('00000000-0000-0000-0000-000000000000')" }, 
+                { "F", "UUID('00000000-0000-0000-0000-000000000000')" }, 
                 { "G", "ObjectId('000000000000000000000000')" }, 
                 { "H", "'x'" }
             };

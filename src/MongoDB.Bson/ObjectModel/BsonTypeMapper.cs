@@ -328,7 +328,7 @@ namespace MongoDB.Bson
                     {
                         return bsonBinaryData.Bytes;
                     }
-                    else if (bsonBinaryData.SubType == BsonBinarySubType.UuidLegacy || bsonBinaryData.SubType == BsonBinarySubType.UuidStandard)
+                    else if (bsonBinaryData.SubType == BsonBinarySubType.UuidStandard)
                     {
                         return bsonBinaryData.ToGuid();
                     }

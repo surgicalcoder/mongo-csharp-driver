@@ -164,7 +164,6 @@ namespace MongoDB.Bson.IO
 #pragma warning disable 618
                 Encoding = _encoding,
 #pragma warning restore
-                GuidRepresentation = GuidRepresentation,
                 Indent = _indent,
                 IndentChars = _indentChars,
                 MaxSerializationDepth = MaxSerializationDepth,

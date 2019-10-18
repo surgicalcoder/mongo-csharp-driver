@@ -263,7 +263,6 @@ namespace MongoDB.Bson.Tests.IO
                 type.Should().Be(BsonType.Binary);
                 binaryData.SubType.Should().Be(BsonBinarySubType.UuidLegacy);
                 binaryData.Bytes.Should().Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
-                binaryData.GuidRepresentation.Should().Be(guidRepresentation);
                 endOfDocument.Should().Be(BsonType.EndOfDocument);
                 stream.Position.Should().Be(stream.Length);
             }
@@ -293,7 +292,6 @@ namespace MongoDB.Bson.Tests.IO
                 type.Should().Be(BsonType.Binary);
                 binaryData.SubType.Should().Be(BsonBinarySubType.UuidStandard);
                 binaryData.Bytes.Should().Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
-                binaryData.GuidRepresentation.Should().Be(GuidRepresentation.Standard);
                 endOfDocument.Should().Be(BsonType.EndOfDocument);
                 stream.Position.Should().Be(stream.Length);
             }

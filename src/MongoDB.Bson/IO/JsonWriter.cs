@@ -120,7 +120,6 @@ namespace MongoDB.Bson.IO
 
             var subType = binaryData.SubType;
             var bytes = binaryData.Bytes;
-            var guidRepresentation = binaryData.GuidRepresentation;
 
             WriteNameHelper(Name);
             switch (Settings.OutputMode)
@@ -134,8 +133,11 @@ namespace MongoDB.Bson.IO
                     switch (subType)
                     {
                         case BsonBinarySubType.UuidLegacy:
+                            _textWriter.Write(GuidToString(subType, bytes, GuidRepresentation.Unspecified));
+                            break;
+
                         case BsonBinarySubType.UuidStandard:
-                            _textWriter.Write(GuidToString(subType, bytes, guidRepresentation));
+                            _textWriter.Write(GuidToString(subType, bytes, GuidRepresentation.Standard));
                             break;
 
                         default:
@@ -790,15 +792,7 @@ namespace MongoDB.Bson.IO
             if (guidRepresentation == GuidRepresentation.Unspecified)
             {
                 var s = BsonUtils.ToHexString(bytes);
-                var parts = new string[]
-                {
-                    s.Substring(0, 8),
-                    s.Substring(8, 4),
-                    s.Substring(12, 4),
-                    s.Substring(16, 4),
-                    s.Substring(20, 12)
-                };
-                return string.Format("HexData({0}, \"{1}\")", (int)subType, string.Join("-", parts));
+                return string.Format("HexData({0}, \"{1}\")", (int)subType, s);
             }
             else
             {

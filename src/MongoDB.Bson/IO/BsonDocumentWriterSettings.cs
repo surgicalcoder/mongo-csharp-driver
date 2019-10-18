@@ -36,16 +36,6 @@ namespace MongoDB.Bson.IO
         {
         }
 
-        /// <summary>
-        /// Initializes a new instance of the BsonDocumentWriterSettings class.
-        /// </summary>
-        /// <param name="guidRepresentation">The representation for Guids.</param>
-        [Obsolete("Use the no-argument constructor instead and set the properties.")]
-        public BsonDocumentWriterSettings(GuidRepresentation guidRepresentation)
-            : base(guidRepresentation)
-        {
-        }
-
         // public static properties
         /// <summary>
         /// Gets or sets the default BsonDocumentWriter settings.
@@ -82,7 +72,6 @@ namespace MongoDB.Bson.IO
         {
             var clone = new BsonDocumentWriterSettings
             {
-                GuidRepresentation = GuidRepresentation,
                 MaxSerializationDepth = MaxSerializationDepth
             };
             return clone;

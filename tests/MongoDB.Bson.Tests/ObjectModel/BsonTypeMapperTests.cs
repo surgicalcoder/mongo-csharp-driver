@@ -416,12 +416,13 @@ namespace MongoDB.Bson.Tests
         public void TestMapGuid()
         {
             var value = Guid.NewGuid();
+            var valueBytes = GuidConverter.ToBytes(value, GuidRepresentation.Standard);
             var bsonValue = (BsonBinaryData)BsonTypeMapper.MapToBsonValue(value);
-            Assert.True(value.ToByteArray().SequenceEqual(bsonValue.Bytes));
-            Assert.Equal(BsonBinarySubType.UuidLegacy, bsonValue.SubType);
+            Assert.True(valueBytes.SequenceEqual(bsonValue.Bytes));
+            Assert.Equal(BsonBinarySubType.UuidStandard, bsonValue.SubType);
             var bsonBinary = (BsonBinaryData)BsonTypeMapper.MapToBsonValue(value, BsonType.Binary);
-            Assert.True(value.ToByteArray().SequenceEqual(bsonBinary.Bytes));
-            Assert.Equal(BsonBinarySubType.UuidLegacy, bsonBinary.SubType);
+            Assert.True(valueBytes.SequenceEqual(bsonBinary.Bytes));
+            Assert.Equal(BsonBinarySubType.UuidStandard, bsonBinary.SubType);
         }
 
         [Fact]
