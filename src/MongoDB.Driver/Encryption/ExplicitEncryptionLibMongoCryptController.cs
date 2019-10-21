@@ -254,8 +254,7 @@ namespace MongoDB.Driver.Encryption
         {
             var wrappedValue = new BsonDocument("v", value);
             var writerSettings = BsonBinaryWriterSettings.Defaults.Clone();
-            writerSettings.GuidRepresentation = GuidRepresentation.Unspecified;
-            return wrappedValue.ToBson(writerSettings: writerSettings);
+            return wrappedValue.ToBson();
         }
 
         private BsonValue UnwrapDecryptedValue(byte[] wrappedBytes)

@@ -154,7 +154,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
             {
                 writerSettings.Encoding = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.WriteEncoding, writerSettings.Encoding);
                 writerSettings.FixOldBinarySubTypeOnOutput = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.FixOldBinarySubTypeOnOutput, writerSettings.FixOldBinarySubTypeOnOutput);
-                writerSettings.GuidRepresentation = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.GuidRepresentation, writerSettings.GuidRepresentation);
                 writerSettings.MaxDocumentSize = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.MaxDocumentSize, writerSettings.MaxDocumentSize);
                 writerSettings.MaxSerializationDepth = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.MaxSerializationDepth, writerSettings.MaxSerializationDepth);
             }

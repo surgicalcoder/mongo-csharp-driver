@@ -48,18 +48,16 @@ namespace MongoDB.Driver.Encryption
         // protected methods
         protected void FeedResult(CryptContext context, BsonDocument document)
         {
-            var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-            var documentBytes = document.ToBson(writerSettings: writerSettings);
+            var documentBytes = document.ToBson();
             context.Feed(documentBytes);
             context.MarkDone();
         }
 
         protected void FeedResults(CryptContext context, IEnumerable<BsonDocument> documents)
         {
-            var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
             foreach (var document in documents)
             {
-                var documentBytes = document.ToBson(writerSettings: writerSettings);
+                var documentBytes = document.ToBson();
                 context.Feed(documentBytes);
             }
             context.MarkDone();

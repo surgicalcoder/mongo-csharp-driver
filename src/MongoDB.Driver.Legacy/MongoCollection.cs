@@ -2010,8 +2010,7 @@ namespace MongoDB.Driver
             // since we can't determine for sure whether it's a new document or not upsert it
             // the only safe way to get the serialized _id value needed for the query is to serialize the entire document
             var bsonDocument = new BsonDocument();
-            var writerSettings = new BsonDocumentWriterSettings { GuidRepresentation = _settings.GuidRepresentation };
-            using (var bsonWriter = new BsonDocumentWriter(bsonDocument, writerSettings))
+            using (var bsonWriter = new BsonDocumentWriter(bsonDocument))
             {
                 var context = BsonSerializationContext.CreateRoot(bsonWriter);
                 var args = new BsonSerializationArgs { NominalType = nominalType };

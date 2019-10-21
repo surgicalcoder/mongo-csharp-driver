@@ -165,7 +165,7 @@ namespace MongoDB.Driver.Tests
             var dbRef = new MongoDBRef("collection", guid);
             var obj = new C { Id = id, DBRef = dbRef };
             var json = obj.ToJson();
-            var expected = "{ '_id' : ObjectId('#id'), 'DBRef' : { '$ref' : 'collection', '$id' : CSUUID('#guid') } }";
+            var expected = "{ '_id' : ObjectId('#id'), 'DBRef' : { '$ref' : 'collection', '$id' : UUID('#guid') } }";
             expected = expected.Replace("#id", id.ToString());
             expected = expected.Replace("#guid", guid.ToString());
             expected = expected.Replace("'", "\"");

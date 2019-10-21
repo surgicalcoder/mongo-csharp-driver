@@ -95,8 +95,7 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 var schemaMapElements = _schemaMap.Select(c => new BsonElement(c.Key, c.Value));
                 var schemaDocument = new BsonDocument(schemaMapElements);
-                var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-                schemaBytes = schemaDocument.ToBson(writerSettings: writerSettings);
+                schemaBytes = schemaDocument.ToBson();
             }
 
             return new CryptOptions(kmsProvidersMap, schemaBytes);

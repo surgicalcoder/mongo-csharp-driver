@@ -348,7 +348,7 @@ namespace MongoDB.Driver.Core.WireProtocol
                 var clusterTime = new BsonElement("$clusterTime", _session.ClusterTime);
                 extraElements.Add(clusterTime);
             }
-            Action<BsonWriterSettings> writerSettingsConfigurator = s => s.GuidRepresentation = GuidRepresentation.Unspecified;
+            Action<BsonWriterSettings> writerSettingsConfigurator = s => { };
             var appendExtraElementsSerializer = new ElementAppendingSerializer<BsonDocument>(BsonDocumentSerializer.Instance, extraElements, writerSettingsConfigurator);
             var commandWithExtraElements = new BsonDocumentWrapper(command, appendExtraElementsSerializer);
 

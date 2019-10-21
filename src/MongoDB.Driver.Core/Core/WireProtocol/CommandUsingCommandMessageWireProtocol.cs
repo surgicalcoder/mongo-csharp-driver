@@ -281,7 +281,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             {
                 addIfNotAlreadyAdded("$clusterTime", _session.ClusterTime);
             }
-            Action<BsonWriterSettings> writerSettingsConfigurator = s => s.GuidRepresentation = GuidRepresentation.Unspecified;
+            Action<BsonWriterSettings> writerSettingsConfigurator = s => { };
 
             _session.AboutToSendCommand();
             if (_session.IsInTransaction)

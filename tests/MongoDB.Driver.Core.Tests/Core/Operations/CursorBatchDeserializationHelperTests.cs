@@ -79,8 +79,7 @@ namespace MongoDB.Driver.Core.Operations
         public void DeserializeBatch_should_return_expected_result_when_GuidRepresentation_is_Standard()
         {
             var document = BsonDocument.Parse("{ batch : [ { a : HexData(4, \"0102030405060708090a0b0c0d0e0f10\") } ] }");
-            var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Standard };
-            var bson = document.ToBson(writerSettings: writerSettings);
+            var bson = document.ToBson();
             var rawDocument = new RawBsonDocument(bson);
             var batch = (RawBsonArray)rawDocument["batch"];
             var documentSerializer = BsonDocumentSerializer.Instance;
