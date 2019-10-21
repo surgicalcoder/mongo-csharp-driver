@@ -59,10 +59,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.JsonEncoders
             }
             
             var readerSettings = new JsonReaderSettings();
-            if (_encoderSettings != null)
-            {
-                readerSettings.GuidRepresentation = _encoderSettings.GetOrDefault(MessageEncoderSettingsName.GuidRepresentation, GuidRepresentation.CSharpLegacy);
-            }
             return new JsonReader(_textReader, readerSettings);
         }
 

@@ -71,10 +71,7 @@ namespace MongoDB.Bson.IO
         /// <returns>A clone of the settings.</returns>
         protected override BsonReaderSettings CloneImplementation()
         {
-            var clone = new JsonReaderSettings
-            {
-                GuidRepresentation = GuidRepresentation
-            };
+            var clone = new JsonReaderSettings();
             return clone;
         }
     }

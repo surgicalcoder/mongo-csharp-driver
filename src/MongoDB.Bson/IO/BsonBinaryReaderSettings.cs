@@ -139,7 +139,6 @@ namespace MongoDB.Bson.IO
                 Encoding = _encoding,
                 FixOldBinarySubTypeOnInput = _fixOldBinarySubTypeOnInput,
                 FixOldDateTimeMaxValueOnInput = _fixOldDateTimeMaxValueOnInput,
-                GuidRepresentation = GuidRepresentation,
                 MaxDocumentSize = _maxDocumentSize
             };
             return clone;

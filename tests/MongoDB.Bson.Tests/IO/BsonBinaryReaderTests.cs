@@ -247,7 +247,7 @@ namespace MongoDB.Bson.Tests.IO
         [InlineData(GuidRepresentation.Unspecified)]
         public void ReadBinaryData_subtype_3_should_use_GuidRepresentation_from_settings(GuidRepresentation guidRepresentation)
         {
-            var settings = new BsonBinaryReaderSettings { GuidRepresentation = guidRepresentation };
+            var settings = new BsonBinaryReaderSettings();
             var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
             using (var stream = new MemoryStream(bytes))
             using (var reader = new BsonBinaryReader(stream, settings))
@@ -276,7 +276,7 @@ namespace MongoDB.Bson.Tests.IO
         [InlineData(GuidRepresentation.Unspecified)]
         public void ReadBinaryData_subtype_4_should_use_GuidRepresentation_Standard(GuidRepresentation guidRepresentation)
         {
-            var settings = new BsonBinaryReaderSettings { GuidRepresentation = guidRepresentation };
+            var settings = new BsonBinaryReaderSettings();
             var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 4, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
             using (var stream = new MemoryStream(bytes))
             using (var reader = new BsonBinaryReader(stream, settings))

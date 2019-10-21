@@ -204,8 +204,7 @@ namespace MongoDB.Driver.Core.Operations
         {
             var binaryReaderSettings = new BsonBinaryReaderSettings
             {
-                Encoding = _messageEncoderSettings.GetOrDefault<UTF8Encoding>(MessageEncoderSettingsName.ReadEncoding, Utf8Encodings.Strict),
-                GuidRepresentation = _messageEncoderSettings.GetOrDefault<GuidRepresentation>(MessageEncoderSettingsName.GuidRepresentation, GuidRepresentation.CSharpLegacy)
+                Encoding = _messageEncoderSettings.GetOrDefault<UTF8Encoding>(MessageEncoderSettingsName.ReadEncoding, Utf8Encodings.Strict)
             };
 
             using (var stream = new ByteBufferStream(rawBsonDocument.Slice, ownsBuffer: false))

@@ -70,7 +70,7 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
         // private methods
         private BsonDocument DeserializeBsonDocument(string value)
         {
-            var jsonReaderSettings = new JsonReaderSettings { GuidRepresentation = GuidRepresentation.Unspecified };
+            var jsonReaderSettings = new JsonReaderSettings();
             using (var jsonReader = new JsonReader(value, jsonReaderSettings))
             {
                 var context = BsonDeserializationContext.CreateRoot(jsonReader);

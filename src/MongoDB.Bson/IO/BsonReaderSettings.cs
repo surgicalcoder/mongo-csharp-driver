@@ -26,7 +26,6 @@ namespace MongoDB.Bson.IO
     public abstract class BsonReaderSettings
     {
         // private fields
-        private GuidRepresentation _guidRepresentation = BsonDefaults.GuidRepresentation;
         private bool _isFrozen;
 
         // constructors
@@ -37,29 +36,7 @@ namespace MongoDB.Bson.IO
         {
         }
 
-        /// <summary>
-        /// Initializes a new instance of the BsonReaderSettings class.
-        /// </summary>
-        /// <param name="guidRepresentation">The representation for Guids.</param>
-        protected BsonReaderSettings(GuidRepresentation guidRepresentation)
-        {
-            _guidRepresentation = guidRepresentation;
-        }
-
         // public properties
-        /// <summary>
-        /// Gets or sets the representation for Guids.
-        /// </summary>
-        public GuidRepresentation GuidRepresentation
-        {
-            get { return _guidRepresentation; }
-            set
-            {
-                if (_isFrozen) { ThrowFrozenException(); }
-                _guidRepresentation = value;
-            }
-        }
-
         /// <summary>
         /// Gets whether the settings are frozen.
         /// </summary>
