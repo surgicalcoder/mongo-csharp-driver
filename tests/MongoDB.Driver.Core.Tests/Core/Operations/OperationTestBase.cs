@@ -26,6 +26,7 @@ using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.TestHelpers;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
+using Xunit;
 
 namespace MongoDB.Driver.Core.Operations
 {
@@ -247,9 +248,10 @@ namespace MongoDB.Driver.Core.Operations
             return new ReadPreferenceBinding(_cluster, readPreference, _session.Fork());
         }
 
-        protected IReadWriteBinding CreateReadWriteBinding()
+        protected IReadWriteBinding CreateReadWriteBinding(bool useExplicitSessionIfSupported = true)
         {
-            return new WritableServerBinding(_cluster, _session.Fork());
+            var session = CreateSession(useExplicitSessionIfSupported, _cluster);
+            return new WritableServerBinding(_cluster, session.Fork());
         }
 
         protected void Insert(params BsonDocument[] documents)
@@ -398,59 +400,109 @@ namespace MongoDB.Driver.Core.Operations
             Update(BsonDocument.Parse(filter), BsonDocument.Parse(update));
         }
 
-        protected void VerifySessionIdWasSentWhenSupported<TResult>(IReadOperation<TResult> operation, string commandName, bool async)
+        protected void VerifySessionIdWasNotSentIfUnacknowledgedWrite<TResult>(
+            IWriteOperation<TResult> operation,
+            string commandName,
+            bool async,
+            bool useExplicitSession)
         {
-            VerifySessionIdWasSentWhenSupported(
+            VerifySessionIdSending(
                 (binding, cancellationToken) => operation.ExecuteAsync(binding, cancellationToken),
                 (binding, cancellationToken) => operation.Execute(binding, cancellationToken),
+                AssertSessionIdWithUnacknowledgedWrite,
+                commandName,
+                async,
+                useExplicitSession);
+        }
+
+        protected void VerifySessionIdWasSentWhenSupported<TResult>(IReadOperation<TResult> operation, string commandName, bool async)
+        {
+            VerifySessionIdSending(
+                (binding, cancellationToken) => operation.ExecuteAsync(binding, cancellationToken),
+                (binding, cancellationToken) => operation.Execute(binding, cancellationToken),
+                AssertSessionIdIsSentIfPresented,
                 commandName,
                 async);
         }
 
         protected void VerifySessionIdWasSentWhenSupported<TResult>(IWriteOperation<TResult> operation, string commandName, bool async)
         {
-            VerifySessionIdWasSentWhenSupported(
+            VerifySessionIdSending(
                 (binding, cancellationToken) => operation.ExecuteAsync(binding, cancellationToken),
                 (binding, cancellationToken) => operation.Execute(binding, cancellationToken),
+                AssertSessionIdIsSentIfPresented,
                 commandName,
                 async);
         }
 
-        protected void VerifySessionIdWasSentWhenSupported<TResult>(
+        protected void VerifySessionIdSending<TResult>(
             Func<WritableServerBinding, CancellationToken, Task<TResult>> executeAsync,
             Func<WritableServerBinding, CancellationToken, TResult> execute,
+            Action<EventCapturer, ICoreSessionHandle, Exception> assertResults,
             string commandName,
-            bool async)
+            bool async,
+            bool useExplicitSessionIfSupported = true)
         {
             var eventCapturer = new EventCapturer().Capture<CommandStartedEvent>(e => e.CommandName == commandName);
             using (var cluster = CoreTestConfiguration.CreateCluster(b => b.Subscribe(eventCapturer)))
             {
-                using (var session = CoreTestConfiguration.StartSession(cluster))
+                using (var session = CreateSession(useExplicitSessionIfSupported, cluster))
                 using (var binding = new WritableServerBinding(cluster, session.Fork()))
                 {
                     var cancellationToken = new CancellationTokenSource().Token;
+                    Exception exception;
                     if (async)
                     {
-                        executeAsync(binding, cancellationToken).GetAwaiter().GetResult();
+                        exception = Record.Exception(() => executeAsync(binding, cancellationToken).GetAwaiter().GetResult());
                     }
                     else
                     {
-                        execute(binding, cancellationToken);
+                        exception = Record.Exception(() => execute(binding, cancellationToken));
                     }
 
-                    var commandStartedEvent = (CommandStartedEvent)eventCapturer.Next();
-                    var command = commandStartedEvent.Command;
-                    if (session.Id == null)
-                    {
-                        command.Contains("lsid").Should().BeFalse();
-                    }
-                    else
-                    {
-                        command["lsid"].Should().Be(session.Id);
-                    }
-                    session.ReferenceCount().Should().Be(2);
+                    assertResults(eventCapturer, session, exception);
                 }
             }
+        }
+
+        // private methods
+        private void AssertSessionIdIsSentIfPresented(EventCapturer eventCapturer, ICoreSessionHandle session, Exception exception)
+        {
+            exception.Should().BeNull();
+            var commandStartedEvent = (CommandStartedEvent)eventCapturer.Next();
+            var command = commandStartedEvent.Command;
+            if (session.Id == null)
+            {
+                command.Contains("lsid").Should().BeFalse();
+            }
+            else
+            {
+                command["lsid"].Should().Be(session.Id);
+            }
+
+            session.ReferenceCount().Should().Be(2);
+        }
+
+        private void AssertSessionIdWithUnacknowledgedWrite(EventCapturer eventCapturer, ICoreSessionHandle session, Exception ex)
+        {
+            if (session.IsImplicit)
+            {
+                var commandStartedEvent = (CommandStartedEvent)eventCapturer.Next();
+                var command = commandStartedEvent.Command;
+                command.Contains("lsid").Should().BeFalse();
+                session.ReferenceCount().Should().Be(2);
+            }
+            else
+            {
+                ex.Should().BeAssignableTo<NotSupportedException>();
+            }
+        }
+
+        private ICoreSessionHandle CreateSession(bool useExplicitSessionIfSupported, ICluster cluster)
+        {
+            return useExplicitSessionIfSupported
+                ? CoreTestConfiguration.StartSession(cluster)
+                : cluster.StartSession(new CoreSessionOptions(isImplicit: true));
         }
 
         protected class Profiler : IDisposable
