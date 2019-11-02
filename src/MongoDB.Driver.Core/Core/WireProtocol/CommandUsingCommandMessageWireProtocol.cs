@@ -274,20 +274,20 @@ namespace MongoDB.Driver.Core.WireProtocol
 
             if (_session.Id != null)
             {
-                if (IsSessionUnacknowledged())
+                if (IsSessionAcknowledged())
                 {
-                    if (_session.IsImplicit)
-                    {
-                        // do not set sessionId If session is implicit and write is unacknowledged
-                    }
-                    else
-                    {
-                        throw new NotSupportedException("Explicit session must not be used with unacknowledged writes.");
-                    }
+                    AddIfNotAlreadyAdded("lsid", _session.Id);
                 }
                 else
                 {
-                    AddIfNotAlreadyAdded("lsid", _session.Id);
+                    if (_session.IsImplicit)
+                    {
+                        // do not set sessionId if session is implicit and write is unacknowledged
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Explicit session must not be used with unacknowledged writes.");
+                    }
                 }
             }
 
@@ -325,17 +325,16 @@ namespace MongoDB.Driver.Core.WireProtocol
                 }
             }
 
-            bool IsSessionUnacknowledged()
+            bool IsSessionAcknowledged()
             {
-                if (_command.TryGetValue("writeConcern", out var writeConcern))
+                if (_command.TryGetValue("writeConcern", out var writeConcernDocument))
                 {
-                    return !WriteConcern
-                        .FromBsonDocument(writeConcern.AsBsonDocument)
-                        .IsAcknowledged;
+                    var writeConcern = WriteConcern.FromBsonDocument(writeConcernDocument.AsBsonDocument);
+                    return writeConcern.IsAcknowledged;
                 }
                 else
                 {
-                    return false;
+                    return true;
                 }
             }
         }

@@ -248,10 +248,11 @@ namespace MongoDB.Driver.Core.Operations
             return new ReadPreferenceBinding(_cluster, readPreference, _session.Fork());
         }
 
-        protected IReadWriteBinding CreateReadWriteBinding(bool useExplicitSessionIfSupported = true)
+        protected IReadWriteBinding CreateReadWriteBinding(bool useImplicitSession = false)
         {
-            var session = CreateSession(useExplicitSessionIfSupported, _cluster);
-            return new WritableServerBinding(_cluster, session.Fork());
+            var options = new CoreSessionOptions(isImplicit: useImplicitSession);
+            var session = CoreTestConfiguration.StartSession(_cluster, options);
+            return new WritableServerBinding(_cluster, session);
         }
 
         protected void Insert(params BsonDocument[] documents)
@@ -404,15 +405,15 @@ namespace MongoDB.Driver.Core.Operations
             IWriteOperation<TResult> operation,
             string commandName,
             bool async,
-            bool useExplicitSession)
+            bool useImplicitSession)
         {
             VerifySessionIdSending(
                 (binding, cancellationToken) => operation.ExecuteAsync(binding, cancellationToken),
                 (binding, cancellationToken) => operation.Execute(binding, cancellationToken),
-                AssertSessionIdWithUnacknowledgedWrite,
+                AssertSessionIdWasNotSentIfUnacknowledgedWrite,
                 commandName,
                 async,
-                useExplicitSession);
+                useImplicitSession);
         }
 
         protected void VerifySessionIdWasSentWhenSupported<TResult>(IReadOperation<TResult> operation, string commandName, bool async)
@@ -420,7 +421,7 @@ namespace MongoDB.Driver.Core.Operations
             VerifySessionIdSending(
                 (binding, cancellationToken) => operation.ExecuteAsync(binding, cancellationToken),
                 (binding, cancellationToken) => operation.Execute(binding, cancellationToken),
-                AssertSessionIdIsSentIfPresented,
+                AssertSessionIdWasSentWhenSupported,
                 commandName,
                 async);
         }
@@ -430,7 +431,7 @@ namespace MongoDB.Driver.Core.Operations
             VerifySessionIdSending(
                 (binding, cancellationToken) => operation.ExecuteAsync(binding, cancellationToken),
                 (binding, cancellationToken) => operation.Execute(binding, cancellationToken),
-                AssertSessionIdIsSentIfPresented,
+                AssertSessionIdWasSentWhenSupported,
                 commandName,
                 async);
         }
@@ -441,12 +442,12 @@ namespace MongoDB.Driver.Core.Operations
             Action<EventCapturer, ICoreSessionHandle, Exception> assertResults,
             string commandName,
             bool async,
-            bool useExplicitSessionIfSupported = true)
+            bool useImplicitSession = false)
         {
             var eventCapturer = new EventCapturer().Capture<CommandStartedEvent>(e => e.CommandName == commandName);
             using (var cluster = CoreTestConfiguration.CreateCluster(b => b.Subscribe(eventCapturer)))
             {
-                using (var session = CreateSession(useExplicitSessionIfSupported, cluster))
+                using (var session = CreateSession(cluster, useImplicitSession))
                 using (var binding = new WritableServerBinding(cluster, session.Fork()))
                 {
                     var cancellationToken = new CancellationTokenSource().Token;
@@ -466,7 +467,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // private methods
-        private void AssertSessionIdIsSentIfPresented(EventCapturer eventCapturer, ICoreSessionHandle session, Exception exception)
+        private void AssertSessionIdWasSentWhenSupported(EventCapturer eventCapturer, ICoreSessionHandle session, Exception exception)
         {
             exception.Should().BeNull();
             var commandStartedEvent = (CommandStartedEvent)eventCapturer.Next();
@@ -483,7 +484,7 @@ namespace MongoDB.Driver.Core.Operations
             session.ReferenceCount().Should().Be(2);
         }
 
-        private void AssertSessionIdWithUnacknowledgedWrite(EventCapturer eventCapturer, ICoreSessionHandle session, Exception ex)
+        private void AssertSessionIdWasNotSentIfUnacknowledgedWrite(EventCapturer eventCapturer, ICoreSessionHandle session, Exception ex)
         {
             if (session.IsImplicit)
             {
@@ -494,15 +495,14 @@ namespace MongoDB.Driver.Core.Operations
             }
             else
             {
-                ex.Should().BeAssignableTo<NotSupportedException>();
+                ex.Should().BeOfType<InvalidOperationException>();
             }
         }
 
-        private ICoreSessionHandle CreateSession(bool useExplicitSessionIfSupported, ICluster cluster)
+        private ICoreSessionHandle CreateSession(ICluster cluster, bool useImplicitSession)
         {
-            return useExplicitSessionIfSupported
-                ? CoreTestConfiguration.StartSession(cluster)
-                : cluster.StartSession(new CoreSessionOptions(isImplicit: true));
+            var options = new CoreSessionOptions(isImplicit: useImplicitSession);
+            return CoreTestConfiguration.StartSession(cluster, options);
         }
 
         protected class Profiler : IDisposable
