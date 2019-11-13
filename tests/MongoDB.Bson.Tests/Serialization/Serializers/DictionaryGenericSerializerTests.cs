@@ -66,7 +66,7 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
             var rep = "null";
 
             var expected = "{ 'D' : #R, 'ID' : #R, 'IROD' : #R, 'ROD' : #R, 'SD' : #R, 'SL' : #R }".Replace("#R", rep).Replace("'", "\"");
-            // 'IROD' : #R, 'ROD' : #R, 
+            // 'IROD' : #R, 'ROD' : #R,
 
             Assert.Equal(expected, json);
 
@@ -78,7 +78,7 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
             Assert.Null(rehydrated.ROD);
             Assert.Null(rehydrated.SD);
             Assert.Null(rehydrated.SL);
-            
+
             Assert.True(bson.SequenceEqual(rehydrated.ToBson()));
         }
 
@@ -342,21 +342,36 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
         [Fact]
         public void TestMixedPrimitiveTypes()
         {
+#pragma warning disable 618
             var dateTime = DateTime.SpecifyKind(new DateTime(2010, 1, 1, 11, 22, 33), DateTimeKind.Utc);
             var isoDate = dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.FFFZ");
             var guid = Guid.Empty;
+            string expectedGuidJson = null;
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+            {
+                switch (BsonDefaults.GuidRepresentation)
+                {
+                    case GuidRepresentation.CSharpLegacy: expectedGuidJson = "CSUUID('00000000-0000-0000-0000-000000000000')"; break;
+                    case GuidRepresentation.JavaLegacy: expectedGuidJson = "JUUID('00000000-0000-0000-0000-000000000000')"; break;
+                    case GuidRepresentation.PythonLegacy: expectedGuidJson = "PYUUID('00000000-0000-0000-0000-000000000000')"; break;
+                    case GuidRepresentation.Standard: expectedGuidJson = "UUID('00000000-0000-0000-0000-000000000000')"; break;
+                }
+            }
             var objectId = ObjectId.Empty;
             var d = new Dictionary<object, object>
             {
-                { "A", true }, 
+                { "A", true },
                 { "B", dateTime },
-                { "C", 1.5 }, 
-                { "D", 1 }, 
+                { "C", 1.5 },
+                { "D", 1 },
                 { "E", 2L },
-                { "F", guid }, 
-                { "G", objectId }, 
+                { "G", objectId },
                 { "H", "x" }
             };
+            if (expectedGuidJson != null)
+            {
+                d.Add("F", guid);
+            }
             var rod = new ReadOnlyDictionary<object, object>(d);
             var sd = CreateSortedDictionary(d);
             var sl = CreateSortedList(d);
@@ -364,15 +379,18 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
             var json = obj.ToJson();
             var reps = new Dictionary<object, object>
             {
-                { "A", "true" }, 
+                { "A", "true" },
                 { "B", string.Format("ISODate('{0}')", isoDate) },
-                { "C", "1.5" }, 
-                { "D", "1" }, 
+                { "C", "1.5" },
+                { "D", "1" },
                 { "E", "NumberLong(2)" },
-                { "F", "CSUUID('00000000-0000-0000-0000-000000000000')" }, 
-                { "G", "ObjectId('000000000000000000000000')" }, 
+                { "G", "ObjectId('000000000000000000000000')" },
                 { "H", "'x'" }
             };
+            if (expectedGuidJson != null)
+            {
+                reps.Add("F", expectedGuidJson);
+            }
             var htRep = GetDocumentRepresentationInKeyOrder(d, reps);
             var sdRep = GetDocumentRepresentationInKeyOrder(sd, reps);
             var slRep = GetDocumentRepresentationInKeyOrder(sl, reps);
@@ -392,6 +410,7 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
             Assert.IsType<SortedDictionary<object, object>>(rehydrated.SD);
             Assert.IsType<SortedList<object, object>>(rehydrated.SL);
             Assert.True(bson.SequenceEqual(rehydrated.ToBson()));
+#pragma warning restore 618
         }
 
         [Fact]
@@ -402,13 +421,13 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
             var objectId = ObjectId.Empty;
             var d = new Dictionary<object, object>
             {
-                { 1, true }, 
+                { 1, true },
                 { 2, dateTime },
-                { 3, 1.5 }, 
-                { 4, 1 }, 
+                { 3, 1.5 },
+                { 4, 1 },
                 { 5, 2L },
-                { 6, guid }, 
-                { 7, objectId }, 
+                { 6, guid },
+                { 7, objectId },
                 { 8, "x" }
             };
             var rod = new ReadOnlyDictionary<object, object>(d);
@@ -427,13 +446,13 @@ namespace MongoDB.Bson.Tests.Serialization.DictionaryGenericSerializers
             var objectId = ObjectId.Empty;
             var d = new Dictionary<object, object>
             {
-                { "A", true }, 
+                { "A", true },
                 { "B", dateTime },
-                { "C", 1.5 }, 
-                { "D", 1 }, 
+                { "C", 1.5 },
+                { "D", 1 },
                 { 4, 2L },
-                { 5.0, guid }, 
-                { true, objectId }, 
+                { 5.0, guid },
+                { true, objectId },
                 { false, "x" }
             };
             var obj = new T { D = d, ID = d, SD = null, SL = null };

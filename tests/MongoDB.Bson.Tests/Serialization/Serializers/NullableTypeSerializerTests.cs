@@ -15,6 +15,7 @@
 
 using System;
 using System.Linq;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
@@ -140,13 +141,34 @@ namespace MongoDB.Bson.Tests.Serialization
         public void TestGuid()
         {
             C c = new C { Guid = Guid.Empty };
-            var json = c.ToJson();
-            var expected = _template.Replace("'Guid' : null", "'Guid' : CSUUID('00000000-0000-0000-0000-000000000000')").Replace("'", "\"");
-            Assert.Equal(expected, json);
+#pragma warning disable 618
+            string expectedGuidJson;
+            var guidRepresentation = BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : GuidRepresentation.Unspecified;
+            switch (guidRepresentation)
+            {
+                case GuidRepresentation.CSharpLegacy: expectedGuidJson = "CSUUID('00000000-0000-0000-0000-000000000000')"; break;
+                case GuidRepresentation.JavaLegacy: expectedGuidJson = "JUUID('00000000-0000-0000-0000-000000000000')"; break;
+                case GuidRepresentation.PythonLegacy: expectedGuidJson = "PYUUID('00000000-0000-0000-0000-000000000000')"; break;
+                case GuidRepresentation.Standard: expectedGuidJson = "UUID('00000000-0000-0000-0000-000000000000')"; break;
+                case GuidRepresentation.Unspecified: expectedGuidJson = null; break;
+                default: throw new Exception("Unexpected GuidRepresentation.");
+            }
+#pragma warning restore 618
+            if (expectedGuidJson == null)
+            {
+                var exception = Record.Exception(() => c.ToJson());
+                exception.Should().BeOfType<BsonSerializationException>();
+            }
+            else
+            {
+                var json = c.ToJson();
+                var expected = _template.Replace("'Guid' : null", $"'Guid' : {expectedGuidJson}").Replace("'", "\"");
+                Assert.Equal(expected, json);
 
-            var bson = c.ToBson();
-            var rehydrated = BsonSerializer.Deserialize<C>(bson);
-            Assert.True(bson.SequenceEqual(rehydrated.ToBson()));
+                var bson = c.ToBson();
+                var rehydrated = BsonSerializer.Deserialize<C>(bson);
+                Assert.True(bson.SequenceEqual(rehydrated.ToBson()));
+            }
         }
 
         [Fact]

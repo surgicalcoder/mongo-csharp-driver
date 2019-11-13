@@ -13,9 +13,9 @@
 * limitations under the License.
 */
 
-using System;
-using MongoDB.Bson;
+using FluentAssertions;
 using MongoDB.Bson.Serialization;
+using System;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Jira.CSharp147
@@ -38,8 +38,19 @@ namespace MongoDB.Bson.Tests.Jira.CSharp147
         {
             var p = new Parent { Child = new Child() };
             p.Child.A = 1;
-            var json = p.ToJson();
-            BsonSerializer.Deserialize<Parent>(json); // throws Unexpected element exception
+#pragma warning disable 618
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
+                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            {
+                var exception = Record.Exception(() => p.ToJson());
+                exception.Should().BeOfType<BsonSerializationException>();
+            }
+            else
+            {
+                var json = p.ToJson();
+                BsonSerializer.Deserialize<Parent>(json); // throws Unexpected element exception
+            }
+#pragma warning restore 618
         }
     }
 }

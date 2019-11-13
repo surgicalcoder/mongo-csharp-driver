@@ -327,11 +327,22 @@ namespace MongoDB.Bson.Tests
         public void TestAsGuid()
         {
             var guid = Guid.NewGuid();
-            BsonValue v = guid;
-            BsonValue s = "";
-            var g = v.AsGuid;
-            Assert.Equal(guid, g);
-            Assert.Throws<InvalidCastException>(() => { var x = s.AsGuid; });
+#pragma warning disable 618
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
+                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            {
+                var exception = Record.Exception(() => { BsonValue v = guid; });
+                exception.Should().BeOfType<InvalidOperationException>();
+            }
+            else
+            {
+                BsonValue v = guid;
+                BsonValue s = "";
+                var g = v.AsGuid;
+                Assert.Equal(guid, g);
+                Assert.Throws<InvalidCastException>(() => { var x = s.AsGuid; });
+            }
+#pragma warning restore 618
         }
 
         [Fact]
@@ -418,12 +429,23 @@ namespace MongoDB.Bson.Tests
         public void TestAsNullableGuid()
         {
             Guid guid = Guid.NewGuid();
-            BsonValue v = guid;
-            BsonValue n = BsonNull.Value;
-            BsonValue s = "";
-            Assert.Equal(guid, v.AsNullableGuid);
-            Assert.Equal(null, n.AsNullableGuid);
-            Assert.Throws<InvalidCastException>(() => { var x = s.AsNullableGuid; });
+#pragma warning disable 618
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
+                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            {
+                var exception = Record.Exception(() => { BsonValue v = guid; });
+                exception.Should().BeOfType<InvalidOperationException>();
+            }
+            else
+            {
+                BsonValue v = guid;
+                BsonValue n = BsonNull.Value;
+                BsonValue s = "";
+                Assert.Equal(guid, v.AsNullableGuid);
+                Assert.Equal(null, n.AsNullableGuid);
+                Assert.Throws<InvalidCastException>(() => { var x = s.AsNullableGuid; });
+            }
+#pragma warning restore 618
         }
 
         [Fact]
@@ -754,11 +776,24 @@ namespace MongoDB.Bson.Tests
         public void TestImplicitConversionFromGuid()
         {
             var guid = Guid.NewGuid();
-            BsonValue v = guid;
-            Assert.IsType<BsonBinaryData>(v);
-            var b = (BsonBinaryData)v;
-            Assert.True(guid.ToByteArray().SequenceEqual(b.AsByteArray));
-            Assert.Equal(BsonBinarySubType.UuidLegacy, b.SubType);
+#pragma warning disable 618
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
+                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            {
+                var exception = Record.Exception(() => { BsonValue v = guid; });
+                exception.Should().BeOfType<InvalidOperationException>();
+            }
+            else
+            {
+                BsonValue v = guid;
+                Assert.IsType<BsonBinaryData>(v);
+                var b = (BsonBinaryData)v;
+                var expectedBytes = GuidConverter.ToBytes(guid, BsonDefaults.GuidRepresentation);
+                var expectedSubType = GuidConverter.GetSubType(BsonDefaults.GuidRepresentation);
+                Assert.True(expectedBytes.SequenceEqual(b.AsByteArray));
+                Assert.Equal(expectedSubType, b.SubType);
+            }
+#pragma warning restore 618
         }
 
         [Fact]
@@ -867,13 +902,37 @@ namespace MongoDB.Bson.Tests
         public void TestImplicitConversionFromNullableGuid()
         {
             var guid = Guid.NewGuid();
-            BsonValue v = (Guid?)guid;
-            BsonValue n = (Guid?)null;
-            Assert.IsType<BsonBinaryData>(v);
-            Assert.IsType<BsonNull>(n);
-            var b = (BsonBinaryData)v;
-            Assert.True(guid.ToByteArray().SequenceEqual(b.AsByteArray));
-            Assert.Equal(BsonBinarySubType.UuidLegacy, b.SubType);
+#pragma warning disable 618
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
+                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            {
+                var exception = Record.Exception(() => { BsonValue v = (Guid?)guid; });
+                exception.Should().BeOfType<InvalidOperationException>();
+            }
+            else
+            {
+                BsonValue v = (Guid?)guid;
+                BsonValue n = (Guid?)null;
+                byte[] expectedBytes;
+                BsonBinarySubType expectedSubType;
+                var guidRepresentation = BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : GuidRepresentation.Unspecified;
+                if (guidRepresentation == GuidRepresentation.Unspecified)
+                {
+                    expectedBytes = GuidConverter.ToBytes(guid, GuidRepresentation.Standard);
+                    expectedSubType = BsonBinarySubType.UuidStandard;
+                }
+                else
+                {
+                    expectedBytes = GuidConverter.ToBytes(guid, guidRepresentation);
+                    expectedSubType = GuidConverter.GetSubType(guidRepresentation);
+                }
+                Assert.IsType<BsonBinaryData>(v);
+                Assert.IsType<BsonNull>(n);
+                var b = (BsonBinaryData)v;
+                Assert.True(expectedBytes.SequenceEqual(b.AsByteArray));
+                Assert.Equal(expectedSubType, b.SubType);
+            }
+#pragma warning restore 618
         }
 
         [Fact]
@@ -903,7 +962,7 @@ namespace MongoDB.Bson.Tests
         {
             var objectId = ObjectId.GenerateNewId();
             BsonValue v = objectId;
-            BsonValue n = (Guid?)null;
+            BsonValue n = (ObjectId?)null;
             Assert.IsType<BsonObjectId>(v);
             Assert.IsType<BsonNull>(n);
             var o = (BsonObjectId)v;

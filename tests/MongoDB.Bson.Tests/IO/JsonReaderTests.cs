@@ -683,12 +683,37 @@ namespace MongoDB.Bson.Tests.IO
                 var binaryData = _bsonReader.ReadBinaryData();
                 Assert.True(binaryData.Bytes.SequenceEqual(guid.ToByteArray()));
                 Assert.Equal(BsonBinarySubType.UuidLegacy, binaryData.SubType);
-                Assert.Equal(GuidRepresentation.CSharpLegacy, binaryData.GuidRepresentation);
+#pragma warning disable 618
+                if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+                {
+                    Assert.Equal(GuidRepresentation.CSharpLegacy, binaryData.GuidRepresentation);
+                }
+#pragma warning restore 618
                 Assert.Equal(BsonReaderState.Initial, _bsonReader.State);
                 Assert.True(_bsonReader.IsAtEndOfFile());
             }
-            var expected = "CSUUID(\"b5f21e0c-2a0d-42d6-ad03-d827008d8ab6\")";
-            Assert.Equal(expected, BsonSerializer.Deserialize<Guid>(json).ToJson());
+#pragma warning disable 618
+            string expected;
+            var guidRepresentation = BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : GuidRepresentation.Unspecified;
+            switch (guidRepresentation)
+            {
+                case GuidRepresentation.CSharpLegacy: expected = "CSUUID(\"b5f21e0c-2a0d-42d6-ad03-d827008d8ab6\")"; break;
+                case GuidRepresentation.JavaLegacy: expected = "JUUID(\"b5f21e0c-2a0d-42d6-ad03-d827008d8ab6\")"; break;
+                case GuidRepresentation.PythonLegacy: expected = "PYUUID(\"b5f21e0c-2a0d-42d6-ad03-d827008d8ab6\")"; break;
+                case GuidRepresentation.Standard: expected = "UUID(\"b5f21e0c-2a0d-42d6-ad03-d827008d8ab6\")"; break;
+                case GuidRepresentation.Unspecified: expected = null; break;
+                default: throw new Exception("Unexpected GuidRepresentation.");
+            }
+#pragma warning restore 618
+            if (expected == null)
+            {
+                var exception = Record.Exception(() => guid.ToJson());
+                exception.Should().BeOfType<BsonSerializationException>();
+            }
+            else
+            {
+                Assert.Equal(expected, BsonSerializer.Deserialize<Guid>(json).ToJson());
+            }
         }
 
         [Fact]
