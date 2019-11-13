@@ -148,16 +148,25 @@ namespace MongoDB.Bson.IO
 
             var bytes = _bsonStream.ReadBytes(size);
 
-            GuidRepresentation guidRepresentation;
-            switch (subType)
+            BsonBinaryData binaryData;
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
-                case BsonBinarySubType.UuidLegacy: guidRepresentation = _settings.GuidRepresentation; break;
-                case BsonBinarySubType.UuidStandard: guidRepresentation = GuidRepresentation.Standard; break;
-                default: guidRepresentation = GuidRepresentation.Unspecified; break;
+                GuidRepresentation guidRepresentation;
+                switch (subType)
+                {
+                    case BsonBinarySubType.UuidLegacy: guidRepresentation = _settings.GuidRepresentation; break;
+                    case BsonBinarySubType.UuidStandard: guidRepresentation = GuidRepresentation.Standard; break;
+                    default: guidRepresentation = GuidRepresentation.Unspecified; break;
+                }
+                binaryData = new BsonBinaryData(bytes, subType, guidRepresentation);
+            }
+            else
+            {
+                binaryData = new BsonBinaryData(bytes, subType);
             }
 
             State = GetNextState();
-            return new BsonBinaryData(bytes, subType, guidRepresentation);
+            return binaryData;
         }
 #pragma warning restore 618
 
