@@ -99,7 +99,17 @@ namespace MongoDB.Bson.Serialization.Serializers
                     if (idBinaryData != null && (idBinaryData.SubType == BsonBinarySubType.UuidLegacy || idBinaryData.SubType == BsonBinarySubType.UuidStandard))
                     {
 #pragma warning disable 618
-                        idGenerator = BsonBinaryDataGuidGenerator.GetInstance(idBinaryData.GuidRepresentation);
+                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+                        {
+                            idGenerator = BsonBinaryDataGuidGenerator.GetInstance(idBinaryData.GuidRepresentation);
+                        }
+                        else
+                        {
+                            if (idBinaryData.SubType == BsonBinarySubType.UuidStandard)
+                            {
+                                idGenerator = BsonBinaryDataGuidGenerator.GetInstance(GuidRepresentation.Standard);
+                            }
+                        }
 #pragma warning restore 618
                     }
                 }

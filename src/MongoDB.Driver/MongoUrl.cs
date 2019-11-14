@@ -97,7 +97,12 @@ namespace MongoDB.Driver
             _connectTimeout = builder.ConnectTimeout;
             _databaseName = builder.DatabaseName;
             _fsync = builder.FSync;
-            _guidRepresentation = builder.GuidRepresentation;
+#pragma warning disable 618
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+            {
+                _guidRepresentation = builder.GuidRepresentation;
+            }
+#pragma warning restore 618
             _heartbeatInterval = builder.HeartbeatInterval;
             _heartbeatTimeout = builder.HeartbeatTimeout;
             _ipv6 = builder.IPv6;
@@ -241,9 +246,17 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the representation to use for Guids.
         /// </summary>
+        [Obsolete("This property will be removed in a later release.")]
         public GuidRepresentation GuidRepresentation
         {
-            get { return _guidRepresentation; }
+            get
+            {
+                if (BsonDefaults.GuidRepresentationMode != GuidRepresentationMode.V2)
+                {
+                    throw new InvalidOperationException("MongoUrl.GuidRepresentation can only be used when BsonDefaults.GuidRepresentationMode is V2.");
+                }
+                return _guidRepresentation;
+            }
         }
 
         /// <summary>
