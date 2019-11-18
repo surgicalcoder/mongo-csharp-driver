@@ -1,10 +1,14 @@
-# .NET Driver Version 2.10.0 Placeholder Release Notes
+# .NET Driver Version 2.10.0 Release Notes
 
-The main new features in 2.10.0 are:
+The main changes in 2.10.0 are:
+
+1. A number of minor bug fixes
+2. New ReplaceOptions parameter for the ReplaceOne CRUD methods
+3. Client-side field level encryption (FLE)
 
 An online version of these release notes is available at:
 
-https://github.com/mongodb/mongo-csharp-driver/blob/master/Release%20Notes/Release%20Notes%20v2.10.0md
+https://github.com/mongodb/mongo-csharp-driver/blob/master/Release%20Notes/Release%20Notes%20v2.10.0.md
 
 The full list of JIRA issues that are currently scheduled to be resolved in this release is available at:
 
