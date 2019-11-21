@@ -18,9 +18,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using MongoDB.Driver.Core.Misc;
 
-namespace MongoDB.Driver.Core.NativeLibraryLoader.Linux
+namespace MongoDB.Driver.Core.NativeLibraryLoader
 {
-    internal class NativeMethods : INativeLibraryLoader
+    internal class LinuxLibraryLoader : INativeLibraryLoader
     {
         // See dlfcn.h
         // #define RTLD_LAZY       0x1
@@ -32,11 +32,11 @@ namespace MongoDB.Driver.Core.NativeLibraryLoader.Linux
 
         private readonly IntPtr _handle;
 
-        public NativeMethods(string path)
+        public LinuxLibraryLoader(string path)
         {
             Ensure.IsNotNullOrEmpty(path, nameof(path));
 
-            _handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
+            _handle = NativeMethods.dlopen(path, RTLD_GLOBAL | RTLD_NOW);
             if (_handle == IntPtr.Zero)
             {
                 throw new FileNotFoundException(path);
@@ -44,18 +44,21 @@ namespace MongoDB.Driver.Core.NativeLibraryLoader.Linux
         }
 
         // public methods
-        public IntPtr GetFunction(string name)
+        public IntPtr GetFunctionPointer(string name)
         {
             Ensure.IsNotNullOrEmpty(name, nameof(name));
 
-            return dlsym(_handle, name);
+            return NativeMethods.dlsym(_handle, name);
         }
 
-        // public static extern methods
-        [DllImport("libdl", CharSet = CharSet.Unicode)]
-        public static extern IntPtr dlopen(string filename, int flags);
+        // nested types
+        private static class NativeMethods
+        {
+            [DllImport("libdl", CharSet = CharSet.Unicode)]
+            public static extern IntPtr dlopen(string filename, int flags);
 
-        [DllImport("libdl", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        public static extern IntPtr dlsym(IntPtr handle, string symbol);
+            [DllImport("libdl", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+            public static extern IntPtr dlsym(IntPtr handle, string symbol);
+        }
     }
 }

@@ -78,7 +78,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="snappy64.dll">
+    <Content Include="Core\Compression\Snappy\lib\win\snappy64.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

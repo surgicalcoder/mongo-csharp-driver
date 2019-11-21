@@ -19,6 +19,6 @@ namespace MongoDB.Driver.Core.NativeLibraryLoader
 {
     internal interface INativeLibraryLoader
     {
-        IntPtr GetFunction(string name);
+        IntPtr GetFunctionPointer(string name);
     }
 }

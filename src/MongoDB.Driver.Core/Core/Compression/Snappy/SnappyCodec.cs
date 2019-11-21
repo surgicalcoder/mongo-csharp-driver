@@ -15,183 +15,104 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using MongoDB.Driver.Core.Compression.Native;
-using MongoDB.Driver.Core.Compression.Snappy.Native;
 using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Core.Compression.Snappy
 {
     internal static class SnappyCodec
     {
-        public static int Compress(byte[] input, int offset, int length, byte[] output, int outOffset)
+        public static int Compress(byte[] input, byte[] output)
+        {
+            return Compress(input, 0, input.Length, output, 0, output.Length);
+        }
+
+        public static int Compress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputOffset, int outputLength)
         {
             Ensure.IsNotNull(input, nameof(input));
             Ensure.IsNotNull(output, nameof(output));
-            EnsureInputRangeValid(offset, length, input.Length);
-            EnsureOutputRangeValid(outOffset, output.Length, throwIfOutOffsetIsEqualToOutputLength: true);
+            EnsureBufferRangeIsValid(inputOffset, inputLength, input.Length);
+            EnsureBufferRangeIsValid(outputOffset, outputLength, output.Length);
 
-            int outLength = output.Length - outOffset;
-            if (offset == input.Length)
-            {
-                input = new byte[1];
-                offset = 0;
-            }
+            var status = SnappyAdapter.snappy_compress(input, inputOffset, inputLength, output, outputOffset, ref outputLength);
 
-            // The array must be pinned by using a GCHandle before it is passed to UnsafeAddrOfPinnedArrayElement.
-            // For maximum performance, this method does not validate the array passed to it; this can result in unexpected behavior.
-            var inputHandle = GCHandle.Alloc(input, GCHandleType.Pinned);
-            var outputHandle = GCHandle.Alloc(output, GCHandleType.Pinned);
-            try
+            switch (status)
             {
-                var inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(input, offset);
-                var outputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(output, outOffset);
-
-                var status = SnappyNativeMethods.snappy_compress(inputPtr, length, outputPtr, ref outLength);
-                switch (status)
-                {
-                    case SnappyStatus.Ok:
-                        return outLength;
-                    case SnappyStatus.BufferTooSmall:
-                        throw new ArgumentOutOfRangeException("Output array is too small.");
-                    default:
-                        throw new InvalidDataException("Invalid input.");
-                }
-            }
-            finally
-            {
-                inputHandle.Free();
-                outputHandle.Free();
+                case SnappyStatus.Ok:
+                    return outputLength;
+                case SnappyStatus.BufferTooSmall:
+                    throw new ArgumentOutOfRangeException("Output array is too small.");
+                default:
+                    throw new InvalidDataException("Invalid input.");
             }
         }
 
-        public static byte[] Compress(byte[] input)
+        public static int GetMaxCompressedLength(int inputLength)
         {
-            Ensure.IsNotNull(input, nameof(input));
-
-            var max = GetMaxCompressedLength(input.Length);
-
-            var output = new byte[max];
-            var outLength = Compress(input, 0, input.Length, output, 0);
-            if (outLength == max)
-                return output;
-            var truncated = new byte[outLength];
-            Array.Copy(output, truncated, outLength);
-            return truncated;
-        }
-
-        public static int GetMaxCompressedLength(int inLength)
-        {
-            return SnappyNativeMethods.snappy_max_compressed_length(inLength);
-        }
-
-        public static int GetUncompressedLength(byte[] input, int offset, int length)
-        {
-            Ensure.IsNotNull(input, nameof(input));
-            EnsureInputRangeValid(offset, length, input.Length);
-            if (length == 0)
-            {
-                throw new InvalidDataException("Compressed block cannot be empty.");
-            }
-
-            var inputHandle = GCHandle.Alloc(input, GCHandleType.Pinned);
-            try
-            {
-                var inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(input, offset);
-                var status = SnappyNativeMethods.snappy_uncompressed_length(inputPtr, length, out var outLength);
-                switch (status)
-                {
-                    case SnappyStatus.Ok:
-                        return outLength;
-                    default:
-                        throw new InvalidDataException("Input is not a valid snappy-compressed block.");
-                }
-            }
-            finally
-            {
-                inputHandle.Free();
-            }
+            return SnappyAdapter.snappy_max_compressed_length(inputLength);
         }
 
         public static int GetUncompressedLength(byte[] input)
         {
-            Ensure.IsNotNull(input, nameof(input));
-
             return GetUncompressedLength(input, 0, input.Length);
         }
 
-        public static int Uncompress(byte[] input, int offset, int length, byte[] output, int outOffset)
+        public static int GetUncompressedLength(byte[] input, int inputOffset, int inputLength)
         {
             Ensure.IsNotNull(input, nameof(input));
-            Ensure.IsNotNull(output, nameof(output));
-            EnsureInputRangeValid(offset, length, input.Length);
-            if (length == 0)
+            EnsureBufferRangeIsValid(inputOffset, inputLength, input.Length);
+            if (inputLength == 0)
+            {
                 throw new InvalidDataException("Compressed block cannot be empty.");
-            EnsureOutputRangeValid(outOffset, output.Length);
-
-            var outLength = output.Length - outOffset;
-            if (outOffset == output.Length)
-            {
-                output = new byte[1];
-                outOffset = 0;
             }
 
-            var inputHandle = GCHandle.Alloc(input, GCHandleType.Pinned);
-            var outputHandle = GCHandle.Alloc(output, GCHandleType.Pinned);
-            try
-            {
-                var inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(input, offset);
-                var outputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(output, outOffset);
+            var status = SnappyAdapter.snappy_uncompressed_length(input, inputOffset, inputLength, out var outLength);
 
-                var status = SnappyNativeMethods.snappy_uncompress(inputPtr, length, outputPtr, ref outLength);
-                switch (status)
-                {
-                    case SnappyStatus.Ok:
-                        return outLength;
-                    case SnappyStatus.BufferTooSmall:
-                        throw new ArgumentOutOfRangeException("Output array is too small.");
-                    default:
-                        throw new InvalidDataException("Input is not a valid snappy-compressed block.");
-                }
-            }
-            finally
+            switch (status)
             {
-                inputHandle.Free();
-                outputHandle.Free();
+                case SnappyStatus.Ok:
+                    return outLength;
+                default:
+                    throw new InvalidDataException("Input is not a valid snappy-compressed block.");
             }
         }
 
         public static byte[] Uncompress(byte[] input)
         {
-            var max = GetUncompressedLength(input);
-            var output = new byte[max];
-            var outLength = Uncompress(input, 0, input.Length, output, 0);
-            if (outLength == max)
+            var maxOutputLength = GetUncompressedLength(input);
+            var output = new byte[maxOutputLength];
+            var outputLength = Uncompress(input, 0, input.Length, output, 0, output.Length);
+            if (outputLength == maxOutputLength)
+            {
                 return output;
-
-            var truncated = new byte[outLength];
-            Array.Copy(output, truncated, outLength);
-            return truncated;
+            }
+            else
+            {
+                var truncatedOutput = new byte[outputLength];
+                Array.Copy(output, truncatedOutput, outputLength);
+                return truncatedOutput;
+            }
         }
 
-        public static bool Validate(byte[] input, int offset, int length)
+        public static int Uncompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputOffset, int outputLength)
         {
             Ensure.IsNotNull(input, nameof(input));
-            EnsureInputRangeValid(offset, length, input.Length);
-            if (length == 0)
+            Ensure.IsNotNull(output, nameof(output));
+            EnsureBufferRangeIsValid(inputOffset, inputLength, input.Length);
+            EnsureBufferRangeIsValid(outputOffset, outputLength, output.Length);
+            if (inputLength == 0)
             {
-                return false;
+                throw new InvalidDataException("Compressed block cannot be empty.");
             }
 
-            var inputHandle = GCHandle.Alloc(input, GCHandleType.Pinned);
-            try
+            var status = SnappyAdapter.snappy_uncompress(input, inputOffset, inputLength, output, outputOffset, ref outputLength);
+            switch (status)
             {
-                var inputPtr = Marshal.UnsafeAddrOfPinnedArrayElement(input, offset);
-                return SnappyNativeMethods.snappy_validate_compressed_buffer(inputPtr, length) == SnappyStatus.Ok;
-            }
-            finally
-            {
-                inputHandle.Free();
+                case SnappyStatus.Ok:
+                    return outputLength;
+                case SnappyStatus.BufferTooSmall:
+                    throw new ArgumentOutOfRangeException("Output array is too small.");
+                default:
+                    throw new InvalidDataException("Input is not a valid snappy-compressed block.");
             }
         }
 
@@ -202,17 +123,25 @@ namespace MongoDB.Driver.Core.Compression.Snappy
             return Validate(input, 0, input.Length);
         }
 
-        // private static methods
-        private static void EnsureInputRangeValid(int offset, int length, int inputLength)
+        public static bool Validate(byte[] input, int inputOffset, int inputLength)
         {
-            if (offset < 0 || length < 0 || offset + length > inputLength)
-                throw new ArgumentOutOfRangeException("Selected range is outside the bounds of the input array.");
+            Ensure.IsNotNull(input, nameof(input));
+            EnsureBufferRangeIsValid(inputOffset, inputLength, input.Length);
+            if (inputLength == 0)
+            {
+                return false;
+            }
+
+            return SnappyAdapter.snappy_validate_compressed_buffer(input, inputOffset, inputLength) == SnappyStatus.Ok;
         }
 
-        private static void EnsureOutputRangeValid(int outOffset, int outputLength, bool throwIfOutOffsetIsEqualToOutputLength = false)
+        // private static methods
+        private static void EnsureBufferRangeIsValid(int offset, int length, int bufferLength)
         {
-            if (outOffset < 0 || outOffset > outputLength || (throwIfOutOffsetIsEqualToOutputLength && outOffset == outputLength))
-                throw new ArgumentOutOfRangeException("Output offset is outside the bounds of the output array.");
+            if (offset < 0 || length < 0 || offset + length > bufferLength)
+            {
+                throw new ArgumentOutOfRangeException("Selected range is outside the bounds of the buffer.");
+            }
         }
     }
 }

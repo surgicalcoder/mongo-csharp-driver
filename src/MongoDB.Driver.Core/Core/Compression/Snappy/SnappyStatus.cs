@@ -13,7 +13,7 @@
 * limitations under the License.
 */
 
-namespace MongoDB.Driver.Core.Compression.Native
+namespace MongoDB.Driver.Core.Compression.Snappy
 {
     internal enum SnappyStatus
     {
