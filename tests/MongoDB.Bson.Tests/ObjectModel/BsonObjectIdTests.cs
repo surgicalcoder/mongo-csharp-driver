@@ -15,7 +15,6 @@
 
 using System;
 using System.Linq;
-using MongoDB.Bson;
 using Xunit;
 
 namespace MongoDB.Bson.Tests
@@ -28,7 +27,7 @@ namespace MongoDB.Bson.Tests
 #pragma warning disable 618
             byte[] bytes = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
             var objectId = new BsonObjectId(bytes);
-            Assert.Equal(0x01020304, objectId.Timestamp);
+            Assert.Equal((uint)0x01020304, objectId.Timestamp);
             Assert.Equal(0x050607, objectId.Machine);
             Assert.Equal(0x0809, objectId.Pid);
             Assert.Equal(0x0a0b0c, objectId.Increment);
@@ -47,7 +46,7 @@ namespace MongoDB.Bson.Tests
 #pragma warning disable 618
             byte[] bytes = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
             var objectId = new BsonObjectId(0x01020304, 0x050607, 0x0809, 0x0a0b0c);
-            Assert.Equal(0x01020304, objectId.Timestamp);
+            Assert.Equal((uint)0x01020304, objectId.Timestamp);
             Assert.Equal(0x050607, objectId.Machine);
             Assert.Equal(0x0809, objectId.Pid);
             Assert.Equal(0x0a0b0c, objectId.Increment);
@@ -67,7 +66,7 @@ namespace MongoDB.Bson.Tests
             byte[] bytes = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
             var timestamp = BsonConstants.UnixEpoch.AddSeconds(0x01020304);
             var objectId = new BsonObjectId(timestamp, 0x050607, 0x0809, 0x0a0b0c);
-            Assert.Equal(0x01020304, objectId.Timestamp);
+            Assert.Equal((uint)0x01020304, objectId.Timestamp);
             Assert.Equal(0x050607, objectId.Machine);
             Assert.Equal(0x0809, objectId.Pid);
             Assert.Equal(0x0a0b0c, objectId.Increment);
@@ -86,7 +85,7 @@ namespace MongoDB.Bson.Tests
 #pragma warning disable 618
             byte[] bytes = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
             var objectId = new BsonObjectId("0102030405060708090a0b0c");
-            Assert.Equal(0x01020304, objectId.Timestamp);
+            Assert.Equal((uint)0x01020304, objectId.Timestamp);
             Assert.Equal(0x050607, objectId.Machine);
             Assert.Equal(0x0809, objectId.Pid);
             Assert.Equal(0x0a0b0c, objectId.Increment);
@@ -136,7 +135,7 @@ namespace MongoDB.Bson.Tests
         public void TestGenerateNewIdWithTimestamp()
         {
 #pragma warning disable 618
-            var timestamp = 0x01020304;
+            uint timestamp = 0x01020304;
             var objectId = BsonObjectId.GenerateNewId(timestamp);
             Assert.True(objectId.Timestamp == timestamp);
             Assert.True(objectId.Machine != 0);
