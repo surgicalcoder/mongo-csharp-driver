@@ -43,15 +43,7 @@ namespace MongoDB.Bson
             BsonSerializationArgs args = default(BsonSerializationArgs)
             )
         {
-            if (args.NominalType == null)
-            {
-                args.NominalType = typeof(TNominalType);
-            }
-            else if (args.NominalType != typeof(TNominalType))
-            {
-                throw new ArgumentException("args.NominalType must be <TNominalType>.", nameof(args));
-            }
-
+            args.SetOrValidateNominalType(typeof(TNominalType), "<TNominalType>");
             return ToBson(obj, typeof(TNominalType), writerSettings, serializer, configurator, args);
         }
 
@@ -79,15 +71,7 @@ namespace MongoDB.Bson
             {
                 throw new ArgumentNullException("nominalType");
             }
-
-            if (args.NominalType == null)
-            {
-                args.NominalType = nominalType;
-            }
-            else if (args.NominalType != nominalType)
-            {
-                throw new ArgumentException("args.NominalType must be nominalType.", nameof(args));
-            }
+            args.SetOrValidateNominalType(nominalType, "nominalType");
 
             if (serializer == null)
             {
@@ -120,20 +104,12 @@ namespace MongoDB.Bson
         /// <param name="args">The serialization args.</param>
         /// <returns>A BsonDocument.</returns>
         public static BsonDocument ToBsonDocument<TNominalType>(
-            this TNominalType obj, 
+            this TNominalType obj,
             IBsonSerializer<TNominalType> serializer = null,
             Action<BsonSerializationContext.Builder> configurator = null,
             BsonSerializationArgs args = default(BsonSerializationArgs))
         {
-            if (args.NominalType == null)
-            {
-                args.NominalType = typeof(TNominalType);
-            }
-            else if (args.NominalType != typeof(TNominalType))
-            {
-                throw new ArgumentException("args.NominalType must be <TNominalType>.", nameof(args));
-            }
-
+            args.SetOrValidateNominalType(typeof(TNominalType), "<TNominalType>");
             return ToBsonDocument(obj, typeof(TNominalType), serializer, configurator, args);
         }
 
@@ -159,15 +135,7 @@ namespace MongoDB.Bson
             {
                 throw new ArgumentNullException("nominalType");
             }
-
-            if (args.NominalType == null)
-            {
-                args.NominalType = nominalType;
-            }
-            else if (args.NominalType != nominalType)
-            {
-                throw new ArgumentException("args.NominalType must be nominalType.", nameof(args));
-            }
+            args.SetOrValidateNominalType(nominalType, "nominalType");
 
             if (obj == null)
             {
@@ -219,21 +187,13 @@ namespace MongoDB.Bson
         /// A JSON string.
         /// </returns>
         public static string ToJson<TNominalType>(
-            this TNominalType obj, 
+            this TNominalType obj,
             JsonWriterSettings writerSettings = null,
-            IBsonSerializer<TNominalType> serializer = null, 
+            IBsonSerializer<TNominalType> serializer = null,
             Action<BsonSerializationContext.Builder> configurator = null,
             BsonSerializationArgs args = default(BsonSerializationArgs))
         {
-            if (args.NominalType == null)
-            {
-                args.NominalType = typeof(TNominalType);
-            }
-            else if (args.NominalType != typeof(TNominalType))
-            {
-                throw new ArgumentException("args.NominalType must be <TNominalType>.", nameof(args));
-            }
-
+            args.SetOrValidateNominalType(typeof(TNominalType), "<TNominalType>");
             return ToJson(obj, typeof(TNominalType), writerSettings, serializer, configurator, args);
         }
 
@@ -263,15 +223,7 @@ namespace MongoDB.Bson
             {
                 throw new ArgumentNullException("nominalType");
             }
-
-            if (args.NominalType == null)
-            {
-                args.NominalType = nominalType;
-            }
-            else if (args.NominalType != nominalType)
-            {
-                throw new ArgumentException("args.NominalType must be nominalType.", nameof(args));
-            }
+            args.SetOrValidateNominalType(nominalType, "nominalType");
 
             if (serializer == null)
             {

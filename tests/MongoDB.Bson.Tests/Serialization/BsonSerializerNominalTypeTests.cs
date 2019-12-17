@@ -53,7 +53,7 @@ namespace MongoDB.Bson.Tests.Serialization
 
                 var e = exception.Should().BeOfType<ArgumentException>().Subject;
                 e.ParamName.Should().Be("args");
-                e.Message.Should().StartWith("args.NominalType must be <TNominalType>."); ;
+                e.Message.Should().StartWith("args.NominalType must be equal to <TNominalType>."); ;
             }
         }
 
@@ -86,7 +86,7 @@ namespace MongoDB.Bson.Tests.Serialization
 
                 var e = exception.Should().BeOfType<ArgumentException>().Subject;
                 e.ParamName.Should().Be("args");
-                e.Message.Should().StartWith("args.NominalType must be nominalType."); ;
+                e.Message.Should().StartWith("args.NominalType must be equal to nominalType."); ;
             }
         }
 
