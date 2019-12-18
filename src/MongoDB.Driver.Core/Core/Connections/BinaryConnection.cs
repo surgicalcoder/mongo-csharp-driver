@@ -287,6 +287,7 @@ namespace MongoDB.Driver.Core.Connections
             var helper = new OpenConnectionHelper(this);
             try
             {
+                Console.WriteLine($"{DateTime.Now} Opening connection begin");
                 helper.OpeningConnection();
                 _stream = _streamFactory.CreateStream(_endPoint, cancellationToken);
                 helper.InitializingConnection();
@@ -294,9 +295,11 @@ namespace MongoDB.Driver.Core.Connections
                 _sendCompressorType = ChooseSendCompressorTypeIfAny(_description);
 
                 helper.OpenedConnection();
+                Console.WriteLine($"{DateTime.Now} Opening connection end");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{DateTime.Now} Opening connection exception: {ex.Message}");
                 var wrappedException = WrapException(ex, "opening a connection to the server");
                 helper.FailedOpeningConnection(wrappedException);
                 throw wrappedException;
@@ -308,6 +311,7 @@ namespace MongoDB.Driver.Core.Connections
             var helper = new OpenConnectionHelper(this);
             try
             {
+                Console.WriteLine($"{DateTime.Now} Opening connection begin");
                 helper.OpeningConnection();
                 _stream = await _streamFactory.CreateStreamAsync(_endPoint, cancellationToken).ConfigureAwait(false);
                 helper.InitializingConnection();
@@ -315,9 +319,11 @@ namespace MongoDB.Driver.Core.Connections
                 _sendCompressorType = ChooseSendCompressorTypeIfAny(_description);
 
                 helper.OpenedConnection();
+                Console.WriteLine($"{DateTime.Now} Opening connection end");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{DateTime.Now} Opening connection exception: {ex.Message}");
                 var wrappedException = WrapException(ex, "opening a connection to the server");
                 helper.FailedOpeningConnection(wrappedException);
                 throw wrappedException;
@@ -328,6 +334,7 @@ namespace MongoDB.Driver.Core.Connections
         {
             try
             {
+                Console.WriteLine($"{DateTime.Now} Reading message begin");
                 var messageSizeBytes = new byte[4];
                 _stream.ReadBytes(messageSizeBytes, 0, 4, _backgroundTaskCancellationToken);
                 var messageSize = BitConverter.ToInt32(messageSizeBytes, 0);
@@ -339,10 +346,12 @@ namespace MongoDB.Driver.Core.Connections
                 _stream.ReadBytes(buffer, 4, messageSize - 4, _backgroundTaskCancellationToken);
                 _lastUsedAtUtc = DateTime.UtcNow;
                 buffer.MakeReadOnly();
+                Console.WriteLine($"{DateTime.Now} Reading message end");
                 return buffer;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{DateTime.Now} Reading message exception: {ex.Message}");
                 var wrappedException = WrapException(ex, "receiving a message from the server");
                 ConnectionFailed(wrappedException);
                 throw wrappedException;
@@ -390,21 +399,25 @@ namespace MongoDB.Driver.Core.Connections
         {
             try
             {
+                Console.WriteLine($"{DateTime.Now} Reading message begin");
                 var messageSizeBytes = new byte[4];
-                await _stream.ReadBytesAsync(messageSizeBytes, 0, 4, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                var readTimeout = TimeSpan.FromMilliseconds(_stream.ReadTimeout);
+                await _stream.ReadBytesAsync(messageSizeBytes, 0, 4, readTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
                 var messageSize = BitConverter.ToInt32(messageSizeBytes, 0);
                 EnsureMessageSizeIsValid(messageSize);
                 var inputBufferChunkSource = new InputBufferChunkSource(BsonChunkPool.Default);
                 var buffer = ByteBufferFactory.Create(inputBufferChunkSource, messageSize);
                 buffer.Length = messageSize;
                 buffer.SetBytes(0, messageSizeBytes, 0, 4);
-                await _stream.ReadBytesAsync(buffer, 4, messageSize - 4, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                await _stream.ReadBytesAsync(buffer, 4, messageSize - 4, readTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
                 _lastUsedAtUtc = DateTime.UtcNow;
                 buffer.MakeReadOnly();
+                Console.WriteLine($"{DateTime.Now} Reading message end");
                 return buffer;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{DateTime.Now} Reading message exception: {ex.Message}");
                 var wrappedException = WrapException(ex, "receiving a message from the server");
                 ConnectionFailed(wrappedException);
                 throw wrappedException;
@@ -515,11 +528,14 @@ namespace MongoDB.Driver.Core.Connections
                 try
                 {
                     // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
+                    Console.WriteLine($"{DateTime.Now} Sending message begin");
                     _stream.WriteBytes(buffer, 0, buffer.Length, _backgroundTaskCancellationToken);
+                    Console.WriteLine($"{DateTime.Now} Sending message end");
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"{DateTime.Now} Sending message exception: {ex.Message}");
                     var wrappedException = WrapException(ex, "sending a message to the server");
                     ConnectionFailed(wrappedException);
                     throw wrappedException;
@@ -544,11 +560,14 @@ namespace MongoDB.Driver.Core.Connections
                 try
                 {
                     // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
+                    Console.WriteLine($"{DateTime.Now} Sending message begin");
                     await _stream.WriteBytesAsync(buffer, 0, buffer.Length, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                    Console.WriteLine($"{DateTime.Now} Sending message end");
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"{DateTime.Now} Sending message exception: {ex.Message}");
                     var wrappedException = WrapException(ex, "sending a message to the server");
                     ConnectionFailed(wrappedException);
                     throw wrappedException;

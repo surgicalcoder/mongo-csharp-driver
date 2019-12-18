@@ -117,7 +117,9 @@ namespace MongoDB.Driver.Core.Servers
                 {
                     try
                     {
+                        Console.WriteLine($"{DateTime.Now} Heartbeat begin");
                         await HeartbeatAsync(heartbeatCancellationToken).ConfigureAwait(false);
+                        Console.WriteLine($"{DateTime.Now} Heartbeat end");
                     }
                     catch (OperationCanceledException) when (heartbeatCancellationToken.IsCancellationRequested)
                     {
@@ -178,18 +180,24 @@ namespace MongoDB.Driver.Core.Servers
             Exception heartbeatException = null;
             for (var attempt = 1; attempt <= maxRetryCount; attempt++)
             {
+                Console.WriteLine($"{DateTime.Now} Heartbeat attempt {attempt}");
                 var connection = _connection;
                 try
                 {
                     if (connection == null)
                     {
+                        Console.WriteLine($"{DateTime.Now} Heartbeat creating connection");
                         connection = _connectionFactory.CreateConnection(_serverId, _endPoint);
+                        Console.WriteLine($"{DateTime.Now} Heartbeat opening connection");
                         // if we are cancelling, it's because the server has
                         // been shut down and we really don't need to wait.
                         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                        Console.WriteLine($"{DateTime.Now} Heartbeat opened connection");
                     }
 
+                    Console.WriteLine($"{DateTime.Now} Heartbeat getting info");
                     heartbeatInfo = await GetHeartbeatInfoAsync(connection, cancellationToken).ConfigureAwait(false);
+                    Console.WriteLine($"{DateTime.Now} Heartbeat info: {heartbeatInfo.IsMasterResult.Wrapped}");
                     heartbeatException = null;
 
                     _connection = connection;
@@ -197,6 +205,7 @@ namespace MongoDB.Driver.Core.Servers
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"{DateTime.Now} Heartbeat info exception: {ex.Message}");
                     heartbeatException = ex;
                     _connection = null;
                     if (connection != null)
@@ -304,6 +313,7 @@ namespace MongoDB.Driver.Core.Servers
             var handler = DescriptionChanged;
             if (handler != null)
             {
+                Console.WriteLine($"{DateTime.Now} Heartbeat publishing new server description: {newDescription.State}");
                 var args = new ServerDescriptionChangedEventArgs(oldDescription, newDescription);
                 try { handler(this, args); }
                 catch { } // ignore exceptions
