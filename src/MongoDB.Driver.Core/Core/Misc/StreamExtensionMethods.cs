@@ -149,6 +149,37 @@ namespace MongoDB.Driver.Core.Misc
             }
         }
 
+
+        public static async Task WriteAsync(this Stream stream, byte[] buffer, int offset, int count, TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            var state = 1; // 1 == writing, 2 == done writing, 3 == timedout, 4 == cancelled
+            void changeState(int to)
+            {
+                var from = Interlocked.CompareExchange(ref state, to, 1);
+                if (from == 1 && to >= 3)
+                {
+                    try { stream.Dispose(); } catch { } // disposing the stream aborts the write attempt
+                }
+            }
+
+            using (new Timer(_ => changeState(3), null, timeout, Timeout.InfiniteTimeSpan))
+            using (cancellationToken.Register(() => changeState(4)))
+            {
+                try
+                {
+                    await stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                    changeState(2);
+                }
+                catch when (state >= 3)
+                {
+                    // a different exception will be thrown instead below
+                }
+
+                if (state == 3) { throw new TimeoutException(); }
+                if (state == 4) { throw new OperationCanceledException(); }
+            }
+        }
+
         public static void WriteBytes(this Stream stream, IByteBuffer buffer, int offset, int count, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(stream, nameof(stream));
@@ -167,7 +198,7 @@ namespace MongoDB.Driver.Core.Misc
             }
         }
 
-        public static async Task WriteBytesAsync(this Stream stream, IByteBuffer buffer, int offset, int count, CancellationToken cancellationToken)
+        public static async Task WriteBytesAsync(this Stream stream, IByteBuffer buffer, int offset, int count, TimeSpan timeout, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(stream, nameof(stream));
             Ensure.IsNotNull(buffer, nameof(buffer));
@@ -178,7 +209,7 @@ namespace MongoDB.Driver.Core.Misc
             {
                 var backingBytes = buffer.AccessBackingBytes(offset);
                 var bytesToWrite = Math.Min(count, backingBytes.Count);
-                await stream.WriteAsync(backingBytes.Array, backingBytes.Offset, bytesToWrite, cancellationToken).ConfigureAwait(false);
+                await stream.WriteAsync(backingBytes.Array, backingBytes.Offset, bytesToWrite, timeout, cancellationToken).ConfigureAwait(false);
                 offset += bytesToWrite;
                 count -= bytesToWrite;
             }

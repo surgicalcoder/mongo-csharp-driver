@@ -545,7 +545,8 @@ namespace MongoDB.Driver.Core.Connections
                 try
                 {
                     // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
-                    await _stream.WriteBytesAsync(buffer, 0, buffer.Length, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                    var writeTimeout = TimeSpan.FromMilliseconds(_stream.WriteTimeout);
+                    await _stream.WriteBytesAsync(buffer, 0, buffer.Length, writeTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
                 catch (Exception ex)
