@@ -391,7 +391,7 @@ namespace MongoDB.Driver.Core.Connections
             try
             {
                 var messageSizeBytes = new byte[4];
-                var readTimeout = TimeSpan.FromMilliseconds(_stream.ReadTimeout);
+                var readTimeout = _stream.CanTimeout ? TimeSpan.FromMilliseconds(_stream.ReadTimeout) : Timeout.InfiniteTimeSpan;
                 await _stream.ReadBytesAsync(messageSizeBytes, 0, 4, readTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
                 var messageSize = BitConverter.ToInt32(messageSizeBytes, 0);
                 EnsureMessageSizeIsValid(messageSize);
@@ -545,7 +545,7 @@ namespace MongoDB.Driver.Core.Connections
                 try
                 {
                     // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
-                    var writeTimeout = TimeSpan.FromMilliseconds(_stream.WriteTimeout);
+                    var writeTimeout = _stream.CanTimeout ? TimeSpan.FromMilliseconds(_stream.WriteTimeout) : Timeout.InfiniteTimeSpan;
                     await _stream.WriteBytesAsync(buffer, 0, buffer.Length, writeTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
