@@ -16,8 +16,6 @@
 using FluentAssertions;
 using MongoDB.Bson.TestHelpers;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Specifications.uuid.prose_tests
@@ -27,7 +25,7 @@ namespace MongoDB.Bson.Tests.Specifications.uuid.prose_tests
         [Fact]
         public void BsonBinaryData_constructor_with_a_Guid_and_no_representation_should_throw()
         {
-            using (TemporaryGuidRepresentationMode.V3())
+            using (TemporaryGuidRepresentationModes.V3.Set())
             {
                 var guid = new Guid("00112233445566778899aabbccddeeff");
 
@@ -46,7 +44,7 @@ namespace MongoDB.Bson.Tests.Specifications.uuid.prose_tests
         [InlineData(GuidRepresentation.Standard, BsonBinarySubType.UuidStandard, "00112233445566778899aabbccddeeff")]
         public void BsonBinaryData_constructor_with_a_Guid_and_a_representation_should_return_expected_result(GuidRepresentation guidRepresentation, BsonBinarySubType expectedSubType, string expectedBytes)
         {
-            using (TemporaryGuidRepresentationMode.V3())
+            using (TemporaryGuidRepresentationModes.V3.Set())
             {
                 var guid = new Guid("00112233445566778899aabbccddeeff");
 
@@ -60,7 +58,7 @@ namespace MongoDB.Bson.Tests.Specifications.uuid.prose_tests
         [Fact]
         public void BsonBinaryData_constructor_with_a_Guid_and_representation_Unspecified_should_throw()
         {
-            using (TemporaryGuidRepresentationMode.V3())
+            using (TemporaryGuidRepresentationModes.V3.Set())
             {
                 var guid = new Guid("00112233445566778899aabbccddeeff");
 

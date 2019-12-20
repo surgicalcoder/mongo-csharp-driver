@@ -125,6 +125,48 @@ Task("Test")
             }
         );
     });
+
+Task("TestAllGuidRepresentations")
+    .IsDependentOn("Build")
+    .DoesForEach(
+        GetFiles("./**/*.Tests.csproj")
+        // .Where(name => name.ToString().Contains("Bson.Tests")) // uncomment to only test Bson
+        .Where(name => !name.ToString().Contains("Atlas")),
+        testProject => 
+    {
+        var modes = new string[][]
+        {
+            new[] { "V2", "Unspecified" },
+            new[] { "V2", "JavaLegacy" },
+            new[] { "V2", "Standard" },
+            new[] { "V2", "PythonLegacy" },
+            new[] { "V2", "CSharpLegacy" },
+            new[] { "V3", "Unspecified" }
+        };
+
+        foreach (var mode in modes)
+        {
+            var testWithGuidRepresentationMode = mode[0];
+            var testWithGuidRepresentation = mode[1];
+            Console.WriteLine($"TESTWITHDEFAULTGUIDREPRESENTATIONMODE={testWithGuidRepresentationMode}");
+            Console.WriteLine($"TESTWITHDEFAULTGUIDREPRESENTATION={testWithGuidRepresentation}");
+
+            DotNetCoreTest(
+                testProject.FullPath,
+                new DotNetCoreTestSettings {
+                    NoBuild = true,
+                    NoRestore = true,
+                    Configuration = configuration,
+                    ArgumentCustomization = args => args.Append("-- RunConfiguration.TargetPlatform=x64"),
+                    EnvironmentVariables = new Dictionary<string, string>
+                    {
+                        { "TESTWITHDEFAULTGUIDREPRESENTATIONMODE", testWithGuidRepresentationMode },
+                        { "TESTWITHDEFAULTGUIDREPRESENTATION", testWithGuidRepresentation }
+                    }
+                }
+            );
+        }
+    });
     
 Task("TestAtlasConnectivity")
     .IsDependentOn("Build")

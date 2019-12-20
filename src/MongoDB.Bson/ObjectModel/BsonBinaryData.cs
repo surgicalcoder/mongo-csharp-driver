@@ -128,7 +128,11 @@ namespace MongoDB.Bson
 #pragma warning disable 618
         [Obsolete("Use the constructor that also takes a GuidRepresentation instead.")]
         public BsonBinaryData(Guid guid)
-            : this(guid, BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : throw new InvalidOperationException("This constructor can only be used when BsonDefaults.GuidRepresentationMode is V2."))
+            : this(
+                guid, 
+                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2
+                    ? BsonDefaults.GuidRepresentation
+                    : throw new InvalidOperationException("This constructor can only be used when BsonDefaults.GuidRepresentationMode is V2."))
         {
         }
 #pragma warning restore 618

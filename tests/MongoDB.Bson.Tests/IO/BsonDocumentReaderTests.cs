@@ -19,6 +19,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.TestHelpers;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.IO
@@ -136,22 +137,27 @@ namespace MongoDB.Bson.Tests.IO
         public void TestGuid()
         {
 #pragma warning disable 618, 1062
-            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
-                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            foreach (var mode in TemporaryGuidRepresentationModes.All)
             {
-                var exception = Record.Exception(() => new BsonDocument("guid", new Guid("B5F21E0C2A0D42d6AD03D827008D8AB6")));
-                exception.Should().BeOfType<InvalidOperationException>();
-            }
-            else
-            {
-                var document = new BsonDocument
+                using (mode.Set())
                 {
-                    { "guid", new Guid("B5F21E0C2A0D42d6AD03D827008D8AB6") }
-                };
-                using (var bsonReader = new BsonDocumentReader(document))
-                {
-                    var rehydrated = DeserializeBsonDocument(bsonReader);
-                    Assert.True(document.Equals(rehydrated));
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation != GuidRepresentation.Unspecified)
+                    {
+                        var document = new BsonDocument
+                        {
+                            { "guid", new Guid("B5F21E0C2A0D42d6AD03D827008D8AB6") }
+                        };
+                        using (var bsonReader = new BsonDocumentReader(document))
+                        {
+                            var rehydrated = DeserializeBsonDocument(bsonReader);
+                            Assert.True(document.Equals(rehydrated));
+                        }
+                    }
+                    else
+                    {
+                        var exception = Record.Exception(() => new BsonDocument("guid", new Guid("B5F21E0C2A0D42d6AD03D827008D8AB6")));
+                        exception.Should().BeOfType<InvalidOperationException>();
+                    }
                 }
             }
 #pragma warning restore 618, 1062

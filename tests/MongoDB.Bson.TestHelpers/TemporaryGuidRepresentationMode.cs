@@ -17,31 +17,65 @@ using System;
 
 namespace MongoDB.Bson.TestHelpers
 {
-    public static class TemporaryGuidRepresentationMode
-
+    public class TemporaryGuidRepresentationMode
     {
-#pragma warning disable 618
-        public static IDisposable V3()
+        private readonly GuidRepresentationMode _guidRepresentationMode;
+        private readonly GuidRepresentation _guidRepresentation;
+
+        public TemporaryGuidRepresentationMode(GuidRepresentationMode guidRepresentationMode, GuidRepresentation guidRepresentation = GuidRepresentation.Unspecified)
         {
-            var resetter = new Resetter(BsonDefaults.GuidRepresentationMode);
-            BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V3;
+            _guidRepresentationMode = guidRepresentationMode;
+            _guidRepresentation = guidRepresentation;
+        }
+
+        public GuidRepresentationMode GuidRepresentationMode => _guidRepresentationMode;
+
+        public GuidRepresentation GuidRepresenation => _guidRepresentation;
+
+        public IDisposable Set()
+        {
+#pragma warning disable 618
+            var resetter = new Resetter();
+            BsonDefaults.GuidRepresentationMode = _guidRepresentationMode;
+            if (_guidRepresentationMode == GuidRepresentationMode.V2)
+            {
+                BsonDefaults.GuidRepresentation = _guidRepresentation;
+            }
             return resetter;
+#pragma warning restore 618
+        }
+
+        public override string ToString()
+        {
+            return _guidRepresentationMode == GuidRepresentationMode.V2 ? $"V2:{_guidRepresentation}" : "V3";
         }
 
         private class Resetter : IDisposable
         {
-            private GuidRepresentationMode _originalMode;
+            private GuidRepresentationMode _originalGuidRepresentationMode;
+            private GuidRepresentation _originalGuidRepresentation;
 
-            public Resetter(GuidRepresentationMode originalMode)
+            public Resetter()
             {
-                _originalMode = originalMode;
+#pragma warning disable 618
+                _originalGuidRepresentationMode = BsonDefaults.GuidRepresentationMode;
+                if (_originalGuidRepresentationMode == GuidRepresentationMode.V2)
+                {
+                    _originalGuidRepresentation = BsonDefaults.GuidRepresentation;
+                }
+#pragma warning restore 618
             }
 
             public void Dispose()
             {
-                BsonDefaults.GuidRepresentationMode = _originalMode;
+#pragma warning disable 618
+                BsonDefaults.GuidRepresentationMode = _originalGuidRepresentationMode;
+                if (_originalGuidRepresentationMode == GuidRepresentationMode.V2)
+                {
+                    BsonDefaults.GuidRepresentation = _originalGuidRepresentation;
+                }
+#pragma warning restore 618
             }
         }
-#pragma warning restore 618
     }
 }

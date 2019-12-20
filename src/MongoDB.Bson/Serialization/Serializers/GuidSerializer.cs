@@ -49,7 +49,7 @@ namespace MongoDB.Bson.Serialization.Serializers
 
                 default:
                     var message = string.Format("{0} is not a valid representation for a GuidSerializer.", representation);
-                    throw new ArgumentException(message);
+                    throw new ArgumentException(message, nameof(representation));
             }
 
             _representation = representation;
@@ -123,6 +123,16 @@ namespace MongoDB.Bson.Serialization.Serializers
                     {
                         throw new BsonSerializationException("GuidSerializer cannot deserialize a Guid when GuidRepresentation is Unspecified.");
                     }
+#pragma warning disable 618
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+                    {
+                        var expectedSubType = GuidConverter.GetSubType(guidRepresentation);
+                        if (subType != expectedSubType)
+                        {
+                            throw new FormatException($"GuidSerializer cannot deserialize a Guid when GuidRepresentation is {guidRepresentation} and binary sub type is {subType}.");
+                        }
+                    }
+#pragma warning restore 618
                     return GuidConverter.FromBytes(bytes, guidRepresentation);
 
                 case BsonType.String:

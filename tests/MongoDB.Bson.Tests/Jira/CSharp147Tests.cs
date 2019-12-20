@@ -14,7 +14,9 @@
 */
 
 using FluentAssertions;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.TestHelpers;
 using System;
 using Xunit;
 
@@ -36,19 +38,24 @@ namespace MongoDB.Bson.Tests.Jira.CSharp147
         [Fact]
         public void Test()
         {
-            var p = new Parent { Child = new Child() };
-            p.Child.A = 1;
 #pragma warning disable 618
-            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation == GuidRepresentation.Unspecified ||
-                BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+            foreach (var mode in TemporaryGuidRepresentationModes.All)
             {
-                var exception = Record.Exception(() => p.ToJson());
-                exception.Should().BeOfType<BsonSerializationException>();
-            }
-            else
-            {
-                var json = p.ToJson();
-                BsonSerializer.Deserialize<Parent>(json); // throws Unexpected element exception
+                using (mode.Set())
+                {
+                    var p = new Parent { Child = new Child() };
+                    p.Child.A = 1;
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation != GuidRepresentation.Unspecified)
+                    {
+                        var json = p.ToJson(new JsonWriterSettings());
+                        BsonSerializer.Deserialize<Parent>(json); // throws Unexpected element exception
+                    }
+                    else
+                    {
+                        var exception = Record.Exception(() => p.ToJson(new JsonWriterSettings()));
+                        exception.Should().BeOfType<BsonSerializationException>();
+                    }
+                }
             }
 #pragma warning restore 618
         }

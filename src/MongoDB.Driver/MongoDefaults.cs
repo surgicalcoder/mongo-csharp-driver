@@ -99,7 +99,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the representation to use for Guids (this is an alias for BsonDefaults.GuidRepresentation).
         /// </summary>
-        [Obsolete("Set GuidRepresentationMode to V3 and use GuidRepresentationV3 instead, or configure individual serializers.")]
+        [Obsolete("Configure serializers instead.")]
         public static GuidRepresentation GuidRepresentation
         {
 #pragma warning disable 618

@@ -13,22 +13,23 @@
 * limitations under the License.
 */
 
-namespace MongoDB.Bson
-{
-    /// <summary>
-    /// Whether to handle GuidRepresentation using the v2.x mode of the v3.x mode.
-    /// See the reference documentation for details.
-    /// </summary>
-    public enum GuidRepresentationMode
-    {
-        /// <summary>
-        /// Handle GuidRepresentation using the v2.x mode.
-        /// </summary>
-        V2,
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
-        /// <summary>
-        /// Handle GuidRepresentation using the v3.x mode.
-        /// </summary>
-        V3
+namespace MongoDB.Bson.TestHelpers
+{
+    public static class EnumHelper
+    {
+        public static IEnumerable<TEnum> GetValues<TEnum>() where TEnum : System.Enum
+        {
+            return Enum.GetValues(typeof(TEnum)).Cast<TEnum>();
+        }
+
+        public static IEnumerable<TEnum?> GetNullableValues<TEnum>() where TEnum : struct, System.Enum
+        {
+            return new TEnum?[] { null }.Concat(Enum.GetValues(typeof(TEnum)).Cast<TEnum?>());
+        }
     }
 }

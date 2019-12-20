@@ -43,7 +43,7 @@ namespace MongoDB.Bson.IO
         /// Initializes a new instance of the BsonReaderSettings class.
         /// </summary>
         /// <param name="guidRepresentation">The representation for Guids.</param>
-        [Obsolete("This constructor will be removed in a later release.")]
+        [Obsolete("Configure serializers instead.")]
         protected BsonReaderSettings(GuidRepresentation guidRepresentation)
         {
             if (BsonDefaults.GuidRepresentationMode != GuidRepresentationMode.V2)
@@ -57,7 +57,7 @@ namespace MongoDB.Bson.IO
         /// <summary>
         /// Gets or sets the representation for Guids.
         /// </summary>
-        [Obsolete("This property will be removed in a later release.")]
+        [Obsolete("Configure serializers instead.")]
         public GuidRepresentation GuidRepresentation
         {
             get

@@ -14,11 +14,14 @@
 */
 
 using System;
+using System.IO;
 using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.TestHelpers;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Serialization
@@ -140,35 +143,40 @@ namespace MongoDB.Bson.Tests.Serialization
         [Fact]
         public void TestGuid()
         {
-            C c = new C { Guid = Guid.Empty };
 #pragma warning disable 618
-            string expectedGuidJson;
-            var guidRepresentation = BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : GuidRepresentation.Unspecified;
-            switch (guidRepresentation)
+            foreach (var mode in TemporaryGuidRepresentationModes.All)
             {
-                case GuidRepresentation.CSharpLegacy: expectedGuidJson = "CSUUID('00000000-0000-0000-0000-000000000000')"; break;
-                case GuidRepresentation.JavaLegacy: expectedGuidJson = "JUUID('00000000-0000-0000-0000-000000000000')"; break;
-                case GuidRepresentation.PythonLegacy: expectedGuidJson = "PYUUID('00000000-0000-0000-0000-000000000000')"; break;
-                case GuidRepresentation.Standard: expectedGuidJson = "UUID('00000000-0000-0000-0000-000000000000')"; break;
-                case GuidRepresentation.Unspecified: expectedGuidJson = null; break;
-                default: throw new Exception("Unexpected GuidRepresentation.");
+                using (mode.Set())
+                {
+                    C c = new C { Guid = Guid.Empty };
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation != GuidRepresentation.Unspecified)
+                    {
+                        var json = c.ToJson(new JsonWriterSettings());
+                        string expectedGuidJson;
+                        var guidRepresentation = BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : GuidRepresentation.Unspecified;
+                        switch (guidRepresentation)
+                        {
+                            case GuidRepresentation.CSharpLegacy: expectedGuidJson = "CSUUID('00000000-0000-0000-0000-000000000000')"; break;
+                            case GuidRepresentation.JavaLegacy: expectedGuidJson = "JUUID('00000000-0000-0000-0000-000000000000')"; break;
+                            case GuidRepresentation.PythonLegacy: expectedGuidJson = "PYUUID('00000000-0000-0000-0000-000000000000')"; break;
+                            case GuidRepresentation.Standard: expectedGuidJson = "UUID('00000000-0000-0000-0000-000000000000')"; break;
+                            default: throw new Exception("Unexpected GuidRepresentation.");
+                        }
+                        var expected = _template.Replace("'Guid' : null", $"'Guid' : {expectedGuidJson}").Replace("'", "\"");
+                        Assert.Equal(expected, json);
+
+                        var bson = c.ToBson(writerSettings: new BsonBinaryWriterSettings());
+                        var rehydrated = BsonSerializer.Deserialize<C>(new BsonBinaryReader(new MemoryStream(bson), new BsonBinaryReaderSettings()));
+                        Assert.True(bson.SequenceEqual(rehydrated.ToBson(writerSettings: new BsonBinaryWriterSettings())));
+                    }
+                    else
+                    {
+                        var exception = Record.Exception(() => c.ToJson(new JsonWriterSettings()));
+                        exception.Should().BeOfType<BsonSerializationException>();
+                    }
+                }
             }
 #pragma warning restore 618
-            if (expectedGuidJson == null)
-            {
-                var exception = Record.Exception(() => c.ToJson());
-                exception.Should().BeOfType<BsonSerializationException>();
-            }
-            else
-            {
-                var json = c.ToJson();
-                var expected = _template.Replace("'Guid' : null", $"'Guid' : {expectedGuidJson}").Replace("'", "\"");
-                Assert.Equal(expected, json);
-
-                var bson = c.ToBson();
-                var rehydrated = BsonSerializer.Deserialize<C>(bson);
-                Assert.True(bson.SequenceEqual(rehydrated.ToBson()));
-            }
         }
 
         [Fact]

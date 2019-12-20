@@ -40,7 +40,7 @@ namespace MongoDB.Bson.IO
         /// Initializes a new instance of the BsonDocumentWriterSettings class.
         /// </summary>
         /// <param name="guidRepresentation">The representation for Guids.</param>
-        [Obsolete("This constructor will be removed in a later release.")]
+        [Obsolete("Configure serializers instead.")]
         public BsonDocumentWriterSettings(GuidRepresentation guidRepresentation)
             : base(guidRepresentation)
         {

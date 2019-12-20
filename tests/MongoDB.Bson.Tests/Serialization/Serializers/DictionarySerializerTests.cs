@@ -23,6 +23,7 @@ using FluentAssertions;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.TestHelpers;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Serialization.DictionarySerializers
@@ -338,74 +339,80 @@ namespace MongoDB.Bson.Tests.Serialization.DictionarySerializers
         public void TestMixedPrimitiveTypes()
         {
 #pragma warning disable 618
-            var dateTime = DateTime.SpecifyKind(new DateTime(2010, 1, 1, 11, 22, 33), DateTimeKind.Utc);
-            var isoDate = dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.FFFZ");
-            var guid = Guid.Empty;
-            string expectedGuidJson = null;
-            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+            foreach (var mode in TemporaryGuidRepresentationModes.All)
             {
-                switch (BsonDefaults.GuidRepresentation)
+                using (mode.Set())
                 {
-                    case GuidRepresentation.CSharpLegacy: expectedGuidJson = "CSUUID('00000000-0000-0000-0000-000000000000')"; break;
-                    case GuidRepresentation.JavaLegacy: expectedGuidJson = "JUUID('00000000-0000-0000-0000-000000000000')"; break;
-                    case GuidRepresentation.PythonLegacy: expectedGuidJson = "PYUUID('00000000-0000-0000-0000-000000000000')"; break;
-                    case GuidRepresentation.Standard: expectedGuidJson = "UUID('00000000-0000-0000-0000-000000000000')"; break;
+                    var dateTime = DateTime.SpecifyKind(new DateTime(2010, 1, 1, 11, 22, 33), DateTimeKind.Utc);
+                    var isoDate = dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.FFFZ");
+                    var guid = Guid.Empty;
+                    string expectedGuidJson = null;
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+                    {
+                        switch (BsonDefaults.GuidRepresentation)
+                        {
+                            case GuidRepresentation.CSharpLegacy: expectedGuidJson = "CSUUID('00000000-0000-0000-0000-000000000000')"; break;
+                            case GuidRepresentation.JavaLegacy: expectedGuidJson = "JUUID('00000000-0000-0000-0000-000000000000')"; break;
+                            case GuidRepresentation.PythonLegacy: expectedGuidJson = "PYUUID('00000000-0000-0000-0000-000000000000')"; break;
+                            case GuidRepresentation.Standard: expectedGuidJson = "UUID('00000000-0000-0000-0000-000000000000')"; break;
+                        }
+                    }
+                    var objectId = ObjectId.Empty;
+                    var ht = new Hashtable
+                    {
+                        { "A", true },
+                        { "B", dateTime },
+                        { "C", 1.5 },
+                        { "D", 1 },
+                        { "E", 2L },
+                        { "G", objectId },
+                        { "H", "x" }
+                    };
+                    if (expectedGuidJson != null)
+                    {
+                        ht.Add("F", guid);
+                    }
+                    var ld = CreateListDictionary(ht);
+                    var od = CreateOrderedDictionary(ht);
+                    var sl = CreateSortedList(ht);
+                    var obj = new T { HT = ht, ID = ht, LD = ld, OD = od, SL = sl };
+                    var json = obj.ToJson(new JsonWriterSettings());
+                    var reps = new Hashtable
+                    {
+                        { "A", "true" },
+                        { "B", "ISODate('#')".Replace("#", isoDate) },
+                        { "C", "1.5" },
+                        { "D", "1" },
+                        { "E", "NumberLong(2)" },
+                        { "G", "ObjectId('000000000000000000000000')" },
+                        { "H", "'x'" }
+                    };
+                    if (expectedGuidJson != null)
+                    {
+                        reps.Add("F", expectedGuidJson);
+                    }
+                    var htRep = GetDocumentRepresentationInKeyOrder(ht, reps);
+                    var ldRep = GetDocumentRepresentationInKeyOrder(ld, reps);
+                    var odRep = GetDocumentRepresentationInKeyOrder(od, reps);
+                    var slRep = GetDocumentRepresentationInKeyOrder(sl, reps);
+                    var expected = "{ 'HT' : #HT, 'ID' : #HT, 'LD' : #LD, 'OD' : #OD, 'SL' : #SL }";
+                    expected = expected.Replace("#HT", htRep);
+                    expected = expected.Replace("#LD", ldRep);
+                    expected = expected.Replace("#OD", odRep);
+                    expected = expected.Replace("#SL", slRep);
+                    expected = expected.Replace("'", "\"");
+                    Assert.Equal(expected, json);
+
+                    var bson = obj.ToBson(writerSettings: new BsonBinaryWriterSettings());
+                    var rehydrated = BsonSerializer.Deserialize<T>(new BsonBinaryReader(new MemoryStream(bson), new BsonBinaryReaderSettings()));
+
+                    rehydrated.HT.Should().BeEquivalentTo(obj.HT);
+                    rehydrated.ID.Should().BeEquivalentTo(obj.ID);
+                    rehydrated.LD.Should().Equal(obj.LD);
+                    rehydrated.OD.Should().Equal(obj.OD);
+                    rehydrated.LD.Should().Equal(obj.LD);
                 }
             }
-            var objectId = ObjectId.Empty;
-            var ht = new Hashtable
-            {
-                { "A", true },
-                { "B", dateTime },
-                { "C", 1.5 },
-                { "D", 1 },
-                { "E", 2L },
-                { "G", objectId },
-                { "H", "x" }
-            };
-            if (expectedGuidJson != null)
-            {
-                ht.Add("F", guid);
-            }
-            var ld = CreateListDictionary(ht);
-            var od = CreateOrderedDictionary(ht);
-            var sl = CreateSortedList(ht);
-            var obj = new T { HT = ht, ID = ht, LD = ld, OD = od, SL = sl };
-            var json = obj.ToJson();
-            var reps = new Hashtable
-            {
-                { "A", "true" },
-                { "B", "ISODate('#')".Replace("#", isoDate) },
-                { "C", "1.5" },
-                { "D", "1" },
-                { "E", "NumberLong(2)" },
-                { "G", "ObjectId('000000000000000000000000')" },
-                { "H", "'x'" }
-            };
-            if (expectedGuidJson != null)
-            {
-                reps.Add("F", expectedGuidJson);
-            }
-            var htRep = GetDocumentRepresentationInKeyOrder(ht, reps);
-            var ldRep = GetDocumentRepresentationInKeyOrder(ld, reps);
-            var odRep = GetDocumentRepresentationInKeyOrder(od, reps);
-            var slRep = GetDocumentRepresentationInKeyOrder(sl, reps);
-            var expected = "{ 'HT' : #HT, 'ID' : #HT, 'LD' : #LD, 'OD' : #OD, 'SL' : #SL }";
-            expected = expected.Replace("#HT", htRep);
-            expected = expected.Replace("#LD", ldRep);
-            expected = expected.Replace("#OD", odRep);
-            expected = expected.Replace("#SL", slRep);
-            expected = expected.Replace("'", "\"");
-            Assert.Equal(expected, json);
-
-            var bson = obj.ToBson();
-            var rehydrated = BsonSerializer.Deserialize<T>(bson);
-
-            rehydrated.HT.Should().BeEquivalentTo(obj.HT);
-            rehydrated.ID.Should().BeEquivalentTo(obj.ID);
-            rehydrated.LD.Should().Equal(obj.LD);
-            rehydrated.OD.Should().Equal(obj.OD);
-            rehydrated.LD.Should().Equal(obj.LD);
 #pragma warning restore 618
         }
 

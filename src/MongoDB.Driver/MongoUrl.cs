@@ -246,7 +246,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the representation to use for Guids.
         /// </summary>
-        [Obsolete("This property will be removed in a later release.")]
+        [Obsolete("Configure serializers instead.")]
         public GuidRepresentation GuidRepresentation
         {
             get
@@ -271,7 +271,7 @@ namespace MongoDB.Driver
                     _password != null ||
                     _authenticationMechanism != null ||
                     _authenticationSource != null;
-            }              
+            }
         }
 
         /// <summary>
@@ -385,7 +385,7 @@ namespace MongoDB.Driver
         {
             get { return _replicaSetName; }
         }
-        
+
         /// <summary>
         /// Gets whether reads will be retried.
         /// </summary>

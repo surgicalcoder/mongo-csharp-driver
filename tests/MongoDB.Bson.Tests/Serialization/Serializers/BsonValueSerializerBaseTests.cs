@@ -13,22 +13,14 @@
 * limitations under the License.
 */
 
-namespace MongoDB.Bson
-{
-    /// <summary>
-    /// Whether to handle GuidRepresentation using the v2.x mode of the v3.x mode.
-    /// See the reference documentation for details.
-    /// </summary>
-    public enum GuidRepresentationMode
-    {
-        /// <summary>
-        /// Handle GuidRepresentation using the v2.x mode.
-        /// </summary>
-        V2,
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.TestHelpers;
 
-        /// <summary>
-        /// Handle GuidRepresentation using the v3.x mode.
-        /// </summary>
-        V3
+namespace MongoDB.Bson.Tests.Serialization.Serializers
+{
+    public static class BsonValueSerializerBaseReflector
+    {
+        public static BsonType? _bsonType<TBsonValue>(this BsonValueSerializerBase<TBsonValue> obj) where TBsonValue : BsonValue
+            => (BsonType?)Reflector.GetFieldValue(obj, nameof(_bsonType));
     }
 }
