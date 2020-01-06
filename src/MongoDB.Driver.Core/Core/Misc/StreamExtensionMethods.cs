@@ -39,23 +39,15 @@ namespace MongoDB.Driver.Core.Misc
         public static async Task<int> ReadAsync(this Stream stream, byte[] buffer, int offset, int count, TimeSpan timeout, CancellationToken cancellationToken)
         {
             var state = 1; // 1 == reading, 2 == done reading, 3 == timedout, 4 == cancelled
-            void changeState(int to)
-            {
-                var from = Interlocked.CompareExchange(ref state, to, 1);
-                if (from == 1 && to >= 3)
-                {
-                    try { stream.Dispose(); } catch { } // disposing the stream aborts the read attempt
-                }
-            }
 
             var bytesRead = 0;
-            using (new Timer(_ => changeState(3), null, timeout, Timeout.InfiniteTimeSpan))
-            using (cancellationToken.Register(() => changeState(4)))
+            using (new Timer(_ => ChangeState(3), null, timeout, Timeout.InfiniteTimeSpan))
+            using (cancellationToken.Register(() => ChangeState(4)))
             {
                 try
                 {
                     bytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-                    changeState(2);
+                    ChangeState(2);
                 }
                 catch when (state >= 3)
                 {
@@ -67,6 +59,15 @@ namespace MongoDB.Driver.Core.Misc
             }
 
             return bytesRead;
+
+            void ChangeState(int to)
+            {
+                var from = Interlocked.CompareExchange(ref state, to, 1);
+                if (from == 1 && to >= 3)
+                {
+                    try { stream.Dispose(); } catch { } // disposing the stream aborts the read attempt
+                }
+            }
         }
 
         public static void ReadBytes(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -153,22 +154,14 @@ namespace MongoDB.Driver.Core.Misc
         public static async Task WriteAsync(this Stream stream, byte[] buffer, int offset, int count, TimeSpan timeout, CancellationToken cancellationToken)
         {
             var state = 1; // 1 == writing, 2 == done writing, 3 == timedout, 4 == cancelled
-            void changeState(int to)
-            {
-                var from = Interlocked.CompareExchange(ref state, to, 1);
-                if (from == 1 && to >= 3)
-                {
-                    try { stream.Dispose(); } catch { } // disposing the stream aborts the write attempt
-                }
-            }
 
-            using (new Timer(_ => changeState(3), null, timeout, Timeout.InfiniteTimeSpan))
-            using (cancellationToken.Register(() => changeState(4)))
+            using (new Timer(_ => ChangeState(3), null, timeout, Timeout.InfiniteTimeSpan))
+            using (cancellationToken.Register(() => ChangeState(4)))
             {
                 try
                 {
                     await stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-                    changeState(2);
+                    ChangeState(2);
                 }
                 catch when (state >= 3)
                 {
@@ -177,6 +170,15 @@ namespace MongoDB.Driver.Core.Misc
 
                 if (state == 3) { throw new TimeoutException(); }
                 if (state == 4) { throw new OperationCanceledException(); }
+            }
+
+            void ChangeState(int to)
+            {
+                var from = Interlocked.CompareExchange(ref state, to, 1);
+                if (from == 1 && to >= 3)
+                {
+                    try { stream.Dispose(); } catch { } // disposing the stream aborts the write attempt
+                }
             }
         }
 
