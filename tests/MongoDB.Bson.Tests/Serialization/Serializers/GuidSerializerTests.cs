@@ -244,7 +244,7 @@ namespace MongoDB.Bson.Tests.Serialization.Serializers
                         continue;
                     }
 
-                    foreach (var readerGuidRepresentation in EnumHelper.GetNullableValues<GuidRepresentation>())
+                    foreach (var readerGuidRepresentation in EnumHelper.GetValuesAndNull<GuidRepresentation>())
                     {
                         var effectiveGuidRepresentation = GuidRepresentation.Unspecified;
                         if (defaultGuidRepresentationMode == GuidRepresentationMode.V2)
@@ -314,7 +314,7 @@ namespace MongoDB.Bson.Tests.Serialization.Serializers
 
                     foreach (var serializerGuidRepresentation in EnumHelper.GetValues<GuidRepresentation>())
                     {
-                        foreach (var readerGuidRepresentation in EnumHelper.GetNullableValues<GuidRepresentation>())
+                        foreach (var readerGuidRepresentation in EnumHelper.GetValuesAndNull<GuidRepresentation>())
                         {
                             var effectiveGuidRepresentation = serializerGuidRepresentation;
 #pragma warning disable 618
@@ -421,7 +421,7 @@ namespace MongoDB.Bson.Tests.Serialization.Serializers
 
                     foreach (var serializerGuidRepresentation in EnumHelper.GetValues<GuidRepresentation>())
                     {
-                        foreach (var writerGuidRepresentation in EnumHelper.GetNullableValues<GuidRepresentation>())
+                        foreach (var writerGuidRepresentation in EnumHelper.GetValuesAndNull<GuidRepresentation>())
                         {
                             var effectiveGuidRepresentation = serializerGuidRepresentation;
                             if (defaultGuidRepresentationMode == GuidRepresentationMode.V2 && serializerGuidRepresentation == GuidRepresentation.Unspecified)
@@ -506,7 +506,7 @@ namespace MongoDB.Bson.Tests.Serialization.Serializers
 
                     foreach (var serializerGuidRepresentation in EnumHelper.GetValues<GuidRepresentation>())
                     {
-                        foreach (var writerGuidRepresentation in EnumHelper.GetNullableValues<GuidRepresentation>())
+                        foreach (var writerGuidRepresentation in EnumHelper.GetValuesAndNull<GuidRepresentation>())
                         {
                             var effectiveGuidRepresentation = serializerGuidRepresentation;
                             if (defaultGuidRepresentationMode == GuidRepresentationMode.V2 && serializerGuidRepresentation == GuidRepresentation.Unspecified)

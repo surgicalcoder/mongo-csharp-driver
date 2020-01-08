@@ -42,7 +42,7 @@ namespace MongoDB.Bson.Serialization.Attributes
         /// Gets the Guid representation.
         /// </summary>
         public GuidRepresentation GuidRepresentation
-    {
+        {
             get { return _guidRepresentation; }
         }
 

@@ -194,7 +194,7 @@ namespace MongoDB.Bson.Serialization.Serializers
         /// <summary>
         /// Returns a serializer that has been reconfigured with the specified Guid representation.
         /// </summary>
-        /// <param name="guidRepresentation"></param>
+        /// <param name="guidRepresentation">The GuidRepresentation.</param>
         /// <returns>The reconfigured serializer.</returns>
         public GuidSerializer WithGuidRepresentation(GuidRepresentation guidRepresentation)
         {

@@ -16,7 +16,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace MongoDB.Bson.TestHelpers
 {
@@ -27,7 +26,7 @@ namespace MongoDB.Bson.TestHelpers
             return Enum.GetValues(typeof(TEnum)).Cast<TEnum>();
         }
 
-        public static IEnumerable<TEnum?> GetNullableValues<TEnum>() where TEnum : struct, System.Enum
+        public static IEnumerable<TEnum?> GetValuesAndNull<TEnum>() where TEnum : struct, System.Enum
         {
             return new TEnum?[] { null }.Concat(Enum.GetValues(typeof(TEnum)).Cast<TEnum?>());
         }
