@@ -13,11 +13,12 @@
 * limitations under the License.
 */
 
+using System;
 using FluentAssertions;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.TestHelpers;
-using System;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Jira.CSharp147
@@ -35,27 +36,26 @@ namespace MongoDB.Bson.Tests.Jira.CSharp147
             public int A { get; set; }
         }
 
-        [Fact]
-        public void Test()
+        [Theory]
+        [ParameterAttributeData]
+        [ResetGuidModeAfterTest]
+        public void Test(
+            [ClassValues(typeof(GuidModeValues))] GuidMode mode)
         {
+            mode.Set();
+
 #pragma warning disable 618
-            foreach (var mode in TemporaryGuidRepresentationModes.All)
+            var p = new Parent { Child = new Child() };
+            p.Child.A = 1;
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation != GuidRepresentation.Unspecified)
             {
-                using (mode.Set())
-                {
-                    var p = new Parent { Child = new Child() };
-                    p.Child.A = 1;
-                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && BsonDefaults.GuidRepresentation != GuidRepresentation.Unspecified)
-                    {
-                        var json = p.ToJson(new JsonWriterSettings());
-                        BsonSerializer.Deserialize<Parent>(json); // throws Unexpected element exception
-                    }
-                    else
-                    {
-                        var exception = Record.Exception(() => p.ToJson(new JsonWriterSettings()));
-                        exception.Should().BeOfType<BsonSerializationException>();
-                    }
-                }
+                var json = p.ToJson(new JsonWriterSettings());
+                BsonSerializer.Deserialize<Parent>(json); // throws Unexpected element exception
+            }
+            else
+            {
+                var exception = Record.Exception(() => p.ToJson(new JsonWriterSettings()));
+                exception.Should().BeOfType<BsonSerializationException>();
             }
 #pragma warning restore 618
         }

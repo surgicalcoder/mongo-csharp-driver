@@ -239,14 +239,11 @@ namespace MongoDB.Bson
         [Obsolete("Use the BsonBinaryData constructor instead and specify a Guid representation.")]
         public static implicit operator BsonBinaryData(Guid value)
         {
-            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
-            {
-                return new BsonBinaryData(value);
-            }
-            else
+            if (BsonDefaults.GuidRepresentationMode != GuidRepresentationMode.V2)
             {
                 throw new InvalidOperationException("Implicit conversion from Guid to BsonBinaryData is only valid when BsonDefaults.GuidRepresentationMode is V2.");
             }
+            return new BsonBinaryData(value);
         }
 
         /// <summary>
