@@ -125,17 +125,9 @@ namespace MongoDB.Driver.Core.Connections
         private void Connect(Socket socket, EndPoint endPoint, CancellationToken cancellationToken)
         {
             var state = 1; // 1 == connecting, 2 == connected, 3 == timedout, 4 == cancelled
-            void changeState(int to)
-            {
-                var from = Interlocked.CompareExchange(ref state, to, 1);
-                if (from == 1 && to >= 3)
-                {
-                    try { socket.Dispose(); } catch { } // disposing the socket aborts the connection attempt
-                }
-            }
 
-            using (new Timer(_ => changeState(3), null, _settings.ConnectTimeout, Timeout.InfiniteTimeSpan))
-            using (cancellationToken.Register(() => changeState(4)))
+            using (new Timer(_ => ChangeState(3), null, _settings.ConnectTimeout, Timeout.InfiniteTimeSpan))
+            using (cancellationToken.Register(() => ChangeState(4)))
             {
                 try
                 {
@@ -149,7 +141,7 @@ namespace MongoDB.Driver.Core.Connections
                     {
                         socket.Connect(endPoint);
                     }
-                    changeState(2);
+                    ChangeState(2);
                     return;
                 }
                 catch
@@ -170,12 +162,8 @@ namespace MongoDB.Driver.Core.Connections
                 var message = string.Format("Timed out connecting to {0}. Timeout was {1}.", endPoint, _settings.ConnectTimeout);
                 throw new TimeoutException(message);
             }
-        }
 
-        private async Task ConnectAsync(Socket socket, EndPoint endPoint, CancellationToken cancellationToken)
-        {
-            var state = 1; // 1 == connecting, 2 == connected, 3 == timedout, 4 == cancelled
-            void changeState(int to)
+            void ChangeState(int to)
             {
                 var from = Interlocked.CompareExchange(ref state, to, 1);
                 if (from == 1 && to >= 3)
@@ -183,9 +171,14 @@ namespace MongoDB.Driver.Core.Connections
                     try { socket.Dispose(); } catch { } // disposing the socket aborts the connection attempt
                 }
             }
+        }
 
-            using (new Timer(_ => changeState(3), null, _settings.ConnectTimeout, Timeout.InfiniteTimeSpan))
-            using (cancellationToken.Register(() => changeState(4)))
+        private async Task ConnectAsync(Socket socket, EndPoint endPoint, CancellationToken cancellationToken)
+        {
+            var state = 1; // 1 == connecting, 2 == connected, 3 == timedout, 4 == cancelled
+
+            using (new Timer(_ => ChangeState(3), null, _settings.ConnectTimeout, Timeout.InfiniteTimeSpan))
+            using (cancellationToken.Register(() => ChangeState(4)))
             {
                 try
                 {
@@ -203,7 +196,7 @@ namespace MongoDB.Driver.Core.Connections
                         await Task.Factory.FromAsync(socket.BeginConnect(endPoint, null, null), socket.EndConnect).ConfigureAwait(false);
                     }
 #endif
-                    changeState(2);
+                    ChangeState(2);
                     return;
                 }
                 catch
@@ -223,6 +216,15 @@ namespace MongoDB.Driver.Core.Connections
             {
                 var message = string.Format("Timed out connecting to {0}. Timeout was {1}.", endPoint, _settings.ConnectTimeout);
                 throw new TimeoutException(message);
+            }
+
+            void ChangeState(int to)
+            {
+                var from = Interlocked.CompareExchange(ref state, to, 1);
+                if (from == 1 && to >= 3)
+                {
+                    try { socket.Dispose(); } catch { } // disposing the socket aborts the connection attempt
+                }
             }
         }
 
