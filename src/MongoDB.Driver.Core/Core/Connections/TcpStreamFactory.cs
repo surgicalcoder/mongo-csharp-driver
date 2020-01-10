@@ -143,28 +143,22 @@ namespace MongoDB.Driver.Core.Connections
                     }
                     ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
                 }
-                catch
+                catch when (state == 1)
                 {
-                    if (state == 1)
-                    {
-                        try { socket.Dispose(); } catch { }
-                        throw;
-                    }
-                    // a timeout or cancellation exception will be thrown instead below
+                    try { socket.Dispose(); } catch { }
+                    throw;
+                }
+                catch when (state >= 3)
+                {
+                    // a timeout or operation cancelled exception will be thrown instead
                 }
 
-                switch (state)
+                if (state == 3)
                 {
-                    case 2:
-                        return;
-                    case 3:
-                        var message = string.Format("Timed out connecting to {0}. Timeout was {1}.", endPoint, _settings.ConnectTimeout);
-                        throw new TimeoutException(message);
-                    case 4:
-                        throw new OperationCanceledException();
-                    default:
-                        throw new Exception($"Unexpected state: {state}.");
+                    var message = string.Format("Timed out connecting to {0}. Timeout was {1}.", endPoint, _settings.ConnectTimeout);
+                    throw new TimeoutException(message);
                 }
+                if (state == 4) { throw new OperationCanceledException(); }
             }
 
             void ChangeState(int to)
@@ -202,28 +196,22 @@ namespace MongoDB.Driver.Core.Connections
 #endif
                     ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
                 }
-                catch
+                catch when (state == 1)
                 {
-                    if (state == 1)
-                    {
-                        try { socket.Dispose(); } catch { }
-                        throw;
-                    }
-                    // a timeout or cancellation exception will be thrown instead below
+                    try { socket.Dispose(); } catch { }
+                    throw;
+                }
+                catch when (state >= 3)
+                {
+                    // a timeout or operation cancelled exception will be thrown instead
                 }
 
-                switch (state)
+                if (state == 3)
                 {
-                    case 2:
-                        return;
-                    case 3:
-                        var message = string.Format("Timed out connecting to {0}. Timeout was {1}.", endPoint, _settings.ConnectTimeout);
-                        throw new TimeoutException(message);
-                    case 4:
-                        throw new OperationCanceledException();
-                    default:
-                        throw new Exception($"Unexpected state: {state}.");
+                    var message = string.Format("Timed out connecting to {0}. Timeout was {1}.", endPoint, _settings.ConnectTimeout);
+                    throw new TimeoutException(message);
                 }
+                if (state == 4) { throw new OperationCanceledException(); }
             }
 
             void ChangeState(int to)
