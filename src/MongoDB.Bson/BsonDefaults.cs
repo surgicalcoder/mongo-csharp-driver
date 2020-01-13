@@ -37,13 +37,13 @@ namespace MongoDB.Bson
         // static constructor
         static BsonDefaults()
         {
-            var testWithDefaultGuidRepresentation = Environment.GetEnvironmentVariable("TESTWITHDEFAULTGUIDREPRESENTATION");
+            var testWithDefaultGuidRepresentation = Environment.GetEnvironmentVariable("TEST_WITH_DEFAULT_GUID_REPRESENTATION");
             if (testWithDefaultGuidRepresentation != null)
             {
                 var _ = Enum.TryParse(testWithDefaultGuidRepresentation, out __guidRepresentation); // ignore errors
             }
 
-            var testWithDefaultGuidRepresentationMode = Environment.GetEnvironmentVariable("TESTWITHDEFAULTGUIDREPRESENTATIONMODE");
+            var testWithDefaultGuidRepresentationMode = Environment.GetEnvironmentVariable("TEST_WITH_DEFAULT_GUID_REPRESENTATION_MODE");
             if (testWithDefaultGuidRepresentationMode != null)
             {
                 var _ = Enum.TryParse(testWithDefaultGuidRepresentationMode, out __guidRepresentationMode); // ignore errors

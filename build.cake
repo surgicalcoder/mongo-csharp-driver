@@ -126,6 +126,7 @@ Task("Test")
         );
     });
 
+// currently we are not running this Task on Evergreen (only locally occassionally)
 Task("TestAllGuidRepresentations")
     .IsDependentOn("Build")
     .DoesForEach(
@@ -148,8 +149,8 @@ Task("TestAllGuidRepresentations")
         {
             var testWithGuidRepresentationMode = mode[0];
             var testWithGuidRepresentation = mode[1];
-            Console.WriteLine($"TESTWITHDEFAULTGUIDREPRESENTATIONMODE={testWithGuidRepresentationMode}");
-            Console.WriteLine($"TESTWITHDEFAULTGUIDREPRESENTATION={testWithGuidRepresentation}");
+            Console.WriteLine($"TEST_WITH_DEFAULT_GUID_REPRESENTATION_MODE={testWithGuidRepresentationMode}");
+            Console.WriteLine($"TEST_WITH_DEFAULT_GUID_REPRESENTATION={testWithGuidRepresentation}");
 
             DotNetCoreTest(
                 testProject.FullPath,
@@ -160,8 +161,8 @@ Task("TestAllGuidRepresentations")
                     ArgumentCustomization = args => args.Append("-- RunConfiguration.TargetPlatform=x64"),
                     EnvironmentVariables = new Dictionary<string, string>
                     {
-                        { "TESTWITHDEFAULTGUIDREPRESENTATIONMODE", testWithGuidRepresentationMode },
-                        { "TESTWITHDEFAULTGUIDREPRESENTATION", testWithGuidRepresentation }
+                        { "TEST_WITH_DEFAULT_GUID_REPRESENTATION_MODE", testWithGuidRepresentationMode },
+                        { "TEST_WITH_DEFAULT_GUID_REPRESENTATION", testWithGuidRepresentation }
                     }
                 }
             );

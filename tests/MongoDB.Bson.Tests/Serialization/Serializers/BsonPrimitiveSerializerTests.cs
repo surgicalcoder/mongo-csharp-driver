@@ -24,9 +24,9 @@ using MongoDB.Bson.TestHelpers;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using Xunit;
 
-namespace MongoDB.Bson.Tests.Serialization
+namespace MongoDB.Bson.Tests.Serialization.Serializers
 {
-    public class BooleanSerializerTests
+    public class ClassWithBooleanSerializerTests
     {
         public class TestClass
         {
@@ -78,7 +78,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class DateTimeSerializerTests
+    public class ClassWithDateTimeSerializerTests
     {
         public class TestClass
         {
@@ -549,7 +549,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class DoubleSerializerTests
+    public class ClassWithDoubleSerializerTests
     {
         public class TestClass
         {
@@ -744,7 +744,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class GuidSerializerTests
+    public class ClassWithGuidSerializerTests
     {
         public class TestClass
         {
@@ -845,7 +845,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class Int32SerializerTests
+    public class ClassWithInt32SerializerTests
     {
         public class TestClass
         {
@@ -966,7 +966,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class Int64SerializerTests
+    public class ClassWithInt64SerializerTests
     {
         public class TestClass
         {
@@ -1087,7 +1087,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class ObjectIdSerializerTests
+    public class ClassWithObjectIdSerializerTests
     {
         public class TestClass
         {
@@ -1118,7 +1118,7 @@ namespace MongoDB.Bson.Tests.Serialization
         }
     }
 
-    public class StringSerializerTests
+    public class ClassWithStringSerializerTests
     {
         public class TestClass
         {
