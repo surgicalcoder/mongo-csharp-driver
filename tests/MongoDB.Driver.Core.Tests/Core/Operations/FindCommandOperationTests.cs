@@ -223,7 +223,7 @@ namespace MongoDB.Driver.Core.Operations
             var expectedResult = new BsonDocument
             {
                 { "find", _collectionNamespace.CollectionName },
-                { "allowDiskUse", () => allowDiskUse.Value, allowDiskUse.HasValue && serverType == ServerType.ShardRouter }
+                { "allowDiskUse", () => allowDiskUse.Value, allowDiskUse.HasValue }
             };
             result.Should().Be(expectedResult);
         }
