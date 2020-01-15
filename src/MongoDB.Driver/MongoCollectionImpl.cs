@@ -961,6 +961,7 @@ namespace MongoDB.Driver
                 renderedProjection.ProjectionSerializer,
                 _messageEncoderSettings)
             {
+                AllowDiskUse = options.AllowDiskUse,
                 AllowPartialResults = options.AllowPartialResults,
                 BatchSize = options.BatchSize,
                 Collation = options.Collation,
