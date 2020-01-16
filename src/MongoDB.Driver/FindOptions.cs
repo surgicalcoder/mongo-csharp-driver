@@ -25,7 +25,6 @@ namespace MongoDB.Driver
     public abstract class FindOptionsBase
     {
         // fields
-
         private bool? _allowDiskUse;
         private bool? _allowPartialResults;
         private int? _batchSize;
