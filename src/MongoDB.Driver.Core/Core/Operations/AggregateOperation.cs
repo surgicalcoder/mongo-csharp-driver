@@ -253,6 +253,7 @@ namespace MongoDB.Driver.Core.Operations
         /// <value>
         /// A value indicating whether the server should use a cursor to return the results.
         /// </value>
+        [Obsolete("Newer versions of the server always use a cursor.")]
         public bool? UseCursor
         {
             get { return _useCursor; }
