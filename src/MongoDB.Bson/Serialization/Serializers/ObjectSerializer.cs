@@ -29,6 +29,7 @@ namespace MongoDB.Bson.Serialization.Serializers
 
         // private fields
         private readonly IDiscriminatorConvention _discriminatorConvention;
+        private readonly GuidRepresentation _guidRepresentation;
 
         // constructors
         /// <summary>
@@ -45,6 +46,16 @@ namespace MongoDB.Bson.Serialization.Serializers
         /// <param name="discriminatorConvention">The discriminator convention.</param>
         /// <exception cref="System.ArgumentNullException">discriminatorConvention</exception>
         public ObjectSerializer(IDiscriminatorConvention discriminatorConvention)
+            : this(discriminatorConvention, GuidRepresentation.Unspecified)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectSerializer"/> class.
+        /// </summary>
+        /// <param name="discriminatorConvention">The discriminator convention.</param>
+        /// <param name="guidRepresentation">The Guid representation.</param>
+        public ObjectSerializer(IDiscriminatorConvention discriminatorConvention, GuidRepresentation guidRepresentation)
         {
             if (discriminatorConvention == null)
             {
@@ -52,6 +63,7 @@ namespace MongoDB.Bson.Serialization.Serializers
             }
 
             _discriminatorConvention = discriminatorConvention;
+            _guidRepresentation = guidRepresentation;
         }
 
         // public static properties
@@ -65,6 +77,12 @@ namespace MongoDB.Bson.Serialization.Serializers
         {
             get { return __instance; }
         }
+
+        // public properties
+        /// <summary>
+        /// Gets the Guid representation.
+        /// </summary>
+        public GuidRepresentation GuidRepresentation => _guidRepresentation;
 
         // public methods
         /// <summary>
@@ -93,19 +111,24 @@ namespace MongoDB.Bson.Serialization.Serializers
                     if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
                     {
 #pragma warning disable 618
-                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && _guidRepresentation == GuidRepresentation.Unspecified)
                         {
                             return binaryData.ToGuid();
                         }
                         else
                         {
-                            if (subType == BsonBinarySubType.UuidStandard)
+                            if (_guidRepresentation == GuidRepresentation.Unspecified)
                             {
-                                return binaryData.ToGuid(GuidRepresentation.Standard);
+                                return binaryData;
                             }
                             else
                             {
-                                return binaryData;
+                                var expectedSubType = GuidConverter.GetSubType(_guidRepresentation);
+                                if (subType != expectedSubType)
+                                {
+                                    throw new FormatException($"When GuidRepresentation is {_guidRepresentation} sub type must be: {expectedSubType}, not: {subType}.");
+                                }
+                                return GuidConverter.FromBytes(binaryData.Bytes, _guidRepresentation);
                             }
                         }
 #pragma warning restore 618
@@ -222,12 +245,18 @@ namespace MongoDB.Bson.Serialization.Serializers
 #pragma warning disable 618
                                     if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
                                     {
-                                        var guidRepresentation = bsonWriter.Settings.GuidRepresentation;
+                                        var guidRepresentation = _guidRepresentation;
+                                        if (guidRepresentation == GuidRepresentation.Unspecified)
+                                        {
+                                            guidRepresentation = bsonWriter.Settings.GuidRepresentation;
+                                        }
                                         binaryData = new BsonBinaryData(guid, guidRepresentation);
                                     }
                                     else
                                     {
-                                        binaryData = new BsonBinaryData(guid, GuidRepresentation.Standard);
+                                        var bytes = GuidConverter.ToBytes(guid, _guidRepresentation);
+                                        var subType = GuidConverter.GetSubType(_guidRepresentation);
+                                        binaryData = new BsonBinaryData(bytes, subType);
                                     }
 #pragma warning restore 618
                                     bsonWriter.WriteBinaryData(binaryData);
