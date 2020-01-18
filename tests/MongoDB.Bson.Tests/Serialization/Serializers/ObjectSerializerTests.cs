@@ -16,8 +16,13 @@
 using System;
 using System.Dynamic;
 using System.Linq;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
+using Moq;
 using Xunit;
 
 namespace MongoDB.Bson.Tests.Serialization
@@ -260,6 +265,61 @@ namespace MongoDB.Bson.Tests.Serialization
             var bson = c.ToBson(configurator: b => b.IsDynamicType = t => t == typeof(ExpandoObject));
             var rehydrated = BsonSerializer.Deserialize<C>(bson, b => b.DynamicDocumentSerializer = BsonSerializer.LookupSerializer<ExpandoObject>());
             Assert.True(bson.SequenceEqual(rehydrated.ToBson(configurator: b => b.IsDynamicType = t => t == typeof(ExpandoObject))));
+        }
+
+        [Fact]
+        public void constructor_should_initialize_instance()
+        {
+            var subject = new ObjectSerializer();
+
+            subject.GuidRepresentation.Should().Be(GuidRepresentation.Unspecified);
+        }
+
+        [Fact]
+        public void constructor_with_discriminator_convention_should_initialize_instance()
+        {
+            var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
+
+            var result = new ObjectSerializer(discriminatorConvention);
+
+            result.DiscriminatorConvention.Should().BeSameAs(discriminatorConvention);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void constructor_with_discriminator_convention_and_guid_representation_should_initialize_instance(
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified] GuidRepresentation guidRepresentation)
+        {
+            var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
+
+            var result = new ObjectSerializer(discriminatorConvention, guidRepresentation);
+
+            result.DiscriminatorConvention.Should().BeSameAs(discriminatorConvention);
+            result.GuidRepresentation.Should().Be(guidRepresentation);
+        }
+
+        [Fact]
+        public void DiscriminatorConvention_get_should_return_expected_result()
+        {
+            var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
+            var subject = new ObjectSerializer(discriminatorConvention);
+
+            var result = subject.DiscriminatorConvention;
+
+            result.Should().BeSameAs(discriminatorConvention);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void GuidRepresentation_get_should_return_expected_result(
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified] GuidRepresentation guidRepresentation)
+        {
+            var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
+            var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
+
+            var result = subject.GuidRepresentation;
+
+            result.Should().Be(guidRepresentation);
         }
     }
 }

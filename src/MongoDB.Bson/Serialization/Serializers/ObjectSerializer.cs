@@ -80,6 +80,11 @@ namespace MongoDB.Bson.Serialization.Serializers
 
         // public properties
         /// <summary>
+        /// Gets the discriminator convention.
+        /// </summary>
+        public IDiscriminatorConvention DiscriminatorConvention => _discriminatorConvention;
+
+        /// <summary>
         /// Gets the Guid representation.
         /// </summary>
         public GuidRepresentation GuidRepresentation => _guidRepresentation;
@@ -111,25 +116,26 @@ namespace MongoDB.Bson.Serialization.Serializers
                     if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
                     {
 #pragma warning disable 618
-                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && _guidRepresentation == GuidRepresentation.Unspecified)
+                        if (_guidRepresentation == GuidRepresentation.Unspecified)
                         {
-                            return binaryData.ToGuid();
-                        }
-                        else
-                        {
-                            if (_guidRepresentation == GuidRepresentation.Unspecified)
+                            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
                             {
-                                return binaryData;
+                                return binaryData.ToGuid();
                             }
                             else
                             {
-                                var expectedSubType = GuidConverter.GetSubType(_guidRepresentation);
-                                if (subType != expectedSubType)
-                                {
-                                    throw new FormatException($"When GuidRepresentation is {_guidRepresentation} sub type must be: {expectedSubType}, not: {subType}.");
-                                }
-                                return GuidConverter.FromBytes(binaryData.Bytes, _guidRepresentation);
+                                throw new BsonSerializationException("When GuidRepresentationMode is V3 GuidRepresentation must be specified in order to deserialize UuidLegacy or UuidStandard binary data.");
                             }
+                        }
+                        else
+                        {
+                            var expectedSubType = GuidConverter.GetSubType(_guidRepresentation);
+                            if (subType != expectedSubType)
+                            {
+                                throw new FormatException($"When GuidRepresentation is {_guidRepresentation} sub type must be: {expectedSubType}, not: {subType}.");
+                            }
+
+                            return GuidConverter.FromBytes(binaryData.Bytes, _guidRepresentation);
                         }
 #pragma warning restore 618
                     }
@@ -243,14 +249,17 @@ namespace MongoDB.Bson.Serialization.Serializers
                                     var guid = (Guid)value;
                                     BsonBinaryData binaryData;
 #pragma warning disable 618
-                                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+                                    if (_guidRepresentation == GuidRepresentation.Unspecified)
                                     {
-                                        var guidRepresentation = _guidRepresentation;
-                                        if (guidRepresentation == GuidRepresentation.Unspecified)
+                                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
                                         {
-                                            guidRepresentation = bsonWriter.Settings.GuidRepresentation;
+                                            var guidRepresentation = bsonWriter.Settings.GuidRepresentation;
+                                            binaryData = new BsonBinaryData(guid, guidRepresentation);
                                         }
-                                        binaryData = new BsonBinaryData(guid, guidRepresentation);
+                                        else
+                                        {
+                                            throw new BsonSerializationException("When GuidRepresentationMode is V3 GuidRepresentation must be specified.");
+                                        }
                                     }
                                     else
                                     {
