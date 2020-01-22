@@ -15,10 +15,11 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Xunit.Abstractions;
 
 namespace MongoDB.Bson.TestHelpers
 {
-    public class GuidMode
+    public class GuidMode : IXunitSerializable
     {
         #region static
         // private static fields
@@ -61,8 +62,14 @@ namespace MongoDB.Bson.TestHelpers
         }
         #endregion
 
-        private readonly GuidRepresentationMode _guidRepresentationMode;
-        private readonly GuidRepresentation _guidRepresentation;
+        private GuidRepresentationMode _guidRepresentationMode;
+        private GuidRepresentation _guidRepresentation;
+
+        public GuidMode()
+        {
+            _guidRepresentationMode = GuidRepresentationMode.V2;
+            _guidRepresentation = GuidRepresentation.CSharpLegacy;
+        }
 
         public GuidMode(GuidRepresentationMode guidRepresentationMode, GuidRepresentation guidRepresentation = GuidRepresentation.Unspecified)
         {
@@ -73,6 +80,24 @@ namespace MongoDB.Bson.TestHelpers
         public GuidRepresentationMode GuidRepresentationMode => _guidRepresentationMode;
 
         public GuidRepresentation GuidRepresentation => _guidRepresentation;
+
+        public void Deserialize(IXunitSerializationInfo info)
+        {
+            _guidRepresentationMode = info.GetValue<GuidRepresentationMode>(nameof(_guidRepresentationMode));
+            if (_guidRepresentationMode == GuidRepresentationMode.V2)
+            {
+                _guidRepresentation = info.GetValue<GuidRepresentation>(nameof(_guidRepresentation));
+            }
+        }
+
+        public void Serialize(IXunitSerializationInfo info)
+        {
+            info.AddValue(nameof(_guidRepresentationMode), _guidRepresentationMode);
+            if (_guidRepresentationMode == GuidRepresentationMode.V2)
+            {
+                info.AddValue(nameof(_guidRepresentation), _guidRepresentation);
+            }
+        }
 
         public void Set()
         {

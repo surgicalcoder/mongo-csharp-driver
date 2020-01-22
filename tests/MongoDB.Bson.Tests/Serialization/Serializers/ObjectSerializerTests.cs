@@ -15,12 +15,14 @@
 
 using System;
 using System.Dynamic;
+using System.IO;
 using System.Linq;
 using FluentAssertions;
-using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using Moq;
 using Xunit;
@@ -272,6 +274,7 @@ namespace MongoDB.Bson.Tests.Serialization
         {
             var subject = new ObjectSerializer();
 
+            subject.DiscriminatorConvention.Should().Be(BsonSerializer.LookupDiscriminatorConvention(typeof(object)));
             subject.GuidRepresentation.Should().Be(GuidRepresentation.Unspecified);
         }
 
@@ -280,22 +283,41 @@ namespace MongoDB.Bson.Tests.Serialization
         {
             var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
 
-            var result = new ObjectSerializer(discriminatorConvention);
+            var subject = new ObjectSerializer(discriminatorConvention);
 
-            result.DiscriminatorConvention.Should().BeSameAs(discriminatorConvention);
+            subject.DiscriminatorConvention.Should().BeSameAs(discriminatorConvention);
+            subject.GuidRepresentation.Should().Be(GuidRepresentation.Unspecified);
+        }
+
+        [Fact]
+        public void constructor_with_discriminator_convention_should_throw_when_discriminator_convention_is_null()
+        {
+            var exception = Record.Exception(() => new ObjectSerializer(null));
+
+            var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
+            e.ParamName.Should().Be("discriminatorConvention");
         }
 
         [Theory]
         [ParameterAttributeData]
         public void constructor_with_discriminator_convention_and_guid_representation_should_initialize_instance(
-            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified] GuidRepresentation guidRepresentation)
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified)] GuidRepresentation guidRepresentation)
         {
             var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
 
-            var result = new ObjectSerializer(discriminatorConvention, guidRepresentation);
+            var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
 
-            result.DiscriminatorConvention.Should().BeSameAs(discriminatorConvention);
-            result.GuidRepresentation.Should().Be(guidRepresentation);
+            subject.DiscriminatorConvention.Should().BeSameAs(discriminatorConvention);
+            subject.GuidRepresentation.Should().Be(guidRepresentation);
+        }
+
+        [Fact]
+        public void constructor_with_discriminator_convention_and_guid_representation_should_throw_when_discriminator_convention_is_null()
+        {
+            var exception = Record.Exception(() => new ObjectSerializer(null, GuidRepresentation.Unspecified));
+
+            var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
+            e.ParamName.Should().Be("discriminatorConvention");
         }
 
         [Fact]
@@ -312,7 +334,7 @@ namespace MongoDB.Bson.Tests.Serialization
         [Theory]
         [ParameterAttributeData]
         public void GuidRepresentation_get_should_return_expected_result(
-            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified] GuidRepresentation guidRepresentation)
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified)] GuidRepresentation guidRepresentation)
         {
             var discriminatorConvention = Mock.Of<IDiscriminatorConvention>();
             var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
@@ -320,6 +342,238 @@ namespace MongoDB.Bson.Tests.Serialization
             var result = subject.GuidRepresentation;
 
             result.Should().Be(guidRepresentation);
+        }
+
+        [SkippableTheory]
+        [ParameterAttributeData]
+        [ResetGuidModeAfterTest]
+        public void Deserialize_binary_data_should_return_expected_result_when_guid_representation_is_unspecified_and_mode_is_v2(
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified)]
+            GuidRepresentation defaultGuidRepresentation,
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified)]
+            GuidRepresentation readerGuidRepresentation)
+        {
+#pragma warning disable 618
+            var expectedGuidRepresentation = readerGuidRepresentation == GuidRepresentation.Unspecified ? defaultGuidRepresentation : readerGuidRepresentation;
+            if (expectedGuidRepresentation == GuidRepresentation.Unspecified)
+            {
+                throw new SkipException("Skipped because expected GuidRepresentation is Unspecified.");
+            }
+            BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V2;
+            BsonDefaults.GuidRepresentation = defaultGuidRepresentation;
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, GuidRepresentation.Unspecified);
+            var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
+            var subType = GuidConverter.GetSubType(expectedGuidRepresentation);
+            bytes[11] = (byte)subType;
+            var readerSettings = new BsonBinaryReaderSettings();
+            if (readerGuidRepresentation != GuidRepresentation.Unspecified)
+            {
+                readerSettings.GuidRepresentation = readerGuidRepresentation;
+            }
+            using (var memoryStream = new MemoryStream(bytes))
+            using (var reader = new BsonBinaryReader(memoryStream, readerSettings))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                reader.ReadStartDocument();
+                reader.ReadName("x");
+                var result = subject.Deserialize<object>(context);
+
+                var guidBytes = bytes.Skip(12).Take(16).ToArray();
+                var expectedResult = GuidConverter.FromBytes(guidBytes, expectedGuidRepresentation);
+                result.Should().Be(expectedResult);
+            }
+#pragma warning restore 618
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        [ResetGuidModeAfterTest]
+        public void Deserialize_binary_data_should_return_expected_result_when_guid_representation_is_specified(
+            [ClassValues(typeof(GuidModeValues))]
+            GuidMode mode,
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard)]
+            GuidRepresentation guidRepresentation)
+        {
+#pragma warning disable 618
+            mode.Set();
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
+            var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
+            var subType = GuidConverter.GetSubType(guidRepresentation);
+            bytes[11] = (byte)subType;
+            using (var memoryStream = new MemoryStream(bytes))
+            using (var reader = new BsonBinaryReader(memoryStream))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                reader.ReadStartDocument();
+                reader.ReadName("x");
+                var result = subject.Deserialize<object>(context);
+
+                var guidBytes = bytes.Skip(12).Take(16).ToArray();
+                var expectedResult = GuidConverter.FromBytes(guidBytes, guidRepresentation);
+                result.Should().Be(expectedResult);
+            }
+#pragma warning restore 618
+        }
+
+        [Fact]
+        [ResetGuidModeAfterTest]
+        public void Deserialize_binary_data_should_throw_when_guid_representation_is_unspecified_and_mode_is_v3()
+        {
+#pragma warning disable 618
+            BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V3;
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, GuidRepresentation.Unspecified);
+            var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
+            using (var memoryStream = new MemoryStream(bytes))
+            using (var reader = new BsonBinaryReader(memoryStream))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                reader.ReadStartDocument();
+                reader.ReadName("x");
+                var exception = Record.Exception(() => subject.Deserialize<object>(context));
+
+                exception.Should().BeOfType<BsonSerializationException>();
+            }
+#pragma warning restore 618
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        [ResetGuidModeAfterTest]
+        public void Deserialize_binary_data_should_throw_when_guid_representation_is_specified_and_sub_type_is_not_expected_sub_type(
+            [ClassValues(typeof(GuidModeValues))]
+            GuidMode mode,
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard)]
+            GuidRepresentation guidRepresentation)
+        {
+#pragma warning disable 618
+            mode.Set();
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
+            var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
+            var incorrectSubType = guidRepresentation == GuidRepresentation.Standard ? BsonBinarySubType.UuidLegacy : BsonBinarySubType.UuidStandard;
+            bytes[11] = (byte)incorrectSubType;
+            using (var memoryStream = new MemoryStream(bytes))
+            using (var reader = new BsonBinaryReader(memoryStream))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                reader.ReadStartDocument();
+                reader.ReadName("x");
+                var exception = Record.Exception(() => subject.Deserialize<object>(context));
+
+                exception.Should().BeOfType<FormatException>();
+            }
+#pragma warning restore 618
+        }
+
+        [SkippableTheory]
+        [ParameterAttributeData]
+        [ResetGuidModeAfterTest]
+        public void Serialize_guid_should_have_expected_result_when_guid_representation_is_unspecified_and_mode_is_v2(
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified)]
+            GuidRepresentation defaultGuidRepresentation,
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard, GuidRepresentation.Unspecified)]
+            GuidRepresentation writerGuidRepresentation)
+        {
+#pragma warning disable 618
+            var expectedGuidRepresentation = writerGuidRepresentation != GuidRepresentation.Unspecified ? writerGuidRepresentation : defaultGuidRepresentation;
+            if (expectedGuidRepresentation == GuidRepresentation.Unspecified)
+            {
+                throw new SkipException("Test skipped because expectedGuidRepresentation is Unspecified.");
+            }
+            BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V2;
+            BsonDefaults.GuidRepresentation = defaultGuidRepresentation;
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, GuidRepresentation.Unspecified);
+            var writerSettings = new BsonBinaryWriterSettings();
+            if (writerGuidRepresentation != GuidRepresentation.Unspecified)
+            {
+                writerSettings.GuidRepresentation = writerGuidRepresentation;
+            }
+            using (var memoryStream = new MemoryStream())
+            using (var writer = new BsonBinaryWriter(memoryStream, writerSettings))
+            {
+                var context = BsonSerializationContext.CreateRoot(writer);
+                var guid = Guid.Parse("01020304-0506-0708-090a-0b0c0d0e0f10");
+
+                writer.WriteStartDocument();
+                writer.WriteName("x");
+                subject.Serialize(context, guid);
+                writer.WriteEndDocument();
+
+                var bytes = memoryStream.ToArray();
+                var expectedBytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
+                var expectedSubType = GuidConverter.GetSubType(expectedGuidRepresentation);
+                var expectedGuidBytes = GuidConverter.ToBytes(guid, expectedGuidRepresentation);
+                expectedBytes[11] = (byte)expectedSubType;
+                Array.Copy(expectedGuidBytes, 0, expectedBytes, 12, 16);
+                bytes.Should().Equal(expectedBytes);
+            }
+#pragma warning restore 618
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        [ResetGuidModeAfterTest]
+        public void Serialize_guid_should_have_expected_result_when_guid_representation_is_specified(
+            [ClassValues(typeof(GuidModeValues))]
+            GuidMode mode,
+            [Values(GuidRepresentation.CSharpLegacy, GuidRepresentation.JavaLegacy, GuidRepresentation.PythonLegacy, GuidRepresentation.Standard)]
+            GuidRepresentation guidRepresentation)
+        {
+#pragma warning disable 618
+            mode.Set();
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
+            using (var memoryStream = new MemoryStream())
+            using (var writer = new BsonBinaryWriter(memoryStream))
+            {
+                var context = BsonSerializationContext.CreateRoot(writer);
+                var guid = Guid.Parse("01020304-0506-0708-090a-0b0c0d0e0f10");
+
+                writer.WriteStartDocument();
+                writer.WriteName("x");
+                subject.Serialize(context, guid);
+                writer.WriteEndDocument();
+
+                var bytes = memoryStream.ToArray();
+                var expectedBytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
+                var expectedSubType = GuidConverter.GetSubType(guidRepresentation);
+                var expectedGuidBytes = GuidConverter.ToBytes(guid, guidRepresentation);
+                expectedBytes[11] = (byte)expectedSubType;
+                Array.Copy(expectedGuidBytes, 0, expectedBytes, 12, 16);
+                bytes.Should().Equal(expectedBytes);
+            }
+#pragma warning restore 618
+        }
+
+        [Fact]
+        [ResetGuidModeAfterTest]
+        public void Serialize_guid_should_throw_when_guid_representation_is_unspecified_and_mode_is_v3()
+        {
+#pragma warning disable 618
+            BsonDefaults.GuidRepresentationMode = GuidRepresentationMode.V3;
+            var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            var subject = new ObjectSerializer(discriminatorConvention, GuidRepresentation.Unspecified);
+            using (var memoryStream = new MemoryStream())
+            using (var writer = new BsonBinaryWriter(memoryStream))
+            {
+                var context = BsonSerializationContext.CreateRoot(writer);
+                var guid = Guid.Parse("01020304-0506-0708-090a-0b0c0d0e0f10");
+
+                writer.WriteStartDocument();
+                writer.WriteName("x");
+                var exception = Record.Exception(() => subject.Serialize(context, guid));
+
+                exception.Should().BeOfType<BsonSerializationException>();
+            }
+#pragma warning restore 618
         }
     }
 }

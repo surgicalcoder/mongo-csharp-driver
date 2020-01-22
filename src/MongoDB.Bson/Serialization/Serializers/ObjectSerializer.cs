@@ -247,14 +247,14 @@ namespace MongoDB.Bson.Serialization.Serializers
                                 if (actualType == typeof(Guid))
                                 {
                                     var guid = (Guid)value;
-                                    BsonBinaryData binaryData;
 #pragma warning disable 618
                                     if (_guidRepresentation == GuidRepresentation.Unspecified)
                                     {
                                         if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
                                         {
                                             var guidRepresentation = bsonWriter.Settings.GuidRepresentation;
-                                            binaryData = new BsonBinaryData(guid, guidRepresentation);
+                                            var binaryData = new BsonBinaryData(guid, guidRepresentation);
+                                            bsonWriter.WriteBinaryData(binaryData);
                                         }
                                         else
                                         {
@@ -265,10 +265,25 @@ namespace MongoDB.Bson.Serialization.Serializers
                                     {
                                         var bytes = GuidConverter.ToBytes(guid, _guidRepresentation);
                                         var subType = GuidConverter.GetSubType(_guidRepresentation);
-                                        binaryData = new BsonBinaryData(bytes, subType);
+                                        var binaryData = new BsonBinaryData(bytes, subType);
+                                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+                                        {
+                                            bsonWriter.PushSettings(s => s.GuidRepresentation = GuidRepresentation.Unspecified);
+                                            try
+                                            {
+                                                bsonWriter.WriteBinaryData(binaryData);
+                                            }
+                                            finally
+                                            {
+                                                bsonWriter.PopSettings();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            bsonWriter.WriteBinaryData(binaryData);
+                                        }
                                     }
 #pragma warning restore 618
-                                    bsonWriter.WriteBinaryData(binaryData);
                                     return;
                                 }
                                 if (actualType == typeof(ObjectId))
