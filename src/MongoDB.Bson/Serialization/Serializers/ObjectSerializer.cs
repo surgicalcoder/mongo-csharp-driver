@@ -30,6 +30,7 @@ namespace MongoDB.Bson.Serialization.Serializers
         // private fields
         private readonly IDiscriminatorConvention _discriminatorConvention;
         private readonly GuidRepresentation _guidRepresentation;
+        private readonly GuidSerializer _guidSerializer;
 
         // constructors
         /// <summary>
@@ -64,6 +65,7 @@ namespace MongoDB.Bson.Serialization.Serializers
 
             _discriminatorConvention = discriminatorConvention;
             _guidRepresentation = guidRepresentation;
+            _guidSerializer = new GuidSerializer(_guidRepresentation);
         }
 
         // public static properties
@@ -77,17 +79,6 @@ namespace MongoDB.Bson.Serialization.Serializers
         {
             get { return __instance; }
         }
-
-        // public properties
-        /// <summary>
-        /// Gets the discriminator convention.
-        /// </summary>
-        public IDiscriminatorConvention DiscriminatorConvention => _discriminatorConvention;
-
-        /// <summary>
-        /// Gets the Guid representation.
-        /// </summary>
-        public GuidRepresentation GuidRepresentation => _guidRepresentation;
 
         // public methods
         /// <summary>
@@ -248,40 +239,15 @@ namespace MongoDB.Bson.Serialization.Serializers
                                 {
                                     var guid = (Guid)value;
 #pragma warning disable 618
-                                    if (_guidRepresentation == GuidRepresentation.Unspecified)
+                                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && _guidRepresentation == GuidRepresentation.Unspecified)
                                     {
-                                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
-                                        {
-                                            var guidRepresentation = bsonWriter.Settings.GuidRepresentation;
-                                            var binaryData = new BsonBinaryData(guid, guidRepresentation);
-                                            bsonWriter.WriteBinaryData(binaryData);
-                                        }
-                                        else
-                                        {
-                                            throw new BsonSerializationException("When GuidRepresentationMode is V3 GuidRepresentation must be specified.");
-                                        }
+                                        var guidRepresentation = bsonWriter.Settings.GuidRepresentation;
+                                        var binaryData = new BsonBinaryData(guid, guidRepresentation);
+                                        bsonWriter.WriteBinaryData(binaryData);
                                     }
                                     else
                                     {
-                                        var bytes = GuidConverter.ToBytes(guid, _guidRepresentation);
-                                        var subType = GuidConverter.GetSubType(_guidRepresentation);
-                                        var binaryData = new BsonBinaryData(bytes, subType);
-                                        if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
-                                        {
-                                            bsonWriter.PushSettings(s => s.GuidRepresentation = GuidRepresentation.Unspecified);
-                                            try
-                                            {
-                                                bsonWriter.WriteBinaryData(binaryData);
-                                            }
-                                            finally
-                                            {
-                                                bsonWriter.PopSettings();
-                                            }
-                                        }
-                                        else
-                                        {
-                                            bsonWriter.WriteBinaryData(binaryData);
-                                        }
+                                        _guidSerializer.Serialize(context, args, guid);
                                     }
 #pragma warning restore 618
                                     return;

@@ -168,16 +168,24 @@ namespace MongoDB.Bson.Serialization.Serializers
                     }
                     var bytes = GuidConverter.ToBytes(value, guidRepresentation);
                     var subType = GuidConverter.GetSubType(guidRepresentation);
-                    BsonBinaryData binaryData;
                     if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
                     {
-                        binaryData = new BsonBinaryData(bytes, subType, guidRepresentation);
+                        var binaryData = new BsonBinaryData(bytes, subType, guidRepresentation);
+                        bsonWriter.PushSettings(s => s.GuidRepresentation = GuidRepresentation.Unspecified);
+                        try
+                        {
+                            bsonWriter.WriteBinaryData(binaryData);
+                        }
+                        finally
+                        {
+                            bsonWriter.PopSettings();
+                        }
                     }
                     else
                     {
-                        binaryData = new BsonBinaryData(bytes, subType);
+                        var binaryData = new BsonBinaryData(bytes, subType);
+                        bsonWriter.WriteBinaryData(binaryData);
                     }
-                    bsonWriter.WriteBinaryData(binaryData);
                     break;
 #pragma warning restore 618
 
