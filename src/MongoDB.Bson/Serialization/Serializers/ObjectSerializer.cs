@@ -102,34 +102,28 @@ namespace MongoDB.Bson.Serialization.Serializers
                     goto default;
 
                 case BsonType.Binary:
-                    var binaryData = bsonReader.ReadBinaryData();
-                    var subType = binaryData.SubType;
-                    if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
-                    {
 #pragma warning disable 618
-                        if (_guidRepresentation == GuidRepresentation.Unspecified)
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && _guidRepresentation == GuidRepresentation.Unspecified)
+                    {
+                        var binaryData = bsonReader.ReadBinaryData();
+                        var subType = binaryData.SubType;
+                        if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
                         {
-                            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
-                            {
-                                return binaryData.ToGuid();
-                            }
-                            else
-                            {
-                                throw new BsonSerializationException("When GuidRepresentationMode is V3 GuidRepresentation must be specified in order to deserialize UuidLegacy or UuidStandard binary data.");
-                            }
+                            return binaryData.ToGuid();
                         }
-                        else
-                        {
-                            var expectedSubType = GuidConverter.GetSubType(_guidRepresentation);
-                            if (subType != expectedSubType)
-                            {
-                                throw new FormatException($"When GuidRepresentation is {_guidRepresentation} sub type must be: {expectedSubType}, not: {subType}.");
-                            }
-
-                            return GuidConverter.FromBytes(binaryData.Bytes, _guidRepresentation);
-                        }
-#pragma warning restore 618
                     }
+                    else
+                    {
+                        var binaryDataBookMark = bsonReader.GetBookmark();
+                        var binaryData = bsonReader.ReadBinaryDataIgnoringGuidRepresentation();
+                        var subType = binaryData.SubType;
+                        if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
+                        {
+                            bsonReader.ReturnToBookmark(binaryDataBookMark);
+                            return _guidSerializer.Deserialize(context);
+                        }
+                    }
+#pragma warning restore 618
                     goto default;
 
                 case BsonType.Boolean:

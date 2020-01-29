@@ -121,9 +121,35 @@ namespace MongoDB.Bson.IO
         /// Reads BSON binary data from the reader.
         /// </summary>
         /// <returns>A BsonBinaryData.</returns>
-#pragma warning disable 618 // about obsolete BsonBinarySubType.OldBinary
         public override BsonBinaryData ReadBinaryData()
         {
+#pragma warning disable 618
+            var binaryData = ReadBinaryDataIgnoringGuidRepresentation();
+
+            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
+            {
+                var bytes = binaryData.Bytes;
+                var subType = binaryData.SubType;
+
+                GuidRepresentation guidRepresentation;
+                switch (subType)
+                {
+                    case BsonBinarySubType.UuidLegacy: guidRepresentation = _settings.GuidRepresentation; break;
+                    case BsonBinarySubType.UuidStandard: guidRepresentation = GuidRepresentation.Standard; break;
+                    default: guidRepresentation = GuidRepresentation.Unspecified; break;
+                }
+                binaryData = new BsonBinaryData(bytes, subType, guidRepresentation);
+            }
+
+            return binaryData;
+#pragma warning restore 618
+        }
+
+        /// <inheritdoc/>
+        [Obsolete("Use ReadBinaryData instead once you have transitioned to GuidRepresentationMode V3.")]
+        public override BsonBinaryData ReadBinaryDataIgnoringGuidRepresentation()
+        {
+#pragma warning disable 618
             if (Disposed) { ThrowObjectDisposedException(); }
             VerifyBsonType("ReadBinaryData", BsonType.Binary);
 
@@ -148,27 +174,10 @@ namespace MongoDB.Bson.IO
 
             var bytes = _bsonStream.ReadBytes(size);
 
-            BsonBinaryData binaryData;
-            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
-            {
-                GuidRepresentation guidRepresentation;
-                switch (subType)
-                {
-                    case BsonBinarySubType.UuidLegacy: guidRepresentation = _settings.GuidRepresentation; break;
-                    case BsonBinarySubType.UuidStandard: guidRepresentation = GuidRepresentation.Standard; break;
-                    default: guidRepresentation = GuidRepresentation.Unspecified; break;
-                }
-                binaryData = new BsonBinaryData(bytes, subType, guidRepresentation);
-            }
-            else
-            {
-                binaryData = new BsonBinaryData(bytes, subType);
-            }
-
             State = GetNextState();
-            return binaryData;
-        }
+            return new BsonBinaryData(bytes, subType);
 #pragma warning restore 618
+        }
 
         /// <summary>
         /// Reads a BSON boolean from the reader.

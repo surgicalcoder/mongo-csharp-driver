@@ -14,6 +14,7 @@
 */
 
 using System;
+using MongoDB.Bson.IO;
 
 namespace MongoDB.Bson.Serialization.Serializers
 {
@@ -99,16 +100,23 @@ namespace MongoDB.Bson.Serialization.Serializers
             switch (bsonType)
             {
                 case BsonType.Binary:
-                    var binaryData = bsonReader.ReadBinaryData();
+#pragma warning disable 618
+                    BsonBinaryData binaryData;
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && _guidRepresentation == GuidRepresentation.Unspecified)
+                    {
+                        binaryData = bsonReader.ReadBinaryData();
+                    }
+                    else
+                    {
+                        binaryData = bsonReader.ReadBinaryDataIgnoringGuidRepresentation();
+                    }
                     var bytes = binaryData.Bytes;
                     var subType = binaryData.SubType;
-#pragma warning disable 618
                     var guidRepresentation = _guidRepresentation;
                     if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 && guidRepresentation == GuidRepresentation.Unspecified)
                     {
                         guidRepresentation = binaryData.GuidRepresentation;
                     }
-#pragma warning restore 618
                     if (bytes.Length != 16)
                     {
                         message = string.Format("Expected length to be 16, not {0}.", bytes.Length);
@@ -123,8 +131,7 @@ namespace MongoDB.Bson.Serialization.Serializers
                     {
                         throw new BsonSerializationException("GuidSerializer cannot deserialize a Guid when GuidRepresentation is Unspecified.");
                     }
-#pragma warning disable 618
-                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3)
+                    if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V3 || _guidRepresentation != GuidRepresentation.Unspecified)
                     {
                         var expectedSubType = GuidConverter.GetSubType(guidRepresentation);
                         if (subType != expectedSubType)
@@ -132,8 +139,8 @@ namespace MongoDB.Bson.Serialization.Serializers
                             throw new FormatException($"GuidSerializer cannot deserialize a Guid when GuidRepresentation is {guidRepresentation} and binary sub type is {subType}.");
                         }
                     }
-#pragma warning restore 618
                     return GuidConverter.FromBytes(bytes, guidRepresentation);
+#pragma warning restore 618
 
                 case BsonType.String:
                     return new Guid(bsonReader.ReadString());

@@ -150,6 +150,13 @@ namespace MongoDB.Bson.IO
         public abstract BsonBinaryData ReadBinaryData();
 
         /// <summary>
+        /// Reads BSON binary data from the reader.
+        /// </summary>
+        /// <returns>A BsonBinaryData.</returns>
+        [Obsolete("Use ReadBinaryData instead once you have transitioned to GuidRepresentationMode V3.")]
+        public abstract BsonBinaryData ReadBinaryDataIgnoringGuidRepresentation();
+
+        /// <summary>
         /// Reads a BSON boolean from the reader.
         /// </summary>
         /// <returns>A Boolean.</returns>

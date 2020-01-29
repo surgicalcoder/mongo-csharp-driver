@@ -153,6 +153,12 @@ namespace MongoDB.Driver.Linq.Processors.Pipeline.MethodCallBinders
                 return _parent.ReadBinaryData();
             }
 
+            [Obsolete("Use ReadBinaryData instead once you have transitioned to GuidRepresentationMode V3.")]
+            public BsonBinaryData ReadBinaryDataIgnoringGuidRepresentation()
+            {
+                return _parent.ReadBinaryDataIgnoringGuidRepresentation();
+            }
+
             public bool ReadBoolean()
             {
                 return _parent.ReadBoolean();

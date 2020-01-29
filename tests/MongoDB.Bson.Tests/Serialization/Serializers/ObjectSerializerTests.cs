@@ -437,7 +437,7 @@ namespace MongoDB.Bson.Tests.Serialization
             GuidRepresentation guidRepresentation)
         {
 #pragma warning disable 618
-        mode.Set();
+            mode.Set();
             var discriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
             var subject = new ObjectSerializer(discriminatorConvention, guidRepresentation);
             var bytes = new byte[] { 29, 0, 0, 0, 5, 120, 0, 16, 0, 0, 0, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0 };
@@ -449,7 +449,7 @@ namespace MongoDB.Bson.Tests.Serialization
                 readerSettings.GuidRepresentation = readerGuidRepresentation;
             }
             using (var memoryStream = new MemoryStream(bytes))
-            using (var reader = new BsonBinaryReader(memoryStream))
+            using (var reader = new BsonBinaryReader(memoryStream, readerSettings))
             {
                 var context = BsonDeserializationContext.CreateRoot(reader);
 
