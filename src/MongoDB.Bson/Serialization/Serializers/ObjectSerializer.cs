@@ -114,12 +114,12 @@ namespace MongoDB.Bson.Serialization.Serializers
                     }
                     else
                     {
-                        var binaryDataBookMark = bsonReader.GetBookmark();
+                        var binaryDataBookmark = bsonReader.GetBookmark();
                         var binaryData = bsonReader.ReadBinaryDataWithGuidRepresentationUnspecified();
                         var subType = binaryData.SubType;
                         if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
                         {
-                            bsonReader.ReturnToBookmark(binaryDataBookMark);
+                            bsonReader.ReturnToBookmark(binaryDataBookmark);
                             return _guidSerializer.Deserialize(context);
                         }
                     }

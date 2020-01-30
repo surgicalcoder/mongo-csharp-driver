@@ -155,7 +155,7 @@ namespace MongoDB.Driver.Linq.Processors.Pipeline.MethodCallBinders
 
             public void PushSettings(Action<BsonReaderSettings> configurator)
             {
-                _parent.PopSettings();
+                _parent.PushSettings(configurator);
             }
 
             public BsonBinaryData ReadBinaryData()
