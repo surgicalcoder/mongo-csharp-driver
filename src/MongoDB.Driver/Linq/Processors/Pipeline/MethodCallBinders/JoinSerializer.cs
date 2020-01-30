@@ -148,15 +148,19 @@ namespace MongoDB.Driver.Linq.Processors.Pipeline.MethodCallBinders
                 return _parent.IsAtEndOfFile();
             }
 
+            public void PopSettings()
+            {
+                _parent.PopSettings();
+            }
+
+            public void PushSettings(Action<BsonReaderSettings> configurator)
+            {
+                _parent.PopSettings();
+            }
+
             public BsonBinaryData ReadBinaryData()
             {
                 return _parent.ReadBinaryData();
-            }
-
-            [Obsolete("Use ReadBinaryData instead once you have transitioned to GuidRepresentationMode V3.")]
-            public BsonBinaryData ReadBinaryDataIgnoringGuidRepresentation()
-            {
-                return _parent.ReadBinaryDataIgnoringGuidRepresentation();
             }
 
             public bool ReadBoolean()

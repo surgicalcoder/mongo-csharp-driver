@@ -108,7 +108,7 @@ namespace MongoDB.Bson.Serialization.Serializers
                     }
                     else
                     {
-                        binaryData = bsonReader.ReadBinaryDataIgnoringGuidRepresentation();
+                        binaryData = bsonReader.ReadBinaryDataWithGuidRepresentationUnspecified();
                     }
                     var bytes = binaryData.Bytes;
                     var subType = binaryData.SubType;

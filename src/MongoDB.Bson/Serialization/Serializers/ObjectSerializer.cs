@@ -115,7 +115,7 @@ namespace MongoDB.Bson.Serialization.Serializers
                     else
                     {
                         var binaryDataBookMark = bsonReader.GetBookmark();
-                        var binaryData = bsonReader.ReadBinaryDataIgnoringGuidRepresentation();
+                        var binaryData = bsonReader.ReadBinaryDataWithGuidRepresentationUnspecified();
                         var subType = binaryData.SubType;
                         if (subType == BsonBinarySubType.UuidStandard || subType == BsonBinarySubType.UuidLegacy)
                         {
