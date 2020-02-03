@@ -247,7 +247,7 @@ namespace MongoDB.Driver.Tests
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
                 clone = settings.Clone();
-                clone.GuidRepresentation = GuidRepresentation.PythonLegacy;
+                clone.GuidRepresentation = settings.GuidRepresentation == GuidRepresentation.CSharpLegacy ? GuidRepresentation.PythonLegacy : GuidRepresentation.CSharpLegacy;
                 Assert.False(clone.Equals(settings));
             }
 #pragma warning restore 618

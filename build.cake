@@ -115,6 +115,17 @@ Task("Test")
         .Where(name => !name.ToString().Contains("Atlas")),
         testProject => 
     {
+        var testWithDefaultGuidRepresentationMode = Environment.GetEnvironmentVariable("TEST_WITH_DEFAULT_GUID_REPRESENTATION_MODE");
+        if (testWithDefaultGuidRepresentationMode != null)
+        {
+            Console.WriteLine($"TEST_WITH_DEFAULT_GUID_REPRESENTATION_MODE={testWithDefaultGuidRepresentationMode}");
+        }
+        var testWithDefaultGuidRepresentation = Environment.GetEnvironmentVariable("TEST_WITH_DEFAULT_GUID_REPRESENTATION");
+        if (testWithDefaultGuidRepresentation != null)
+        {
+            Console.WriteLine($"TEST_WITH_DEFAULT_GUID_REPRESENTATION={testWithDefaultGuidRepresentation}");
+        }
+
         DotNetCoreTest(
             testProject.FullPath,
             new DotNetCoreTestSettings {

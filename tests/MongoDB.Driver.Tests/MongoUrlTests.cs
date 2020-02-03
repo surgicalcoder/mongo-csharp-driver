@@ -262,10 +262,13 @@ namespace MongoDB.Driver.Tests
                 Assert.Equal(TimeSpan.FromSeconds(9), url.WTimeout);
                 var expectedConnectionString = connectionString;
 #pragma warning disable 618
-                var defaultGuidRepresentation = BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2 ? BsonDefaults.GuidRepresentation : GuidRepresentation.Unspecified;
-                if (url.GuidRepresentation == defaultGuidRepresentation)
+                if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
                 {
-                    expectedConnectionString = expectedConnectionString.Replace("uuidRepresentation=pythonLegacy;", "");
+                    var defaultGuidRepresentation = BsonDefaults.GuidRepresentation;
+                    if (url.GuidRepresentation == defaultGuidRepresentation)
+                    {
+                        expectedConnectionString = expectedConnectionString.Replace("uuidRepresentation=pythonLegacy;", "");
+                    }
                 }
 #pragma warning restore 618
                 Assert.Equal(expectedConnectionString, url.ToString());
