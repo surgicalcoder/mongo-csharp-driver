@@ -35,7 +35,8 @@ namespace MongoDB.Driver.Core.Operations
 
         public static TResult Execute<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context, CancellationToken cancellationToken)
         {
-            if (!context.RetryRequested || !AreRetryableWritesSupported(context.Channel.ConnectionDescription) || context.Binding.Session.IsInTransaction)
+            var shouldRetryWrites = ShouldRetryWrites(operation, context);
+            if (!shouldRetryWrites)
             {
                 return operation.ExecuteAttempt(context, 1, null, cancellationToken);
             }
@@ -86,7 +87,8 @@ namespace MongoDB.Driver.Core.Operations
 
         public static async Task<TResult> ExecuteAsync<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context, CancellationToken cancellationToken)
         {
-            if (!context.RetryRequested || !AreRetryableWritesSupported(context.Channel.ConnectionDescription) || context.Binding.Session.IsInTransaction)
+            var shouldRetryWrites = ShouldRetryWrites(operation, context);
+            if (!shouldRetryWrites)
             {
                 return await operation.ExecuteAttemptAsync(context, 1, null, cancellationToken).ConfigureAwait(false);
             }
@@ -133,6 +135,20 @@ namespace MongoDB.Driver.Core.Operations
             return
                 connectionDescription.IsMasterResult.LogicalSessionTimeout != null &&
                 connectionDescription.IsMasterResult.ServerType != ServerType.Standalone;
+        }
+
+        private static bool ShouldRetryWrites<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context)
+        {
+            var writeConcern = operation.WriteConcern;
+            if (writeConcern != null && !writeConcern.IsAcknowledged)
+            {
+                return false;
+            }
+
+            return
+                context.RetryRequested &&
+                AreRetryableWritesSupported(context.Channel.ConnectionDescription) &&
+                !context.Binding.Session.IsInTransaction;
         }
 
         private static bool ShouldThrowOriginalException(Exception retryException)
