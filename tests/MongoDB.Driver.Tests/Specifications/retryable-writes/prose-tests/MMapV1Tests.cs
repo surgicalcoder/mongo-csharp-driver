@@ -13,8 +13,10 @@
 * limitations under the License.
 */
 
+using System;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.TestHelpers;
@@ -24,8 +26,10 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
 {
     public class MMapV1Tests
     {
-        [SkippableFact]
-        public void Write_operation_should_throw_when_retry_writes_is_true_and_storage_engine_is_MMMAPv1()
+        [SkippableTheory]
+        [ParameterAttributeData]
+        public void Write_operation_should_throw_when_retry_writes_is_true_and_storage_engine_is_MMMAPv1(
+            [Values(false, true)] bool async)
         {
             RequireServer.Check()
                 .VersionGreaterThanOrEqualTo("3.6.0")
@@ -39,7 +43,15 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
                 database.DropCollection(collection.CollectionNamespace.CollectionName);
 
                 var document = new BsonDocument("_id", 1);
-                var exception = Record.Exception(() => collection.InsertOne(document));
+                Exception exception;
+                if (async)
+                {
+                    exception = Record.Exception(() => collection.InsertOneAsync(document).GetAwaiter().GetResult());
+                }
+                else
+                {
+                    exception = Record.Exception(() => collection.InsertOne(document));
+                }
 
                 var e = exception.Should().BeOfType<MongoCommandException>().Subject;
                 e.Message.Should().Be("This MongoDB deployment does not support retryable writes. Please add retryWrites=false to your connection string.");
