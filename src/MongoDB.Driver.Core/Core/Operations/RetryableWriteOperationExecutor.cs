@@ -35,8 +35,7 @@ namespace MongoDB.Driver.Core.Operations
 
         public static TResult Execute<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context, CancellationToken cancellationToken)
         {
-            var shouldRetryWrites = ShouldRetryWrites(operation, context);
-            if (!shouldRetryWrites)
+            if (!AreRetriesAllowed(operation, context))
             {
                 return operation.ExecuteAttempt(context, 1, null, cancellationToken);
             }
@@ -87,8 +86,7 @@ namespace MongoDB.Driver.Core.Operations
 
         public static async Task<TResult> ExecuteAsync<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context, CancellationToken cancellationToken)
         {
-            var shouldRetryWrites = ShouldRetryWrites(operation, context);
-            if (!shouldRetryWrites)
+            if (!AreRetriesAllowed(operation, context))
             {
                 return await operation.ExecuteAttemptAsync(context, 1, null, cancellationToken).ConfigureAwait(false);
             }
@@ -130,6 +128,11 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // privates static methods
+        private static bool AreRetriesAllowed<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context)
+        {
+            return IsOperationAcknowledged(operation) && DoesContextAllowRetries(context);
+        }
+
         private static bool AreRetryableWritesSupported(ConnectionDescription connectionDescription)
         {
             return
@@ -137,18 +140,20 @@ namespace MongoDB.Driver.Core.Operations
                 connectionDescription.IsMasterResult.ServerType != ServerType.Standalone;
         }
 
-        private static bool ShouldRetryWrites<TResult>(IRetryableWriteOperation<TResult> operation, RetryableWriteContext context)
+        private static bool DoesContextAllowRetries(RetryableWriteContext context)
         {
-            var writeConcern = operation.WriteConcern;
-            if (writeConcern != null && !writeConcern.IsAcknowledged)
-            {
-                return false;
-            }
-
             return
                 context.RetryRequested &&
                 AreRetryableWritesSupported(context.Channel.ConnectionDescription) &&
                 !context.Binding.Session.IsInTransaction;
+        }
+
+        private static bool IsOperationAcknowledged<TResult>(IRetryableWriteOperation<TResult> operation)
+        {
+            var writeConcern = operation.WriteConcern;
+            return 
+                writeConcern == null || // null means use server default write concern which implies acknowledged
+                writeConcern.IsAcknowledged;
         }
 
         private static bool ShouldThrowOriginalException(Exception retryException)
