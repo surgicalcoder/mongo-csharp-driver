@@ -33,7 +33,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
         {
             RequireServer.Check()
                 .VersionGreaterThanOrEqualTo("3.6.0")
-                .ClusterTypes(ClusterType.ReplicaSet, ClusterType.Sharded)
+                .ClusterType(ClusterType.ReplicaSet)
                 .StorageEngine("mmapv1");
 
             using (var client = CreateDisposableMongoClient())
