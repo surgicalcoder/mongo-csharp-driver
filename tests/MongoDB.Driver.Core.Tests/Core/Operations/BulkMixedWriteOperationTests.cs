@@ -1298,8 +1298,7 @@ namespace MongoDB.Driver.Core.Operations
         [SkippableTheory]
         [ParameterAttributeData]
         public void Execute_with_insert_should_not_send_session_id_when_unacknowledged_writes(
-            [Values(false, true)]
-            bool retryRequested,
+            [Values(false, true)] bool retryRequested,
             [Values(false, true)] bool useImplicitSession,
             [Values(false, true)] bool async)
         {
@@ -1333,8 +1332,7 @@ namespace MongoDB.Driver.Core.Operations
         [SkippableTheory]
         [ParameterAttributeData]
         public void Execute_with_update_should_not_send_session_id_when_unacknowledged_writes(
-            [Values(false, true)]
-            bool retryRequested,
+            [Values(false, true)] bool retryRequested,
             [Values(false, true)] bool useImplicitSession,
             [Values(false, true)] bool async)
         {

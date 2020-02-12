@@ -48,7 +48,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
             using (var client = CreateDisposableClient(eventCapturer))
             {
                 var database = client.GetDatabase(_databaseName);
-                var collection = database.GetCollection<BsonDocument>(_collectionName);
+                var collection =  database.GetCollection<BsonDocument>(_collectionName).WithWriteConcern(WriteConcern.Unacknowledged);
 
                 switch (operation)
                 {
@@ -56,11 +56,11 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
                         var deleteFilter = Builders<BsonDocument>.Filter.Eq("_id", 1);
                         if (async)
                         {
-                            collection.WithWriteConcern(WriteConcern.Unacknowledged).DeleteOneAsync(deleteFilter).GetAwaiter().GetResult();
+                            collection.DeleteOneAsync(deleteFilter).GetAwaiter().GetResult();
                         }
                         else
                         {
-                            collection.WithWriteConcern(WriteConcern.Unacknowledged).DeleteOne(deleteFilter);
+                            collection.DeleteOne(deleteFilter);
                         }
                         break;
 
@@ -68,11 +68,11 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
                         var document = new BsonDocument("_id", 1);
                         if (async)
                         {
-                            collection.WithWriteConcern(WriteConcern.Unacknowledged).InsertOneAsync(document).GetAwaiter().GetResult(); ;
+                            collection.InsertOneAsync(document).GetAwaiter().GetResult(); ;
                         }
                         else
                         {
-                            collection.WithWriteConcern(WriteConcern.Unacknowledged).InsertOne(document);
+                            collection.InsertOne(document);
                         }
                         SpinUntilCollectionIsNotEmpty(); // wait for unacknowledged insert to complete so it won't execute later while another test is running
                         break;
@@ -82,11 +82,11 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
                         var update = Builders<BsonDocument>.Update.Set("x", 1);
                         if (async)
                         {
-                            collection.WithWriteConcern(WriteConcern.Unacknowledged).UpdateOneAsync(updateFilter, update).GetAwaiter().GetResult();
+                            collection.UpdateOneAsync(updateFilter, update).GetAwaiter().GetResult();
                         }
                         else
                         {
-                            collection.WithWriteConcern(WriteConcern.Unacknowledged).UpdateOne(updateFilter, update);
+                            collection.UpdateOne(updateFilter, update);
                         }
                         break;
 
