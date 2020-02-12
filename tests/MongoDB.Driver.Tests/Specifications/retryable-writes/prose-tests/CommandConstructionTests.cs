@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
@@ -73,6 +74,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
                         {
                             collection.WithWriteConcern(WriteConcern.Unacknowledged).InsertOne(document);
                         }
+                        SpinUntilCollectionIsNotEmpty(); // wait for unacknowledged insert to complete so it won't execute later while another test is running
                         break;
 
                     case "update":
@@ -451,6 +453,14 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes.prose_tests
             var client = DriverTestConfiguration.Client;
             var database = client.GetDatabase(_databaseName);
             database.DropCollection(_collectionName);
+        }
+
+        private void SpinUntilCollectionIsNotEmpty()
+        {
+            var client = DriverTestConfiguration.Client;
+            var database = client.GetDatabase(_databaseName);
+            var collection = database.GetCollection<BsonDocument>(_collectionName);
+            SpinWait.SpinUntil(() => collection.CountDocuments("{}") > 0, TimeSpan.FromSeconds(10)).Should().BeTrue();
         }
     }
 }
