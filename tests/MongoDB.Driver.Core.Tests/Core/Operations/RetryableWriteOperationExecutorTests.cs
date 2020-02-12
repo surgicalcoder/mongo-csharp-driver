@@ -51,7 +51,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Operations
 
             var result = RetryableWriteOperationExecutorReflector.DoesContextAllowRetries(context);
 
-            object should = result.Should().Be(expectedResult);
+            result.Should().Be(expectedResult);
         }
 
         [Theory]
