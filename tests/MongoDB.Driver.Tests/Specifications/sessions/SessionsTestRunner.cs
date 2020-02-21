@@ -38,12 +38,9 @@ namespace MongoDB.Driver.Tests.Specifications.sessions
             using (var client = CreateDisposableClient(test, eventCapturer))
             using (var session0 = StartSession(client, test, "session0"))
             {
-                var objectMap = new Dictionary<string, object>
-                {
-                    { "session0", session0 },
-                };
+                ObjectMap.Add("session0", session0);
 
-                ExecuteOperations(client, objectMap, test, eventCapturer);
+                ExecuteOperations(client, test, eventCapturer);
             }
         }
 

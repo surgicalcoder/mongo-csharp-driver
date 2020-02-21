@@ -36,15 +36,28 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         {
             JsonDrivenHelper.EnsureFieldEquals(document, "object", "collection");
 
-            if (document.Contains("collectionOptions"))
+            if (document.TryGetValue("databaseOptions", out var databaseOptions))
             {
-                ParseCollectionOptions(document["collectionOptions"].AsBsonDocument);
+                ParseDatabaseOptions(databaseOptions.AsBsonDocument, out var database);
+                _collection = GetCollectionFromAnotherDatabaseInstance(database, _collection);
+            }
+
+            if (document.TryGetValue("collectionOptions", out var collectionOptions))
+            {
+                ParseCollectionOptions(collectionOptions.AsBsonDocument);
             }
 
             base.Arrange(document);
         }
 
         // private methods
+        private IMongoCollection<BsonDocument> GetCollectionFromAnotherDatabaseInstance(IMongoDatabase database, IMongoCollection<BsonDocument> collection)
+        {
+            return database.GetCollection<BsonDocument>(
+                collection.CollectionNamespace.CollectionName,
+                collection.Settings);
+        }
+
         private void ParseCollectionOptions(BsonDocument document)
         {
             JsonDrivenHelper.EnsureAllFieldsAreValid(document, "readConcern", "readPreference", "writeConcern");
@@ -65,6 +78,30 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             {
                 var writeConcern = WriteConcern.FromBsonDocument(document["writeConcern"].AsBsonDocument);
                 _collection = _collection.WithWriteConcern(writeConcern);
+            }
+        }
+
+        private void ParseDatabaseOptions(BsonDocument document, out IMongoDatabase database)
+        {
+            JsonDrivenHelper.EnsureAllFieldsAreValid(document, "readConcern", "readPreference", "writeConcern");
+
+            database = _collection.Database;
+            if (document.Contains("readConcern"))
+            {
+                var readConcern = ReadConcern.FromBsonDocument(document["readConcern"].AsBsonDocument);
+                database = database.WithReadConcern(readConcern);
+            }
+
+            if (document.Contains("readPreference"))
+            {
+                var readPreference = ReadPreference.FromBsonDocument(document["readPreference"].AsBsonDocument);
+                database = database.WithReadPreference(readPreference);
+            }
+
+            if (document.Contains("writeConcern"))
+            {
+                var writeConcern = WriteConcern.FromBsonDocument(document["writeConcern"].AsBsonDocument);
+                database = database.WithWriteConcern(writeConcern);
             }
         }
     }

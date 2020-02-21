@@ -41,7 +41,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         // public methods
         public override void Arrange(BsonDocument document)
         {
-            JsonDrivenHelper.EnsureAllFieldsAreValid(document, "name", "object", "collectionOptions", "arguments", "result", "error");
+            JsonDrivenHelper.EnsureAllFieldsAreValid(document, "name", "object", "collectionOptions", "databaseOptions", "arguments", "result", "error");
             base.Arrange(document);
         }
 
@@ -88,7 +88,9 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                     return;
 
                 case "pipeline":
-                    _pipeline = new BsonDocumentStagePipelineDefinition<BsonDocument, BsonDocument>(value.AsBsonArray.Cast<BsonDocument>());
+                    var pipelineStages = value.AsBsonArray.Cast<BsonDocument>();
+                    _pipeline = new BsonDocumentStagePipelineDefinition<BsonDocument, BsonDocument>(pipelineStages);
+                    ReplaceCollectionForAssertingtIfRequired(pipelineStages);
                     return;
 
                 case "session":
@@ -101,6 +103,23 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             }
 
             base.SetArgument(name, value);
+        }
+
+        // private methods
+        private void ReplaceCollectionForAssertingtIfRequired(IEnumerable<BsonDocument> pipelineStages)
+        {
+            // assuming that only one _objectMap item will be added for each call
+            foreach (var stage in pipelineStages)
+            {
+                if (stage.TryGetElement("$out", out var outElement))
+                {
+                    _objectMap.Add(outElement.Name, outElement.Value);
+                }
+                if (stage.TryGetElement("$merge", out var mergeElement))
+                {
+                    _objectMap.Add(mergeElement.Name, mergeElement.Value["into"].ToString());
+                }
+            }
         }
     }
 }
