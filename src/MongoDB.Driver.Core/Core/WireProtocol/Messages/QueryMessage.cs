@@ -123,7 +123,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages
             bool slaveOk,
             bool partialOk,
             bool noCursorTimeout,
-            bool oplogReplay, // obsolete: OplogReplay is ignored by server versions 4.3.1 and newer
+            bool oplogReplay, // obsolete: OplogReplay is ignored by server versions 4.4.0 and newer
             bool tailableCursor,
             bool awaitData,
             Func<bool> shouldBeSent = null)
@@ -196,7 +196,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages
         /// <value>
         ///   <c>true</c> if the OplogReplay bit will be set; otherwise, <c>false</c>.
         /// </value>
-        [Obsolete("OplogReplay is ignored by server versions 4.3.1 and newer.")]
+        [Obsolete("OplogReplay is ignored by server versions 4.4.0 and newer.")]
         public bool OplogReplay
         {
             get { return _oplogReplay; }

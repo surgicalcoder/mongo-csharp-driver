@@ -90,7 +90,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             bool slaveOk,
             bool partialOk,
             bool noCursorTimeout,
-            bool oplogReplay, // obsolete: OplogReplay is ignored by server versions 4.3.1 and newer
+            bool oplogReplay, // obsolete: OplogReplay is ignored by server versions 4.4.0 and newer
             bool tailableCursor,
             bool awaitData,
             IBsonSerializer<TDocument> serializer,

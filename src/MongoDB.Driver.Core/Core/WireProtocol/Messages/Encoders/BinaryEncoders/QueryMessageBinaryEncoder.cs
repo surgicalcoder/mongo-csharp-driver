@@ -303,7 +303,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
             None = 0,
             TailableCursor = 2,
             SlaveOk = 4,
-            [Obsolete("OplogReplay is ignored by server versions 4.3.1 and newer.")]
+            [Obsolete("OplogReplay is ignored by server versions 4.4.0 and newer.")]
             OplogReplay = 8,
             NoCursorTimeout = 16,
             AwaitData = 32,

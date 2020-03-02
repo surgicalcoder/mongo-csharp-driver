@@ -826,6 +826,7 @@ namespace MongoDB.Driver.Core.Servers
                 MessageEncoderSettings messageEncoderSettings,
                 CancellationToken cancellationToken)
             {
+#pragma warning disable 618
                 return Query(
                     collectionNamespace,
                     query,
@@ -842,8 +843,10 @@ namespace MongoDB.Driver.Core.Servers
                     serializer,
                     messageEncoderSettings,
                     cancellationToken);
+#pragma warning restore 618
             }
 
+            [Obsolete("Use the newest overload instead.")]
             public CursorBatch<TDocument> Query<TDocument>(
                 CollectionNamespace collectionNamespace,
                 BsonDocument query,
@@ -884,21 +887,22 @@ namespace MongoDB.Driver.Core.Servers
             }
 
             public Task<CursorBatch<TDocument>> QueryAsync<TDocument>(
-             CollectionNamespace collectionNamespace,
-             BsonDocument query,
-             BsonDocument fields,
-             IElementNameValidator queryValidator,
-             int skip,
-             int batchSize,
-             bool slaveOk,
-             bool partialOk,
-             bool noCursorTimeout,
-             bool tailableCursor,
-             bool awaitData,
-             IBsonSerializer<TDocument> serializer,
-             MessageEncoderSettings messageEncoderSettings,
-             CancellationToken cancellationToken)
+                CollectionNamespace collectionNamespace,
+                BsonDocument query,
+                BsonDocument fields,
+                IElementNameValidator queryValidator,
+                int skip,
+                int batchSize,
+                bool slaveOk,
+                bool partialOk,
+                bool noCursorTimeout,
+                bool tailableCursor,
+                bool awaitData,
+                IBsonSerializer<TDocument> serializer,
+                MessageEncoderSettings messageEncoderSettings,
+                CancellationToken cancellationToken)
             {
+#pragma warning disable 618
                 return QueryAsync(
                     collectionNamespace,
                     query,
@@ -915,24 +919,26 @@ namespace MongoDB.Driver.Core.Servers
                     serializer,
                     messageEncoderSettings,
                     cancellationToken);
+#pragma warning restore 618
             }
 
+            [Obsolete("Use the newest overload instead.")]
             public Task<CursorBatch<TDocument>> QueryAsync<TDocument>(
-             CollectionNamespace collectionNamespace,
-             BsonDocument query,
-             BsonDocument fields,
-             IElementNameValidator queryValidator,
-             int skip,
-             int batchSize,
-             bool slaveOk,
-             bool partialOk,
-             bool noCursorTimeout,
-             bool oplogReplay,
-             bool tailableCursor,
-             bool awaitData,
-             IBsonSerializer<TDocument> serializer,
-             MessageEncoderSettings messageEncoderSettings,
-             CancellationToken cancellationToken)
+                CollectionNamespace collectionNamespace,
+                BsonDocument query,
+                BsonDocument fields,
+                IElementNameValidator queryValidator,
+                int skip,
+                int batchSize,
+                bool slaveOk,
+                bool partialOk,
+                bool noCursorTimeout,
+                bool oplogReplay,
+                bool tailableCursor,
+                bool awaitData,
+                IBsonSerializer<TDocument> serializer,
+                MessageEncoderSettings messageEncoderSettings,
+                CancellationToken cancellationToken)
             {
                 slaveOk = GetEffectiveSlaveOk(slaveOk);
 #pragma warning disable 618
