@@ -58,7 +58,7 @@ namespace MongoDB.Driver.Core.Servers
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
             Ensure.IsNotNull(eventSubscriber, nameof(eventSubscriber));
 
-            _baseDescription = _currentDescription = new ServerDescription(_serverId, endPoint, "InitialDescription", heartbeatInterval: heartbeatInterval);
+            _baseDescription = _currentDescription = new ServerDescription(_serverId, endPoint, "BaseDescription", heartbeatInterval: heartbeatInterval);
             _heartbeatInterval = heartbeatInterval;
             _timeout = timeout;
             _state = new InterlockedInt32(State.Initial);
@@ -233,15 +233,15 @@ namespace MongoDB.Driver.Core.Servers
             }
             else
             {
-                newDescription = _baseDescription.With("Heartbeat", lastUpdateTimestamp: DateTime.UtcNow);
+                newDescription = _baseDescription.With(lastUpdateTimestamp: DateTime.UtcNow);
             }
 
             if (heartbeatException != null)
             {
-                newDescription = newDescription.With("Heartbeat", heartbeatException: heartbeatException);
+                newDescription = newDescription.With(heartbeatException: heartbeatException);
             }
 
-            newDescription = newDescription.With("Heartbeat", lastHeartbeatTimestamp: DateTime.UtcNow);
+            newDescription = newDescription.With(reasonChanged: "Heartbeat", lastHeartbeatTimestamp: DateTime.UtcNow);
 
             SetDescription(newDescription);
 

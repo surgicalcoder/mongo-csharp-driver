@@ -322,6 +322,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <summary>
         /// The reason the server description was last changed.
         /// </summary>
+        /// <value>The reason the server description was last changed.</value>
         public string ReasonChanged => _reasonChanged;
 
         /// <summary>
@@ -576,7 +577,7 @@ namespace MongoDB.Driver.Core.Servers
             return new ServerDescription(
                 _serverId,
                 _endPoint,
-                "HeartbeatFailed",
+                reasonChanged: "HeartbeatFailed",
                 averageRoundTripTime: _averageRoundTripTime,
                 canonicalEndPoint: _canonicalEndPoint,
                 electionId: _electionId,
