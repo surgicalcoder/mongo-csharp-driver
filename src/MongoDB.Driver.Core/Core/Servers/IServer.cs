@@ -102,7 +102,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <summary>
         /// Invalidates this instance (sets the server type to Unknown and clears the connection pool).
         /// </summary>
-        void Invalidate();
+        void Invalidate(string reasonInvalidated);
 
         /// <summary>
         /// Requests a heartbeat as soon as possible.

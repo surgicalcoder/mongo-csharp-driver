@@ -58,7 +58,7 @@ namespace MongoDB.Driver.Core.Servers
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
             Ensure.IsNotNull(eventSubscriber, nameof(eventSubscriber));
 
-            _baseDescription = _currentDescription = new ServerDescription(_serverId, endPoint, heartbeatInterval: heartbeatInterval);
+            _baseDescription = _currentDescription = new ServerDescription(_serverId, endPoint, "InitialDescription", heartbeatInterval: heartbeatInterval);
             _heartbeatInterval = heartbeatInterval;
             _timeout = timeout;
             _state = new InterlockedInt32(State.Initial);
@@ -91,9 +91,9 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        public void Invalidate()
+        public void Invalidate(string reasonInvalidated)
         {
-            SetDescription(_baseDescription.With(lastUpdateTimestamp: DateTime.UtcNow));
+            SetDescription(_baseDescription.With($"InvalidatedBecause:{reasonInvalidated}", lastUpdateTimestamp: DateTime.UtcNow));
             RequestHeartbeat();
         }
 
@@ -215,6 +215,7 @@ namespace MongoDB.Driver.Core.Servers
                 var buildInfoResult = heartbeatInfo.BuildInfoResult;
 
                 newDescription = _baseDescription.With(
+                    "Heartbeat",
                     averageRoundTripTime: averageRoundTripTimeRounded,
                     canonicalEndPoint: isMasterResult.Me,
                     electionId: isMasterResult.ElectionId,
@@ -232,13 +233,15 @@ namespace MongoDB.Driver.Core.Servers
             }
             else
             {
-                newDescription = _baseDescription.With(lastUpdateTimestamp: DateTime.UtcNow);
+                newDescription = _baseDescription.With("Heartbeat", lastUpdateTimestamp: DateTime.UtcNow);
             }
 
             if (heartbeatException != null)
             {
-                newDescription = newDescription.With(heartbeatException: heartbeatException);
+                newDescription = newDescription.With("Heartbeat", heartbeatException: heartbeatException);
             }
+
+            newDescription = newDescription.With("Heartbeat", lastHeartbeatTimestamp: DateTime.UtcNow);
 
             SetDescription(newDescription);
 
