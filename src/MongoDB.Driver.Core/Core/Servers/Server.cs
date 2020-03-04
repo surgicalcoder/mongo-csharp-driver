@@ -279,7 +279,7 @@ namespace MongoDB.Driver.Core.Servers
             if (ShouldInvalidateServer(ex))
             {
                 var shouldClearConnectionPool = ShouldClearConnectionPoolForChannelException(ex, connection.Description.ServerVersion);
-                Invalidate($"ChannelException:{ex.GetType().Name}", shouldClearConnectionPool);
+                Invalidate($"ChannelException:{ex.GetType().Name}:{ex.Message}", shouldClearConnectionPool);
             }
             else
             {
