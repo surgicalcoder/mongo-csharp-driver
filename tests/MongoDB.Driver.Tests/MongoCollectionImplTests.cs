@@ -3451,10 +3451,9 @@ namespace MongoDB.Driver
                 thirdElement.Name.Should().Be("x");
                 thirdElement.Value.Should().Be(3);
             }
-            catch
+            finally
             {
-                try { database.DropCollection(collection.CollectionNamespace.CollectionName); } catch { }
-                throw;
+                database.DropCollection(collection.CollectionNamespace.CollectionName);
             }
         }
 
