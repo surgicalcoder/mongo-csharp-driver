@@ -3424,7 +3424,7 @@ namespace MongoDB.Driver
         [SkippableFact]
         public void Watch_should_support_full_document_with_duplicate_elements()
         {
-            RequireServer.Check().Supports(Feature.ChangeStreamStage);
+            RequireServer.Check().Supports(Feature.ChangeStreamStage).ClusterTypes(ClusterType.ReplicaSet, ClusterType.Sharded);
 
             var client = DriverTestConfiguration.Client;
             var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
