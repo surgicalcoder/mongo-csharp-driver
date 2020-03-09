@@ -3431,23 +3431,31 @@ namespace MongoDB.Driver
             var collection = database.GetCollection<BsonDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
             database.DropCollection(collection.CollectionNamespace.CollectionName);
 
-            var cursor = collection.Watch();
+            try
+            {
+                var cursor = collection.Watch();
 
-            ChangeStreamDocument<BsonDocument> changeStreamDocument = null;
-            var document = new BsonDocument(allowDuplicateNames: true) { { "_id", 1 }, { "x", 2 }, { "x", 3 } };
-            collection.InsertOne(document);
-            SpinWait.SpinUntil(() => cursor.MoveNext() && (changeStreamDocument = cursor.Current.FirstOrDefault()) != null, TimeSpan.FromSeconds(5)).Should().BeTrue();
-            var fullDocument = changeStreamDocument.FullDocument;
-            fullDocument.ElementCount.Should().Be(3);
-            var firstElement = fullDocument.GetElement(0);
-            firstElement.Name.Should().Be("_id");
-            firstElement.Value.Should().Be(1);
-            var secondElement = fullDocument.GetElement(1);
-            secondElement.Name.Should().Be("x");
-            secondElement.Value.Should().Be(2);
-            var thirdElement = fullDocument.GetElement(2);
-            thirdElement.Name.Should().Be("x");
-            thirdElement.Value.Should().Be(3);
+                ChangeStreamDocument<BsonDocument> changeStreamDocument = null;
+                var document = new BsonDocument(allowDuplicateNames: true) { { "_id", 1 }, { "x", 2 }, { "x", 3 } };
+                collection.InsertOne(document);
+                SpinWait.SpinUntil(() => cursor.MoveNext() && (changeStreamDocument = cursor.Current.FirstOrDefault()) != null, TimeSpan.FromSeconds(5)).Should().BeTrue();
+                var fullDocument = changeStreamDocument.FullDocument;
+                fullDocument.ElementCount.Should().Be(3);
+                var firstElement = fullDocument.GetElement(0);
+                firstElement.Name.Should().Be("_id");
+                firstElement.Value.Should().Be(1);
+                var secondElement = fullDocument.GetElement(1);
+                secondElement.Name.Should().Be("x");
+                secondElement.Value.Should().Be(2);
+                var thirdElement = fullDocument.GetElement(2);
+                thirdElement.Name.Should().Be("x");
+                thirdElement.Value.Should().Be(3);
+            }
+            catch
+            {
+                try { database.DropCollection(collection.CollectionNamespace.CollectionName); } catch { }
+                throw;
+            }
         }
 
         [Fact]
