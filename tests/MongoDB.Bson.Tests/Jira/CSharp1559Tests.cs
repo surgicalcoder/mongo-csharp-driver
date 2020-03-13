@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Linq;
 using System.Reflection;
 using FluentAssertions;
 using MongoDB.Bson.Serialization;
@@ -26,16 +27,20 @@ namespace MongoDB.Bson.Tests.Jira
     public class CSharp1559Tests
     {
         [Theory]
-        [InlineData(typeof(DerivedWithoutSetter_BaseWithoutSetter))]
-        [InlineData(typeof(DerivedWithoutSetter_BaseWithPrivateSetterAndWithProtectedConstructor))]
-        [InlineData(typeof(DerivedWithoutSetterAndWithBsonElement_BaseWithoutSetterAndWithProtectedConstructor))]
-        [InlineData(typeof(DerivedWithoutSetterAndWithBsonElementAndWithPrivateConstructor_BaseWithoutSetter))]
-        [InlineData(typeof(DerivedWithoutSetterAndWithoutBsonElement_AbstractBaseWithoutSetterAndWithProtectedConstructor))]
-        [InlineData(typeof(DerivedWithoutSetterAndWithoutBsonElement_AbstractBaseWithoutSetter))]
-        [InlineData(typeof(DerivedWithPrivateSetterAndWithBsonElement_BaseWithoutSetter))]
-        public void Serialization_should_work_as_expected(Type testCaseType)
+        [InlineData(typeof(DerivedWithoutSetter_BaseWithoutSetter), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedWithoutSetter_BaseWithPrivateSetterAndWithProtectedConstructor), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedWithoutSetterAndWithBsonElement_BaseWithoutSetterAndWithProtectedConstructor), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedWithoutSetterAndWithBsonElementAndWithPrivateConstructor_BaseWithoutSetter), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedWithoutSetterAndWithoutBsonElement_AbstractBaseWithoutSetterAndWithProtectedConstructor), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedWithoutSetterAndWithoutBsonElement_AbstractBaseWithoutSetter), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedWithPrivateSetterAndWithBsonElement_BaseWithoutSetter), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutable), new[] { 2 })]
+        [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutable), new[] { 2 })]
+        [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor), new[] { 1, 2})]
+        [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor), new[] { 1, 2 })]
+        public void Serialization_should_return_expected_result(Type testCaseType, int[] arguments)
         {
-            var testCase = Activator.CreateInstance(testCaseType, 1, 2);
+            var testCase = Activator.CreateInstance(testCaseType, arguments.Select(a => (object)a).ToArray());
 
             var json = testCase.ToJson();
             var result = BsonSerializer.Deserialize(json, testCaseType);
@@ -232,6 +237,67 @@ namespace MongoDB.Bson.Tests.Jira
                 Y = y;
             }
 
+            public int Y { get; }
+        }
+
+        public abstract class AbstractBaseImmutable
+        {
+            public int X { get; } = 1;
+        }
+
+        public class DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutable : AbstractBaseImmutable
+        {
+            [BsonConstructor]
+            public DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutable(int y)
+            {
+                Y = y;
+            }
+
+            public int Y { get; }
+        }
+
+        public class DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutable : AbstractBaseImmutable
+        {
+            [BsonConstructor]
+            public DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutable(int y)
+            {
+                Y = y;
+            }
+
+            [BsonElement]
+            public int Y { get; }
+        }
+
+        public abstract class AbstractBaseImmutableWithConstructor
+        {
+            public AbstractBaseImmutableWithConstructor(int x)
+            {
+                X = x;
+            }
+
+            public int X { get; } = 0; // should be overwritten
+        }
+
+        public class DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor : AbstractBaseImmutableWithConstructor
+        {
+            [BsonConstructor]
+            public DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor(int x, int y) : base(x)
+            {
+                Y = y;
+            }
+
+            public int Y { get; }
+        }
+
+        public class DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor : AbstractBaseImmutableWithConstructor
+        {
+            [BsonConstructor]
+            public DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor(int x, int y) : base(x)
+            {
+                Y = y;
+            }
+
+            [BsonElement]
             public int Y { get; }
         }
     }
