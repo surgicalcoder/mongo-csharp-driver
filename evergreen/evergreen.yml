@@ -361,7 +361,6 @@ functions:
       type: test
       params:
         working_dir: mongo-csharp-driver
-        silent: true
         script: |
           # DO NOT ECHO WITH XTRACE (which PREPARE_SHELL does)
           cat <<'EOF' > "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
@@ -627,10 +626,10 @@ tasks:
             TOPOLOGY: "server"
         - func: add-aws-auth-variables-to-file
         - func: run-aws-auth-test-with-regular-aws-credentials
-        - func: run-aws-auth-test-with-aws-EC2-credentials
         - func: run-aws-auth-test-with-assume-role-credentials
         - func: run-aws-auth-test-with-aws-credentials-as-environment-variables
         - func: run-aws-auth-test-with-aws-credentials-and-session-token-as-environment-variables
+        - func: run-aws-auth-test-with-aws-EC2-credentials
 
     - name: publish-snapshot
       depends_on:
