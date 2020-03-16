@@ -15,20 +15,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Security;
-using System.Text;
 using FluentAssertions;
 using MongoDB.Driver.Core.Authentication;
-using MongoDB.Driver.Core.Authentication.Sspi;
-using MongoDB.Driver.Core.Connections;
-using MongoDB.Driver.Core.Misc;
 using Xunit;
 
 namespace MongoDB.Driver.Core.Tests.Core.Authentication
 {
-    public class AvsSignatureVersion4Tests
+    public class AwsSignatureVersion4Tests
     {
         [Theory]
         [InlineData("sts.amazonaws.com", "us-east-1")]
