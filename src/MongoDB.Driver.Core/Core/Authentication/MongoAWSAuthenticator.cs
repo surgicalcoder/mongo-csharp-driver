@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Core.Authentication
     public class MongoAWSAuthenticator : SaslAuthenticator
     {
         // constants
-        private const int _clientNonceLength = 32;
+        private const int ClientNonceLength = 32;
 
         // static properties
         /// <summary>
@@ -129,11 +129,21 @@ namespace MongoDB.Driver.Core.Authentication
             {
                 var awsCredentials = awsCredentialsCreator();
 
-                if (awsCredentials != null)
+                if (awsCredentials == null)
                 {
-                    var credentials = new UsernamePasswordCredential("$external", awsCredentials.Username, awsCredentials.Password);
-                    return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, dateTimeProvider);
+                    continue;
                 }
+
+                ValidateAwsCredentials(awsCredentials);
+
+                if (awsCredentials.Username == null)
+                {
+                    continue;
+                }
+
+                var credentials = new UsernamePasswordCredential("$external", awsCredentials.Username, awsCredentials.Password);
+
+                return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, dateTimeProvider);
             }
 
             throw new ArgumentException("A MONGODB-AWS must have access key ID.");
@@ -142,12 +152,6 @@ namespace MongoDB.Driver.Core.Authentication
         private static AwsCredentials CreateAwsCredentialsFromMongoCredentials(string username, SecureString securePassword, IEnumerable<KeyValuePair<string, string>> properties)
         {
             var sessionToken = ExtractSessionTokenFromMechanismProperties(properties);
-            ValidateCredentials(username, securePassword, sessionToken);
-
-            if (username == null)
-            {
-                return null;
-            }
 
             return new AwsCredentials
             {
@@ -162,12 +166,6 @@ namespace MongoDB.Driver.Core.Authentication
             var username = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             var password = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
             var sessionToken = Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
-            ValidateCredentials(username, password, sessionToken);
-
-            if (username == null)
-            {
-                return null;
-            }
 
             return new AwsCredentials
             {
@@ -189,12 +187,6 @@ namespace MongoDB.Driver.Core.Authentication
             var username = parsedReponse.GetValue("AccessKeyId")?.AsString;
             var password = parsedReponse.GetValue("SecretAccessKey")?.AsString;
             var sessionToken = parsedReponse.GetValue("Token")?.AsString;
-            ValidateCredentials(username, password, sessionToken);
-
-            if (username == null)
-            {
-                return null;
-            }
 
             return new AwsCredentials
             {
@@ -211,12 +203,6 @@ namespace MongoDB.Driver.Core.Authentication
             var username = parsedReponse.GetValue("AccessKeyId")?.AsString;
             var password = parsedReponse.GetValue("SecretAccessKey")?.AsString;
             var sessionToken = parsedReponse.GetValue("Token")?.AsString;
-            ValidateCredentials(username, password, sessionToken);
-
-            if (username == null)
-            {
-                return null;
-            }
 
             return new AwsCredentials
             {
@@ -249,34 +235,28 @@ namespace MongoDB.Driver.Core.Authentication
 
         private static SecureString ToSecureString(string str)
         {
+            if (str == null)
+            {
+                return null;
+            }
+
             var secureString = new SecureString();
             foreach (var c in str)
             {
                 secureString.AppendChar(c);
             }
             secureString.MakeReadOnly();
+
             return secureString;
         }
 
-        private static void ValidateCredentials(string username, string password, string sessionToken)
+        private static void ValidateAwsCredentials(AwsCredentials awsCredentials)
         {
-            if (username == null && (password != null || sessionToken != null))
+            if (awsCredentials.Username == null && (awsCredentials.Password != null || awsCredentials.SessionToken != null))
             {
                 throw new ArgumentException("A MONGODB-AWS must have access key id.");
             }
-            if (username != null && password == null)
-            {
-                throw new ArgumentException("A MONGODB-AWS must have secret access key.");
-            }
-        }
-
-        private static void ValidateCredentials(string username, SecureString password, string sessionToken)
-        {
-            if (username == null && (password != null || sessionToken != null))
-            {
-                throw new ArgumentException("A MONGODB-AWS must have access key id.");
-            }
-            if (username != null && password == null)
+            if (awsCredentials.Username != null && awsCredentials.Password == null)
             {
                 throw new ArgumentException("A MONGODB-AWS must have secret access key.");
             }
@@ -327,7 +307,7 @@ namespace MongoDB.Driver.Core.Authentication
 
             public static async Task<string> GetEC2Response()
             {
-                var tokenRequest = CraeteTokenRequest(_ec2BaseUri);
+                var tokenRequest = CreateTokenRequest(_ec2BaseUri);
                 var token = await GetHttpContent(tokenRequest, "Failed to acquire EC2 token.").ConfigureAwait(false);
 
                 var roleRequest = CreateRoleRequest(_ec2BaseUri, token);
@@ -376,7 +356,7 @@ namespace MongoDB.Driver.Core.Authentication
                 return roleRequest;
             }
 
-            private static HttpRequestMessage CraeteTokenRequest(Uri baseUri)
+            private static HttpRequestMessage CreateTokenRequest(Uri baseUri)
             {
                 var tokenRequest = new HttpRequestMessage
                 {
@@ -451,7 +431,7 @@ namespace MongoDB.Driver.Core.Authentication
 
             private byte[] GenerateRandomBytes()
             {
-                return _randomByteGenerator.Generate(_clientNonceLength);
+                return _randomByteGenerator.Generate(ClientNonceLength);
             }
         }
 
@@ -493,7 +473,7 @@ namespace MongoDB.Driver.Core.Authentication
                 var serverNonce = serverFirstMessageDoc["s"].AsByteArray;
                 var host = serverFirstMessageDoc["h"].AsString;
 
-                if (serverNonce.Length != _clientNonceLength * 2 || !serverNonce.Take(_clientNonceLength).SequenceEqual(_nonce))
+                if (serverNonce.Length != ClientNonceLength * 2 || !serverNonce.Take(ClientNonceLength).SequenceEqual(_nonce))
                 {
                     throw new MongoAuthenticationException(conversation.ConnectionId, message: "Server sent an invalid nonce.");
                 }

@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
     public class MongoAWSAuthenticatorTests
     {
         // private constants
-        private const int _clientNonceLength = 32;
+        private const int ClientNonceLength = 32;
 
         // private static
         private static readonly IRandomByteGenerator __randomByteGenerator = new DefaultRandomByteGenerator();
@@ -53,8 +53,8 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
                 new IsMasterResult(new BsonDocument("ok", 1).Add("ismaster", 1)),
                 new BuildInfoResult(new BsonDocument("version", "4.0.0")));
 
-            var clientNonce = __randomByteGenerator.Generate(_clientNonceLength);
-            var serverNonce = Combine(clientNonce, __randomByteGenerator.Generate(_clientNonceLength));
+            var clientNonce = __randomByteGenerator.Generate(ClientNonceLength);
+            var serverNonce = Combine(clientNonce, __randomByteGenerator.Generate(ClientNonceLength));
             var host = "sts.amazonaws.com";
             var credential = new UsernamePasswordCredential("$external", "permanentuser", "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake");
             
