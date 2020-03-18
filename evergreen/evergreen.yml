@@ -301,7 +301,6 @@ functions:
       type: test
       params:
         working_dir: mongo-csharp-driver
-        silent: true
         script: |
           cat <<'EOF' > "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
             alias urlencode='python -c "import sys, urllib as ul; sys.stdout.write(ul.quote_plus(sys.argv[1]))"'
@@ -328,7 +327,6 @@ functions:
       type: test
       params:
         working_dir: mongo-csharp-driver
-        silent: true
         script: |
           # DO NOT ECHO WITH XTRACE (which PREPARE_SHELL does)
           cat <<'EOF' > "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
@@ -373,7 +371,6 @@ functions:
       type: test
       params:
         working_dir: mongo-csharp-driver
-        silent: true
         script: |
           # DO NOT ECHO WITH XTRACE (which PREPARE_SHELL does)
           cat <<'EOF' > "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
@@ -393,7 +390,6 @@ functions:
       type: test
       params:
         working_dir: mongo-csharp-driver
-        silent: true
         script: |
           # DO NOT ECHO WITH XTRACE (which PREPARE_SHELL does)
           cat <<'EOF' > "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
@@ -614,7 +610,7 @@ tasks:
       commands:
         - func: run-plain-auth-tests
 
-    - name: aws-auth-test
+    - name: aws-auth-tests
       depends_on:
         - variant: windows-64-compile
           name: compile
@@ -1106,13 +1102,13 @@ buildvariants:
   tasks:
     - name: ".ocsp"
 
-- matrix_name: aws-auth-test
+- matrix_name: aws-auth-tests
   matrix_spec: { version: ["latest"], topology: "standalone", os: "*" }
   display_name: "MONGODB-AWS Auth test"
   run_on:
     - windows-64-vs2017-test
   tasks:
-    - name: aws-auth-test
+    - name: aws-auth-tests
 
 - name: atlas-connectivity-tests
   display_name: "Atlas Connectivity Tests"

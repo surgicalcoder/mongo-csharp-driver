@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,24 +25,64 @@ namespace MongoDB.Driver.Core.Authentication
     /// <summary>
     /// The AWS signature version 4.
     /// </summary>
-    public class AwsSignatureVersion4
+    internal static class AwsSignatureVersion4
     {
         /// <summary>
-        /// Gets canonical headers.
+        /// Signs the request.
         /// </summary>
-        /// <param name="requestHeaders">The request headers.</param>
-        /// <returns>The canonical headers.</returns>
-        public static string GetCanonicalHeaders(SortedDictionary<string, string> requestHeaders)
+        /// <param name="dateTime">The date time.</param>
+        /// <param name="accessKey">The access key.</param>
+        /// <param name="secretKey">The secret key.</param>
+        /// <param name="securityToken">The security token.</param>
+        /// <param name="salt">The salt.</param>
+        /// <param name="host">The host.</param>
+        /// <param name="authorizationHeader">The authorization header.</param>
+        /// <param name="timestamp">The timestamp.</param>
+        public static void SignRequest(
+            DateTime dateTime,
+            string accessKey,
+            string secretKey,
+            string securityToken,
+            byte[] salt,
+            string host,
+            out string authorizationHeader,
+            out string timestamp)
+        {
+            var body = "Action=GetCallerIdentity&Version=2011-06-15";
+            var region = GetRegion(host);
+            var service = "sts";
+
+            timestamp = dateTime.ToString("yyyyMMddTHHmmssZ");
+
+            string datestamp = dateTime.ToString("yyyyMMdd");
+
+            var requestHeaders = GetRequestHeaders(
+                body: body,
+                contentType: "application/x-www-form-urlencoded",
+                host: host,
+                timestamp: timestamp,
+                sessionToken: securityToken,
+                nonce: salt);
+
+            var canonicalHeaders = GetCanonicalHeaders(requestHeaders);
+            var signedHeaders = GetSignedHeaders(requestHeaders);
+
+            var canonicalRequest = string.Join("\n", "POST", "/", "", canonicalHeaders, "", signedHeaders, Hash(body));
+            var algorithm = "AWS4-HMAC-SHA256";
+            var credentialScope = $"{datestamp}/{region}/{service}/aws4_request";
+            var stringToSign = string.Join("\n", algorithm, timestamp, credentialScope, Hash(canonicalRequest));
+            var signature = GetSignature(stringToSign, secretKey, datestamp, region, service);
+
+            authorizationHeader = $"{algorithm} Credential={accessKey}/{credentialScope}, SignedHeaders={signedHeaders}, Signature={signature}";
+        }
+
+        //private static methods
+        private static string GetCanonicalHeaders(SortedDictionary<string, string> requestHeaders)
         {
             return string.Join("\n", requestHeaders.Select(x => $"{x.Key.ToLowerInvariant()}:{x.Value}"));
         }
 
-        /// <summary>
-        /// Gets Amazon region from host.
-        /// </summary>
-        /// <param name="host">The host.</param>
-        /// <returns>The region.</returns>
-        public static string GetRegion(string host)
+        private static string GetRegion(string host)
         {
             if (host == "sts.amazonaws.com")
             {
@@ -55,92 +96,6 @@ namespace MongoDB.Driver.Core.Authentication
             }
 
             return "us-east-1";
-        }
-
-        /// <summary>
-        /// Gets signed headers.
-        /// </summary>
-        /// <param name="requestHeaders">The request headers.</param>
-        /// <returns>The signed headers.</returns>
-        public static string GetSignedHeaders(SortedDictionary<string, string> requestHeaders)
-        {
-            return string.Join(";", requestHeaders.Keys.Select(x => x.ToLowerInvariant()));
-        }
-
-        /// <summary>
-        /// Sign request.
-        /// </summary>
-        /// <param name="accessKey">The access key.</param>
-        /// <param name="secretKey">The secret key.</param>
-        /// <param name="securityToken">The security token.</param>
-        /// <param name="salt">The salt.</param>
-        /// <param name="host">The host.</param>
-        /// <returns>The signed request.</returns>
-        public static Tuple<string, string> SignRequest(
-            string accessKey,
-            string secretKey,
-            string securityToken,
-            byte[] salt,
-            string host)
-        {
-            return SignRequest(DateTime.UtcNow, accessKey, secretKey, securityToken, salt, host);
-        }
-
-        /// <summary>
-        /// Signs the request.
-        /// </summary>
-        /// <param name="dateTime">The date time.</param>
-        /// <param name="accessKey">The access key.</param>
-        /// <param name="secretKey">The secret key.</param>
-        /// <param name="securityToken">The security token.</param>
-        /// <param name="salt">The salt.</param>
-        /// <param name="host">The host.</param>
-        /// <returns>The signed request.</returns>
-        public static Tuple<string, string> SignRequest(
-            DateTime dateTime,
-            string accessKey,
-            string secretKey,
-            string securityToken,
-            byte[] salt,
-            string host)
-        {
-            var body = "Action=GetCallerIdentity&Version=2011-06-15";
-            var region = GetRegion(host);
-            var service = "sts";
-
-            string timestamp = dateTime.ToString("yyyyMMddTHHmmssZ");
-            string datestamp = dateTime.ToString("yyyyMMdd");
-
-            // Create a canonical request.
-
-            var requestHeaders = GetRequestHeaders(
-                body: body,
-                contentType: "application/x-www-form-urlencoded",
-                host: host,
-                timestamp: dateTime.ToString("yyyyMMddTHHmmssZ"),
-                sessionToken: securityToken,
-                nonce: salt);
-
-            var canonicalHeaders = GetCanonicalHeaders(requestHeaders);
-            var signedHeaders = GetSignedHeaders(requestHeaders);
-
-            var canonicalRequest = string.Join("\n", "POST", "/", "", canonicalHeaders, "", signedHeaders, Hash(body));
-
-            // Create the string to sign.
-
-            var algorithm = "AWS4-HMAC-SHA256";
-            var credentialScope = $"{datestamp}/{region}/{service}/aws4_request";
-            var stringToSign = string.Join("\n", algorithm, timestamp, credentialScope, Hash(canonicalRequest));
-
-            // Calculate the signature.
-
-            var signature = GetSignature(stringToSign, secretKey, datestamp, region, service);
-
-            // Add signing information to the request.
-
-            var authHeader = $"{algorithm} Credential={accessKey}/{credentialScope}, SignedHeaders={signedHeaders}, Signature={signature}";
-
-            return new Tuple<string, string>(authHeader, timestamp);
         }
 
         private static SortedDictionary<string, string> GetRequestHeaders(
@@ -173,7 +128,12 @@ namespace MongoDB.Driver.Core.Authentication
             byte[] kServiceBlock = Hmac256(kRegionBlock, Encoding.ASCII.GetBytes(service));
             byte[] kSigningBlock = Hmac256(kServiceBlock, Encoding.ASCII.GetBytes("aws4_request"));
 
-            return ToHexString(Hmac256(kSigningBlock, Encoding.ASCII.GetBytes(stringToSign)));
+            return BsonUtils.ToHexString(Hmac256(kSigningBlock, Encoding.ASCII.GetBytes(stringToSign)));
+        }
+
+        private static string GetSignedHeaders(SortedDictionary<string, string> requestHeaders)
+        {
+            return string.Join(";", requestHeaders.Keys.Select(x => x.ToLowerInvariant()));
         }
 
         private static string Hash(string str)
@@ -183,7 +143,7 @@ namespace MongoDB.Driver.Core.Authentication
             {
                 var hash = algorithm.ComputeHash(bytes);
 
-                return ToHexString(hash);
+                return BsonUtils.ToHexString(hash);
             }
         }
 
@@ -193,11 +153,6 @@ namespace MongoDB.Driver.Core.Authentication
             {
                 return hmac.ComputeHash(bytes);
             }
-        }
-
-        private static string ToHexString(byte[] bytes)
-        {
-            return BitConverter.ToString(bytes).Replace("-", "").ToLower();
         }
     }
 }

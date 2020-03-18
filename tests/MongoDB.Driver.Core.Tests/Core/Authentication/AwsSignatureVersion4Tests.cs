@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Authentication;
 using Xunit;
 
@@ -30,7 +31,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         [InlineData("first.second.third", "second")]
         public void GetRegionShouldWorkAsExpected(string host, string expectedRegion)
         {
-            var region = AwsSignatureVersion4.GetRegion(host);
+            var region = AwsSignatureVersion4Reflector.GetRegion(host);
 
             region.Should().Be(expectedRegion);
         }
@@ -55,7 +56,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
                 "x-mongodb-gs2-cb-flag:n\n" +
                 "x-mongodb-server-nonce:123";
 
-            var actual = AwsSignatureVersion4.GetCanonicalHeaders(requestHeaders);
+            var actual = AwsSignatureVersion4Reflector.GetCanonicalHeaders(requestHeaders);
 
             actual.Should().Be(expected);
         }
@@ -74,7 +75,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             requestHeaders["X-MongoDB-Server-Nonce"] = "123";
             var expected = "content-length;content-type;host;x-amz-date;x-amz-security-token;x-mongodb-gs2-cb-flag;x-mongodb-server-nonce";
 
-            var actual = AwsSignatureVersion4.GetSignedHeaders(requestHeaders);
+            var actual = AwsSignatureVersion4Reflector.GetSignedHeaders(requestHeaders);
 
             actual.Should().Be(expected);
         }
@@ -87,16 +88,24 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             var secretKey = "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake";
             var salt = new byte[] { 64, 230, 20, 164, 223, 96, 92, 144, 3, 240, 27, 110, 97, 65, 200, 11, 157, 162, 141, 4, 149, 86, 91, 108, 189, 194, 100, 90, 249, 219, 155, 235, };
             var host = "sts.amazonaws.com";
-            var expected = Tuple.Create(
-                "AWS4-HMAC-SHA256 " +
+            var expectedAuthHeader = "AWS4-HMAC-SHA256 " +
                 "Credential=permanentuser/20200312/us-east-1/sts/aws4_request, " +
                 "SignedHeaders=content-length;content-type;host;x-amz-date;x-mongodb-gs2-cb-flag;x-mongodb-server-nonce, " +
-                "Signature=6872b9199b47dc983a95f9113a096c9b4e63bb6ddf39030161b1f092ab616df2",
-                "20200312T142346Z");
+                "Signature=6872b9199b47dc983a95f9113a096c9b4e63bb6ddf39030161b1f092ab616df2";
+            var expectedTimestamp = "20200312T142346Z";
 
-            var actual = AwsSignatureVersion4.SignRequest(date, accessKey, secretKey, securityToken: null, salt, host);
+            AwsSignatureVersion4.SignRequest(
+                date,
+                accessKey,
+                secretKey,
+                securityToken: null,
+                salt,
+                host,
+                out var actualAuthHeader,
+                out var actualTimestamp);
 
-            actual.Should().Be(expected);
+            actualAuthHeader.Should().Be(expectedAuthHeader);
+            actualTimestamp.Should().Be(expectedTimestamp);
         }
 
         [Fact]
@@ -108,16 +117,43 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             var sessionToken = "MXUpbuzwzPo67WKCNYtdBq47taFtIpt+SVx58hNx1/jSz37h9d67dtUOg0ejKrv83u8ai+VFZxMx=";
             var salt = new byte[] { 64, 230, 20, 164, 223, 96, 92, 144, 3, 240, 27, 110, 97, 65, 200, 11, 157, 162, 141, 4, 149, 86, 91, 108, 189, 194, 100, 90, 249, 219, 155, 235, };
             var host = "sts.amazonaws.com";
-            var expected = Tuple.Create(
-                "AWS4-HMAC-SHA256 " +
+            var expectedAuthHeader = "AWS4-HMAC-SHA256 " +
                 "Credential=permanentuser/20200312/us-east-1/sts/aws4_request, " +
                 "SignedHeaders=content-length;content-type;host;x-amz-date;x-amz-security-token;x-mongodb-gs2-cb-flag;x-mongodb-server-nonce, " +
-                "Signature=d60ee7fe01c82631583a7534fe017e1840fd5975faf1593252e91c54573a93ae",
-                "20200312T142346Z");
+                "Signature=d60ee7fe01c82631583a7534fe017e1840fd5975faf1593252e91c54573a93ae";
+            var expectedTimestamp = "20200312T142346Z";
 
-            var actual = AwsSignatureVersion4.SignRequest(date, accessKey, secretKey, sessionToken, salt, host);
+            AwsSignatureVersion4.SignRequest(
+                date,
+                accessKey,
+                secretKey,
+                sessionToken,
+                salt,
+                host,
+                out var actualAuthHeader,
+                out var actualTimestamp);
 
-            actual.Should().Be(expected);
+            actualAuthHeader.Should().Be(expectedAuthHeader);
+            actualTimestamp.Should().Be(expectedTimestamp);
         }
+    }
+
+    internal static class AwsSignatureVersion4Reflector
+    {
+        public static string GetCanonicalHeaders(SortedDictionary<string, string> requestHeaders)
+        {
+            return (string)Reflector.InvokeStatic(typeof(AwsSignatureVersion4), nameof(GetCanonicalHeaders), requestHeaders);
+        }
+
+        public static string GetRegion(string host)
+        {
+            return (string)Reflector.InvokeStatic(typeof(AwsSignatureVersion4), nameof(GetRegion), host);
+        }
+
+        public static string GetSignedHeaders(SortedDictionary<string, string> requestHeaders)
+        {
+            return (string)Reflector.InvokeStatic(typeof(AwsSignatureVersion4), nameof(GetSignedHeaders), requestHeaders);
+        }
+
     }
 }

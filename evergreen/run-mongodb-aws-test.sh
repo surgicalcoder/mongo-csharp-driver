@@ -19,7 +19,10 @@ set +x
 shopt -s expand_aliases # needed for `urlencode` alias
 [ -s "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh" ] && source "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
 
-MONGODB_URI=${MONGODB_URI:-"mongodb://localhost"}
+if [ -z ${MONGODB_URI+x} ]; then
+    echo "MONGODB_URI is not set";
+    exit 1
+fi
 MONGODB_URI="${MONGODB_URI}/aws?authMechanism=MONGODB-AWS"
 if [[ -n ${SESSION_TOKEN} ]]; then
     MONGODB_URI="${MONGODB_URI}&authMechanismProperties=AWS_SESSION_TOKEN:${SESSION_TOKEN}"

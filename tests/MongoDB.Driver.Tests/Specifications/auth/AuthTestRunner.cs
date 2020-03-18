@@ -133,7 +133,7 @@ namespace MongoDB.Driver.Tests.Specifications.auth
             #region static
             private static readonly string[] __ignoredTestNames =
             {
-                // Atuh tests create auth mechanism which this test does not expect. Altering this behavior would break GSSAPI tests.
+                // Auth tests create auth mechanism which this test does not expect. Altering this behavior would break GSSAPI tests.
                 "should recognise the mechanism (MONGODB-AWS)"
             };
             #endregion

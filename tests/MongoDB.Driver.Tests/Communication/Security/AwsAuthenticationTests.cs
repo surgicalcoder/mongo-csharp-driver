@@ -25,17 +25,10 @@ namespace MongoDB.Driver.Tests.Communication.Security
     [Trait("Category", "AwsMechanism")]
     public class AwsAuthenticationTests
     {
-        private static readonly string __collectionName = "test";
-        private static readonly string __databaseName = "aws";
-        private static readonly string __environmentVariableName = "MONGODB_URI";
-        
         [Fact]
-        public void AwsAuthenticationShouldBehaveAsExpected()
+        public void Aws_authentication_should_behave_as_expected()
         {
-            var connectionString = Environment.GetEnvironmentVariable(__environmentVariableName);
-            connectionString.Should().NotBeNull();
-
-            using (var client = CreateDisposableClient(connectionString))
+            using (var client = DriverTestConfiguration.CreateDisposableClient())
             {
                 // test that a command that doesn't require auth completes normally
                 var adminDatabase = client.GetDatabase("admin");
@@ -43,19 +36,10 @@ namespace MongoDB.Driver.Tests.Communication.Security
                 var isMasterResult = adminDatabase.RunCommand<BsonDocument>(isMasterCommand);
 
                 // test that a command that does require auth completes normally
-                var database = client.GetDatabase(__databaseName);
-                var collection = database.GetCollection<BsonDocument>(__collectionName);
-                var emptyFilter = Builders<BsonDocument>.Filter.Empty;
-                var count = collection.CountDocuments(emptyFilter);
+                var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
+                var collection = database.GetCollection<BsonDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
+                var count = collection.CountDocuments(FilterDefinition<BsonDocument>.Empty);
             }
-        }
-
-        // private methods
-        private DisposableMongoClient CreateDisposableClient(string connectionString)
-        {
-            var clientSettings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
-            var client = new MongoClient(clientSettings);
-            return new DisposableMongoClient(client);
         }
     }
 }
