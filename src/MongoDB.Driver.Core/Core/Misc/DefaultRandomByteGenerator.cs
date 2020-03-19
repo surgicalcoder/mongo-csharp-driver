@@ -21,13 +21,13 @@ namespace MongoDB.Driver.Core.Misc
     {
         public byte[] Generate(int length)
         {
-            var randomData = new byte[length];
+            var randomBytes = new byte[length];
             using (var rng = RandomNumberGenerator.Create())
             {
-                rng.GetBytes(randomData);
+                rng.GetBytes(randomBytes);
             }
 
-            return randomData;
+            return randomBytes;
         }
     }
 }

@@ -54,7 +54,7 @@ namespace MongoDB.Driver.Core.Authentication
 
             timestamp = dateTime.ToString("yyyyMMddTHHmmssZ");
 
-            string datestamp = dateTime.ToString("yyyyMMdd");
+            var datestamp = dateTime.ToString("yyyyMMdd");
 
             var requestHeaders = GetRequestHeaders(
                 body: body,

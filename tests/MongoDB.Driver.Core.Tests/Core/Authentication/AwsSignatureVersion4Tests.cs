@@ -13,11 +13,11 @@
 * limitations under the License.
 */
 
-using System;
-using System.Collections.Generic;
 using FluentAssertions;
 using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Authentication;
+using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace MongoDB.Driver.Core.Tests.Core.Authentication
@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         [InlineData("first", "us-east-1")]
         [InlineData("first.second", "second")]
         [InlineData("first.second.third", "second")]
-        public void GetRegionShouldWorkAsExpected(string host, string expectedRegion)
+        public void Get_region_should_work_as_expected(string host, string expectedRegion)
         {
             var region = AwsSignatureVersion4Reflector.GetRegion(host);
 
@@ -37,7 +37,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         }
 
         [Fact]
-        public void GetCanonicalHeadersShouldWorkAsExpected()
+        public void Get_canonical_headers_should_work_as_expected()
         {
             var timestamp = new DateTime(2020, 03, 12, 14, 23, 46).ToString("yyyyMMddTHHmmssZ");
             var requestHeaders = new SortedDictionary<string, string>();
@@ -62,7 +62,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         }
 
         [Fact]
-        public void GetSignedHeadersShouldWorkAsExpected()
+        public void Get_signed_headers_should_work_as_expected()
         {
             var timestamp = new DateTime(2020, 03, 12, 14, 23, 46).ToString("yyyyMMddTHHmmssZ");
             var requestHeaders = new SortedDictionary<string, string>();
@@ -81,14 +81,14 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         }
 
         [Fact]
-        public void SignRequestShouldWorkAsExpected()
+        public void Sign_request_should_work_as_expected()
         {
             var date = new DateTime(2020, 03, 12, 14, 23, 46);
             var accessKey = "permanentuser";
             var secretKey = "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake";
             var salt = new byte[] { 64, 230, 20, 164, 223, 96, 92, 144, 3, 240, 27, 110, 97, 65, 200, 11, 157, 162, 141, 4, 149, 86, 91, 108, 189, 194, 100, 90, 249, 219, 155, 235, };
             var host = "sts.amazonaws.com";
-            var expectedAuthHeader = "AWS4-HMAC-SHA256 " +
+            var expectedAuthorizationHeader = "AWS4-HMAC-SHA256 " +
                 "Credential=permanentuser/20200312/us-east-1/sts/aws4_request, " +
                 "SignedHeaders=content-length;content-type;host;x-amz-date;x-mongodb-gs2-cb-flag;x-mongodb-server-nonce, " +
                 "Signature=6872b9199b47dc983a95f9113a096c9b4e63bb6ddf39030161b1f092ab616df2";
@@ -101,15 +101,15 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
                 securityToken: null,
                 salt,
                 host,
-                out var actualAuthHeader,
+                out var actualAuthorizationHeader,
                 out var actualTimestamp);
 
-            actualAuthHeader.Should().Be(expectedAuthHeader);
+            actualAuthorizationHeader.Should().Be(expectedAuthorizationHeader);
             actualTimestamp.Should().Be(expectedTimestamp);
         }
 
         [Fact]
-        public void SignRequestWithSessionTokenShouldWorkAsExpected()
+        public void Sign_request_with_session_token_should_work_as_expected()
         {
             var date = new DateTime(2020, 03, 12, 14, 23, 46);
             var accessKey = "permanentuser";
@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             var sessionToken = "MXUpbuzwzPo67WKCNYtdBq47taFtIpt+SVx58hNx1/jSz37h9d67dtUOg0ejKrv83u8ai+VFZxMx=";
             var salt = new byte[] { 64, 230, 20, 164, 223, 96, 92, 144, 3, 240, 27, 110, 97, 65, 200, 11, 157, 162, 141, 4, 149, 86, 91, 108, 189, 194, 100, 90, 249, 219, 155, 235, };
             var host = "sts.amazonaws.com";
-            var expectedAuthHeader = "AWS4-HMAC-SHA256 " +
+            var expectedAuthorizationHeader = "AWS4-HMAC-SHA256 " +
                 "Credential=permanentuser/20200312/us-east-1/sts/aws4_request, " +
                 "SignedHeaders=content-length;content-type;host;x-amz-date;x-amz-security-token;x-mongodb-gs2-cb-flag;x-mongodb-server-nonce, " +
                 "Signature=d60ee7fe01c82631583a7534fe017e1840fd5975faf1593252e91c54573a93ae";
@@ -130,10 +130,10 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
                 sessionToken,
                 salt,
                 host,
-                out var actualAuthHeader,
+                out var actualAuthorizationHeader,
                 out var actualTimestamp);
 
-            actualAuthHeader.Should().Be(expectedAuthHeader);
+            actualAuthorizationHeader.Should().Be(expectedAuthorizationHeader);
             actualTimestamp.Should().Be(expectedTimestamp);
         }
     }
@@ -154,6 +154,5 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         {
             return (string)Reflector.InvokeStatic(typeof(AwsSignatureVersion4), nameof(GetSignedHeaders), requestHeaders);
         }
-
     }
 }

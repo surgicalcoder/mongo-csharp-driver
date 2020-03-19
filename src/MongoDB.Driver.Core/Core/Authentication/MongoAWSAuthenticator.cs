@@ -13,19 +13,16 @@
 * limitations under the License.
 */
 
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver.Core.Connections;
+using MongoDB.Driver.Core.Misc;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
 using System.Threading.Tasks;
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
-using MongoDB.Driver.Core.Connections;
-using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Core.Authentication
 {
@@ -36,6 +33,8 @@ namespace MongoDB.Driver.Core.Authentication
     {
         // constants
         private const int ClientNonceLength = 32;
+        private const string AccessKeyIdExceptionMessage = "A MONGODB-AWS must have access key ID.";
+        private const string SecretAccessKeyExceptionMessage = "A MONGODB-AWS must have secret access key.";
 
         // static properties
         /// <summary>
@@ -51,7 +50,7 @@ namespace MongoDB.Driver.Core.Authentication
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="GssapiAuthenticator"/> class.
+        /// Initializes a new instance of the <see cref="MongoAWSAuthenticator"/> class.
         /// </summary>
         /// <param name="credential">The credentials.</param>
         /// <param name="properties">The properties.</param>
@@ -61,7 +60,7 @@ namespace MongoDB.Driver.Core.Authentication
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GssapiAuthenticator"/> class.
+        /// Initializes a new instance of the <see cref="MongoAWSAuthenticator"/> class.
         /// </summary>
         /// <param name="username">The username.</param>
         /// <param name="properties">The properties.</param>
@@ -99,14 +98,14 @@ namespace MongoDB.Driver.Core.Authentication
             UsernamePasswordCredential credential,
             IEnumerable<KeyValuePair<string, string>> properties,
             IRandomByteGenerator randomByteGenerator,
-            IClock dateTimeProvider)
+            IClock clock)
         {
             if (credential.Source != "$external")
             {
                 throw new ArgumentException("MONGO AWS authentication may only use the $external source.", nameof(credential));
             }
 
-            return CreateMechanism(credential.Username, credential.Password, properties, randomByteGenerator, dateTimeProvider);
+            return CreateMechanism(credential.Username, credential.Password, properties, randomByteGenerator, clock);
         }
 
         private static MongoAWSMechanism CreateMechanism(
@@ -114,14 +113,13 @@ namespace MongoDB.Driver.Core.Authentication
             SecureString securePassword,
             IEnumerable<KeyValuePair<string, string>> properties,
             IRandomByteGenerator randomByteGenerator,
-            IClock dateTimeProvider)
+            IClock clock)
         {
-            var relativeUri = Environment.GetEnvironmentVariable("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI");
             var awsCredentialsCreators = new Func<AwsCredentials>[]
             {
                 () => CreateAwsCredentialsFromMongoCredentials(username, securePassword, properties),
                 () => CreateAwsCredentialsFromEnvironmentVariables(),
-                () => CreateAwsCredentialsFromEcsResponse(relativeUri),
+                () => CreateAwsCredentialsFromEcsResponse(),
                 () => CreateAwsCredentialsFromEc2Response()
             };
 
@@ -143,10 +141,10 @@ namespace MongoDB.Driver.Core.Authentication
 
                 var credentials = new UsernamePasswordCredential("$external", awsCredentials.Username, awsCredentials.Password);
 
-                return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, dateTimeProvider);
+                return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, clock);
             }
 
-            throw new ArgumentException("A MONGODB-AWS must have access key ID.");
+            throw new InvalidOperationException(AccessKeyIdExceptionMessage);
         }
 
         private static AwsCredentials CreateAwsCredentialsFromMongoCredentials(string username, SecureString securePassword, IEnumerable<KeyValuePair<string, string>> properties)
@@ -175,18 +173,20 @@ namespace MongoDB.Driver.Core.Authentication
             };
         }
 
-        private static AwsCredentials CreateAwsCredentialsFromEcsResponse(string relativeUri)
+        private static AwsCredentials CreateAwsCredentialsFromEcsResponse()
         {
+            var relativeUri = Environment.GetEnvironmentVariable("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI");
+
             if (relativeUri == null)
             {
                 return null;
             }
 
-            var response = AwsHttpClientHelper.GetECSResponse(relativeUri).GetAwaiter().GetResult();
+            var response = AwsHttpClientHelper.GetECSResponseAsync(relativeUri).GetAwaiter().GetResult();
             var parsedReponse = BsonDocument.Parse(response);
-            var username = parsedReponse.GetValue("AccessKeyId")?.AsString;
-            var password = parsedReponse.GetValue("SecretAccessKey")?.AsString;
-            var sessionToken = parsedReponse.GetValue("Token")?.AsString;
+            var username = parsedReponse.GetValue("AccessKeyId", null)?.AsString;
+            var password = parsedReponse.GetValue("SecretAccessKey", null)?.AsString;
+            var sessionToken = parsedReponse.GetValue("Token", null)?.AsString;
 
             return new AwsCredentials
             {
@@ -198,11 +198,11 @@ namespace MongoDB.Driver.Core.Authentication
 
         private static AwsCredentials CreateAwsCredentialsFromEc2Response()
         {
-            var response = AwsHttpClientHelper.GetEC2Response().GetAwaiter().GetResult();
+            var response = AwsHttpClientHelper.GetEC2ResponseAsync().GetAwaiter().GetResult();
             var parsedReponse = BsonDocument.Parse(response);
-            var username = parsedReponse.GetValue("AccessKeyId")?.AsString;
-            var password = parsedReponse.GetValue("SecretAccessKey")?.AsString;
-            var sessionToken = parsedReponse.GetValue("Token")?.AsString;
+            var username = parsedReponse.GetValue("AccessKeyId", null)?.AsString;
+            var password = parsedReponse.GetValue("SecretAccessKey", null)?.AsString;
+            var sessionToken = parsedReponse.GetValue("Token", null)?.AsString;
 
             return new AwsCredentials
             {
@@ -222,7 +222,7 @@ namespace MongoDB.Driver.Core.Authentication
                     switch (pair.Key.ToUpperInvariant())
                     {
                         case "AWS_SESSION_TOKEN":
-                            sessionToken = (string)pair.Value;
+                            sessionToken = pair.Value;
                             break;
                         default:
                             throw new ArgumentException($"Unknown AWS property '{pair.Key}'.", nameof(properties));
@@ -254,37 +254,12 @@ namespace MongoDB.Driver.Core.Authentication
         {
             if (awsCredentials.Username == null && (awsCredentials.Password != null || awsCredentials.SessionToken != null))
             {
-                throw new ArgumentException("A MONGODB-AWS must have access key id.");
+                throw new InvalidOperationException(AccessKeyIdExceptionMessage);
             }
             if (awsCredentials.Username != null && awsCredentials.Password == null)
             {
-                throw new ArgumentException("A MONGODB-AWS must have secret access key.");
+                throw new InvalidOperationException(SecretAccessKeyExceptionMessage);
             }
-        }
-
-        private static BsonDocument ToDocument(byte[] bytes)
-        {
-            MemoryStream stream = new MemoryStream(bytes);
-            using (var jsonReader = new BsonBinaryReader(stream))
-            {
-                var context = BsonDeserializationContext.CreateRoot(jsonReader);
-                return BsonDocumentSerializer.Instance.Deserialize(context);
-            }
-        }
-
-        private static byte[] ToBytes(BsonDocument doc)
-        {
-#pragma warning disable 618
-            if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
-            {
-                return doc.ToBson(writerSettings: new BsonBinaryWriterSettings
-                {
-                    GuidRepresentation = GuidRepresentation.Unspecified
-                });
-            }
-#pragma warning restore 618
-
-            return doc.ToBson();
         }
 
         // nested classes
@@ -298,36 +273,36 @@ namespace MongoDB.Driver.Core.Authentication
         private class AwsHttpClientHelper
         {
             // private static
-            private static readonly Uri _ec2BaseUri = new Uri("http://169.254.169.254");
-            private static readonly Uri _ecsBaseUri = new Uri("http://169.254.170.2");
+            private static readonly Uri __ec2BaseUri = new Uri("http://169.254.169.254");
+            private static readonly Uri __ecsBaseUri = new Uri("http://169.254.170.2");
             private static readonly Lazy<HttpClient> __httpClientInstance = new Lazy<HttpClient>(() => new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(10)
             });
 
-            public static async Task<string> GetEC2Response()
+            public static async Task<string> GetEC2ResponseAsync()
             {
-                var tokenRequest = CreateTokenRequest(_ec2BaseUri);
-                var token = await GetHttpContent(tokenRequest, "Failed to acquire EC2 token.").ConfigureAwait(false);
+                var tokenRequest = CreateTokenRequest(__ec2BaseUri);
+                var token = await GetHttpContentAsync(tokenRequest, "Failed to acquire EC2 token.").ConfigureAwait(false);
 
-                var roleRequest = CreateRoleRequest(_ec2BaseUri, token);
-                var roleName = await GetHttpContent(roleRequest, "Failed to acquire EC2 role name.").ConfigureAwait(false);
+                var roleRequest = CreateRoleRequest(__ec2BaseUri, token);
+                var roleName = await GetHttpContentAsync(roleRequest, "Failed to acquire EC2 role name.").ConfigureAwait(false);
 
-                var credentialsRequest = CreateCredentialsRequest(_ec2BaseUri, roleName, token);
-                var credentials = await GetHttpContent(credentialsRequest, "Failed to acquire EC2 credentials.").ConfigureAwait(false);
+                var credentialsRequest = CreateCredentialsRequest(__ec2BaseUri, roleName, token);
+                var credentials = await GetHttpContentAsync(credentialsRequest, "Failed to acquire EC2 credentials.").ConfigureAwait(false);
 
                 return credentials;
             }
 
-            public static async Task<string> GetECSResponse(string relativeUri)
+            public static async Task<string> GetECSResponseAsync(string relativeUri)
             {
                 var credentialsRequest = new HttpRequestMessage
                 {
-                    RequestUri = new Uri(_ecsBaseUri, relativeUri),
+                    RequestUri = new Uri(__ecsBaseUri, relativeUri),
                     Method = HttpMethod.Get
                 };
 
-                return await GetHttpContent(credentialsRequest, "Failed to acquire ECS credentials.").ConfigureAwait(false);
+                return await GetHttpContentAsync(credentialsRequest, "Failed to acquire ECS credentials.").ConfigureAwait(false);
             }
 
             // private static methods
@@ -368,7 +343,7 @@ namespace MongoDB.Driver.Core.Authentication
                 return tokenRequest;
             }
 
-            private static async Task<string> GetHttpContent(HttpRequestMessage request, string exceptionMessage)
+            private static async Task<string> GetHttpContentAsync(HttpRequestMessage request, string exceptionMessage)
             {
                 HttpResponseMessage response;
                 try
@@ -391,8 +366,8 @@ namespace MongoDB.Driver.Core.Authentication
 
         private class MongoAWSMechanism : ISaslMechanism
         {
+            private readonly IClock _clock;
             private readonly UsernamePasswordCredential _credential;
-            private readonly IClock _dateTimeProvider;
             private readonly IRandomByteGenerator _randomByteGenerator;
             private readonly string _sessionToken;
 
@@ -400,12 +375,12 @@ namespace MongoDB.Driver.Core.Authentication
                 UsernamePasswordCredential credential,
                 string sessionToken,
                 IRandomByteGenerator randomByteGenerator,
-                IClock dateTimeProvider)
+                IClock clock)
             {
                 _credential = Ensure.IsNotNull(credential, nameof(credential));
                 _sessionToken = sessionToken;
                 _randomByteGenerator = Ensure.IsNotNull(randomByteGenerator, nameof(randomByteGenerator));
-                _dateTimeProvider = Ensure.IsNotNull(dateTimeProvider, nameof(dateTimeProvider));
+                _clock = Ensure.IsNotNull(clock, nameof(clock));
             }
 
             public string Name
@@ -420,13 +395,15 @@ namespace MongoDB.Driver.Core.Authentication
 
                 var nonce = GenerateRandomBytes();
 
-                var document = new BsonDocument()
-                    .Add("r", new BsonBinaryData(nonce))
-                    .Add("p", new BsonInt32('n'));
+                var document = new BsonDocument
+                {
+                    { "r", nonce },
+                    { "p", (int)'n' }
+                };
 
-                var clientFirstMessageBytes = ToBytes(document);
+                var clientMessageBytes = document.ToBson();
 
-                return new ClientFirst(clientFirstMessageBytes, nonce, _credential, _sessionToken, _dateTimeProvider);
+                return new ClientFirst(clientMessageBytes, nonce, _credential, _sessionToken, _clock);
             }
 
             private byte[] GenerateRandomBytes()
@@ -439,7 +416,7 @@ namespace MongoDB.Driver.Core.Authentication
         {
             private readonly byte[] _bytesToSendToServer;
             private readonly UsernamePasswordCredential _credential;
-            private readonly IClock _dateTimeProvider;
+            private readonly IClock _clock;
             private readonly byte[] _nonce;
             private readonly string _sessionToken;
 
@@ -448,11 +425,11 @@ namespace MongoDB.Driver.Core.Authentication
                 byte[] nonce,
                 UsernamePasswordCredential credential,
                 string sessionToken,
-                IClock dateTimeProvider)
+                IClock clock)
             {
                 _bytesToSendToServer = bytesToSendToServer;
                 _credential = credential;
-                _dateTimeProvider = dateTimeProvider;
+                _clock = clock;
                 _nonce = nonce;
                 _sessionToken = sessionToken;
             }
@@ -469,9 +446,9 @@ namespace MongoDB.Driver.Core.Authentication
 
             public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
             {
-                var serverFirstMessageDoc = ToDocument(bytesReceivedFromServer);
-                var serverNonce = serverFirstMessageDoc["s"].AsByteArray;
-                var host = serverFirstMessageDoc["h"].AsString;
+                var serverFirstMessageDocument = BsonSerializer.Deserialize<BsonDocument>(bytesReceivedFromServer);
+                var serverNonce = serverFirstMessageDocument["s"].AsByteArray;
+                var host = serverFirstMessageDocument["h"].AsString;
 
                 if (serverNonce.Length != ClientNonceLength * 2 || !serverNonce.Take(ClientNonceLength).SequenceEqual(_nonce))
                 {
@@ -479,25 +456,23 @@ namespace MongoDB.Driver.Core.Authentication
                 }
 
                 AwsSignatureVersion4.SignRequest(
-                    _dateTimeProvider.UtcNow,
+                    _clock.UtcNow,
                     _credential.Username,
                     _credential.GetInsecurePassword(),
                     _sessionToken,
                     serverNonce,
                     host,
-                    out var authHeader,
+                    out var authorizationHeader,
                     out var timestamp);
 
-                var document = new BsonDocument()
-                    .Add("a", authHeader)
-                    .Add("d", timestamp);
-
-                if (_sessionToken != null)
+                var document = new BsonDocument
                 {
-                    document.Add("t", _sessionToken);
-                }
+                    { "a", authorizationHeader },
+                    { "d", timestamp },
+                    { "t",  _sessionToken, _sessionToken != null }
+                };
 
-                var clientSecondMessageBytes = ToBytes(document);
+                var clientSecondMessageBytes = document.ToBson();
 
                 return new ClientLast(clientSecondMessageBytes);
             }
