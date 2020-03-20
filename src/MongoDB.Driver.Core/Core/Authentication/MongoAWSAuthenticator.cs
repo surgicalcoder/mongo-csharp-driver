@@ -71,8 +71,8 @@ namespace MongoDB.Driver.Core.Authentication
             UsernamePasswordCredential credential,
             IEnumerable<KeyValuePair<string, string>> properties,
             IRandomByteGenerator randomByteGenerator,
-            IClock dateTimeProvider)
-            : base(CreateMechanism(credential, properties, randomByteGenerator, dateTimeProvider))
+            IClock clock)
+            : base(CreateMechanism(credential, properties, randomByteGenerator, clock))
         {
         }
 
@@ -80,8 +80,8 @@ namespace MongoDB.Driver.Core.Authentication
             string username,
             IEnumerable<KeyValuePair<string, string>> properties,
             IRandomByteGenerator randomByteGenerator,
-            IClock dateTimeProvider)
-            : base(CreateMechanism(username, null, properties, randomByteGenerator, dateTimeProvider))
+            IClock clock)
+            : base(CreateMechanism(username, null, properties, randomByteGenerator, clock))
         {
         }
 

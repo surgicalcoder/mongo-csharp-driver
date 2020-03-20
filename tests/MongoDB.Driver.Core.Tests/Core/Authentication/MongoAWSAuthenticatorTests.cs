@@ -297,7 +297,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
                     "collection : \"$cmd\", " +
                     "batchSize : -1, " +
                     "slaveOk : true, " +
-                    "query: " +
+                    "query : " +
                     "{ " +
                         "\"saslContinue\" : 1, " +
                         "\"conversationId\" : 1, " +
@@ -316,7 +316,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
                     "collection : \"$cmd\", " +
                     "batchSize : -1, " +
                     "slaveOk : true, " +
-                    "query: " +
+                    "query : " +
                     "{ " +
                         "\"saslStart\" : 1, " +
                         "\"mechanism\" : \"MONGODB-AWS\", " +
