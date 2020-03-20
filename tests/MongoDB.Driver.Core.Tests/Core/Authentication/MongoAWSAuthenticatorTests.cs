@@ -13,6 +13,10 @@
 * limitations under the License.
 */
 
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
@@ -24,10 +28,6 @@ using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.WireProtocol.Messages;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
 using Xunit;
 
 namespace MongoDB.Driver.Core.Tests.Core.Authentication
@@ -91,9 +91,9 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             };
 
             var saslStartReply = MessageHelper.BuildReply<RawBsonDocument>(RawBsonDocumentHelper.FromJson(
-                $"{{conversationId: 1, done: false, payload: BinData(0,\"{ToBase64(serverFirstMessage.ToBson())}\"), ok: 1}}"));
+                $"{{ conversationId : 1, done : false, payload : BinData(0,\"{ToBase64(serverFirstMessage.ToBson())}\"), ok : 1 }}"));
             var saslContinueReply = MessageHelper.BuildReply<RawBsonDocument>(RawBsonDocumentHelper.FromJson(
-                "{conversationId: 1, done: true, payload: BinData(0,\"\"), ok: 1}"));
+                "{ conversationId : 1, done : true, payload : BinData(0,\"\"), ok : 1}"));
 
             var subject = new MongoAWSAuthenticator(credential, null, mockRandomByteGenerator.Object, mockClock.Object);
 
@@ -175,9 +175,9 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             };
 
             var saslStartReply = MessageHelper.BuildReply<RawBsonDocument>(RawBsonDocumentHelper.FromJson(
-                $"{{conversationId: 1, done: false, payload: BinData(0,\"{ToBase64(serverFirstMessage.ToBson())}\"), ok: 1}}"));
+                $"{{ conversationId : 1, done : false, payload : BinData(0,\"{ToBase64(serverFirstMessage.ToBson())}\"), ok : 1}}"));
             var saslContinueReply = MessageHelper.BuildReply<RawBsonDocument>(RawBsonDocumentHelper.FromJson(
-                "{conversationId: 1, done: true, payload: BinData(0,\"\"), ok: 1}"));
+                "{ conversationId : 1, done : true, payload : BinData(0,\"\"), ok : 1}"));
 
             var properties = new[] { new KeyValuePair<string, string>("AWS_SESSION_TOKEN", sessionToken) };
             var subject = new MongoAWSAuthenticator(credential, properties, mockRandomByteGenerator.Object, mockClock.Object);

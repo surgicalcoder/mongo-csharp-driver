@@ -13,16 +13,16 @@
 * limitations under the License.
 */
 
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Core.Connections;
-using MongoDB.Driver.Core.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver.Core.Connections;
+using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Core.Authentication
 {
@@ -32,9 +32,9 @@ namespace MongoDB.Driver.Core.Authentication
     public class MongoAWSAuthenticator : SaslAuthenticator
     {
         // constants
+        private const string AccessKeyIdExceptionMessage = "A MONGODB-AWS credential must have access key ID.";
         private const int ClientNonceLength = 32;
-        private const string AccessKeyIdExceptionMessage = "A MONGODB-AWS must have access key ID.";
-        private const string SecretAccessKeyExceptionMessage = "A MONGODB-AWS must have secret access key.";
+        private const string SecretAccessKeyExceptionMessage = "A MONGODB-AWS credential must have secret access key.";
 
         // static properties
         /// <summary>
@@ -183,10 +183,10 @@ namespace MongoDB.Driver.Core.Authentication
             }
 
             var response = AwsHttpClientHelper.GetECSResponseAsync(relativeUri).GetAwaiter().GetResult();
-            var parsedReponse = BsonDocument.Parse(response);
-            var username = parsedReponse.GetValue("AccessKeyId", null)?.AsString;
-            var password = parsedReponse.GetValue("SecretAccessKey", null)?.AsString;
-            var sessionToken = parsedReponse.GetValue("Token", null)?.AsString;
+            var parsedResponse = BsonDocument.Parse(response);
+            var username = parsedResponse.GetValue("AccessKeyId", null)?.AsString;
+            var password = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
+            var sessionToken = parsedResponse.GetValue("Token", null)?.AsString;
 
             return new AwsCredentials
             {
@@ -199,10 +199,10 @@ namespace MongoDB.Driver.Core.Authentication
         private static AwsCredentials CreateAwsCredentialsFromEc2Response()
         {
             var response = AwsHttpClientHelper.GetEC2ResponseAsync().GetAwaiter().GetResult();
-            var parsedReponse = BsonDocument.Parse(response);
-            var username = parsedReponse.GetValue("AccessKeyId", null)?.AsString;
-            var password = parsedReponse.GetValue("SecretAccessKey", null)?.AsString;
-            var sessionToken = parsedReponse.GetValue("Token", null)?.AsString;
+            var parsedResponse = BsonDocument.Parse(response);
+            var username = parsedResponse.GetValue("AccessKeyId", null)?.AsString;
+            var password = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
+            var sessionToken = parsedResponse.GetValue("Token", null)?.AsString;
 
             return new AwsCredentials
             {
@@ -270,7 +270,7 @@ namespace MongoDB.Driver.Core.Authentication
             public string SessionToken;
         }
 
-        private class AwsHttpClientHelper
+        private static class AwsHttpClientHelper
         {
             // private static
             private static readonly Uri __ec2BaseUri = new Uri("http://169.254.169.254");
@@ -415,8 +415,8 @@ namespace MongoDB.Driver.Core.Authentication
         private class ClientFirst : ISaslStep
         {
             private readonly byte[] _bytesToSendToServer;
-            private readonly UsernamePasswordCredential _credential;
             private readonly IClock _clock;
+            private readonly UsernamePasswordCredential _credential;
             private readonly byte[] _nonce;
             private readonly string _sessionToken;
 
@@ -428,8 +428,8 @@ namespace MongoDB.Driver.Core.Authentication
                 IClock clock)
             {
                 _bytesToSendToServer = bytesToSendToServer;
-                _credential = credential;
                 _clock = clock;
+                _credential = credential;
                 _nonce = nonce;
                 _sessionToken = sessionToken;
             }
@@ -453,6 +453,10 @@ namespace MongoDB.Driver.Core.Authentication
                 if (serverNonce.Length != ClientNonceLength * 2 || !serverNonce.Take(ClientNonceLength).SequenceEqual(_nonce))
                 {
                     throw new MongoAuthenticationException(conversation.ConnectionId, message: "Server sent an invalid nonce.");
+                }
+                if (host.Length < 1 || host.Length > 255 || host.Contains(".."))
+                {
+                    throw new MongoAuthenticationException(conversation.ConnectionId, message: "Server returned an invalid sts host.");
                 }
 
                 AwsSignatureVersion4.SignRequest(

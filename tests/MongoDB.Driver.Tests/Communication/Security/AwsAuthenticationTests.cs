@@ -13,10 +13,7 @@
 * limitations under the License.
 */
 
-using FluentAssertions;
 using MongoDB.Bson;
-using MongoDB.Driver.TestHelpers;
-using System;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Communication.Security

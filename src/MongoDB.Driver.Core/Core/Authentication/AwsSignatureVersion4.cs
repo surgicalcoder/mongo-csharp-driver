@@ -13,12 +13,12 @@
 * limitations under the License.
 */
 
-using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using MongoDB.Bson;
 
 namespace MongoDB.Driver.Core.Authentication
 {
@@ -106,13 +106,15 @@ namespace MongoDB.Driver.Core.Authentication
             string sessionToken,
             byte[] nonce)
         {
-            var requestHeaders = new SortedDictionary<string, string>();
-            requestHeaders["Content-Type"] = contentType;
-            requestHeaders["Content-Length"] = body.Length.ToString();
-            requestHeaders["Host"] = host;
-            requestHeaders["X-Amz-Date"] = timestamp;
-            requestHeaders["X-MongoDB-Server-Nonce"] = Convert.ToBase64String(nonce);
-            requestHeaders["X-MongoDB-GS2-CB-Flag"] = "n";
+            var requestHeaders = new SortedDictionary<string, string>
+            {
+                ["Content-Type"] = contentType,
+                ["Content-Length"] = body.Length.ToString(),
+                ["Host"] = host,
+                ["X-Amz-Date"] = timestamp,
+                ["X-MongoDB-GS2-CB-Flag"] = "n",
+                ["X-MongoDB-Server-Nonce"] = Convert.ToBase64String(nonce)
+            };
             if (sessionToken != null)
             {
                 requestHeaders["X-Amz-Security-Token"] = sessionToken;

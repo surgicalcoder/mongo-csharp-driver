@@ -13,11 +13,11 @@
 * limitations under the License.
 */
 
+using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Authentication;
-using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace MongoDB.Driver.Core.Tests.Core.Authentication
@@ -40,14 +40,16 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         public void Get_canonical_headers_should_work_as_expected()
         {
             var timestamp = new DateTime(2020, 03, 12, 14, 23, 46).ToString("yyyyMMddTHHmmssZ");
-            var requestHeaders = new SortedDictionary<string, string>();
-            requestHeaders["X-MongoDB-GS2-CB-Flag"] = "n";
-            requestHeaders["Content-Type"] = "application/x-www-form-urlencoded";
-            requestHeaders["X-Amz-Date"] = timestamp;
-            requestHeaders["Content-Length"] = "42";
-            requestHeaders["Host"] = "iam.testhost.com";
-            requestHeaders["X-MongoDB-Server-Nonce"] = "123";
-            requestHeaders["X-Amz-Security-Token"] = "321";
+            var requestHeaders = new SortedDictionary<string, string>
+            {
+                ["X-MongoDB-GS2-CB-Flag"] = "n",
+                ["Content-Type"] = "application/x-www-form-urlencoded",
+                ["X-Amz-Date"] = timestamp,
+                ["Content-Length"] = "42",
+                ["Host"] = "iam.testhost.com",
+                ["X-MongoDB-Server-Nonce"] = "123",
+                ["X-Amz-Security-Token"] = "321"
+            };
             var expected = "content-length:42\n" +
                 "content-type:application/x-www-form-urlencoded\n" +
                 "host:iam.testhost.com\n" +
@@ -65,14 +67,16 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         public void Get_signed_headers_should_work_as_expected()
         {
             var timestamp = new DateTime(2020, 03, 12, 14, 23, 46).ToString("yyyyMMddTHHmmssZ");
-            var requestHeaders = new SortedDictionary<string, string>();
-            requestHeaders["X-Amz-Security-Token"] = "321";
-            requestHeaders["Content-Type"] = "application/x-www-form-urlencoded";
-            requestHeaders["X-Amz-Date"] = timestamp;
-            requestHeaders["Content-Length"] = "42";
-            requestHeaders["Host"] = "iam.testhost.com";
-            requestHeaders["X-MongoDB-GS2-CB-Flag"] = "n";
-            requestHeaders["X-MongoDB-Server-Nonce"] = "123";
+            var requestHeaders = new SortedDictionary<string, string>
+            {
+                ["X-Amz-Security-Token"] = "321",
+                ["Content-Type"] = "application/x-www-form-urlencoded",
+                ["X-Amz-Date"] = timestamp,
+                ["Content-Length"] = "42",
+                ["Host"] = "iam.testhost.com",
+                ["X-MongoDB-GS2-CB-Flag"] = "n",
+                ["X-MongoDB-Server-Nonce"] = "123"
+            };
             var expected = "content-length;content-type;host;x-amz-date;x-amz-security-token;x-mongodb-gs2-cb-flag;x-mongodb-server-nonce";
 
             var actual = AwsSignatureVersion4Reflector.GetSignedHeaders(requestHeaders);
