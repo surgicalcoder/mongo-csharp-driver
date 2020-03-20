@@ -23,7 +23,7 @@ namespace MongoDB.Driver.Tests.Communication.Security
     [Trait("Category", "AwsMechanism")]
     public class AwsAuthenticationTests
     {
-        [Fact]
+        [SkippableFact]
         public void Aws_authentication_should_should_have_expected_result()
         {
             RequireEnvironment.Check().EnvironmentVariable("AWS_TESTS_ENABLED");
