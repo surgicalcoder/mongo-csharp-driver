@@ -423,6 +423,7 @@ namespace MongoDB.Driver
                     _identity.Source,
                     _identity.Username,
                     insecurePassword);
+
                 if (_mechanism == null)
                 {
                     return new DefaultAuthenticator(credential);
@@ -541,9 +542,9 @@ namespace MongoDB.Driver
                     EnsureNullOrExternalSource(mechanism, source);
                     if (username == null)
                     {
-                        if (evidence != null && evidence is PasswordEvidence)
+                        if (evidence is PasswordEvidence)
                         {
-                            throw new ArgumentException("A MONGODB-AWS credential must have access key id.");
+                            throw new ArgumentException("A MONGODB-AWS credential must have an access key id.");
                         }
 
                         return new MongoCredential(
@@ -553,7 +554,7 @@ namespace MongoDB.Driver
                     }
                     if (evidence == null || evidence is ExternalEvidence)
                     {
-                        throw new ArgumentException("A MONGODB-AWS credential must have secret access key.");
+                        throw new ArgumentException("A MONGODB-AWS credential must have a secret access key.");
                     }
 
                     return new MongoCredential(

@@ -38,18 +38,25 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         private const int ClientNonceLength = 32;
 
         #region static
-        // private static
+        // private static fields
         private static readonly IRandomByteGenerator __randomByteGenerator = new DefaultRandomByteGenerator();
-        private static readonly ServerId __serverId = new ServerId(new ClusterId(), new DnsEndPoint("localhost", 27017));
-        private static readonly ConnectionDescription __connectionDescription = new ConnectionDescription(
-            new ConnectionId(__serverId),
-            new IsMasterResult(new BsonDocument("ok", 1).Add("ismaster", 1)),
-            new BuildInfoResult(new BsonDocument("version", "4.0.0")));
+        private static readonly ServerId __serverId;
+        private static readonly ConnectionDescription __connectionDescription;
+        
+        // static constructor
+        static MongoAWSAuthenticatorTests()
+        {
+            __serverId = new ServerId(new ClusterId(), new DnsEndPoint("localhost", 27017));
+            __connectionDescription = new ConnectionDescription(
+                new ConnectionId(__serverId),
+                new IsMasterResult(new BsonDocument("ok", 1).Add("ismaster", 1)),
+                new BuildInfoResult(new BsonDocument("version", "4.0.0")));
+        }
         #endregion
 
         [Theory]
         [ParameterAttributeData]
-        public void Authenticate_should_work_as_expected(
+        public void Authenticate_should_have_expected_result(
             [Values(false, true)] bool async)
         {
             var dateTime = DateTime.UtcNow;
@@ -58,7 +65,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             var host = "sts.amazonaws.com";
             var credential = new UsernamePasswordCredential("$external", "permanentuser", "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake");
 
-            AwsSignatureVersion4.SignRequest(
+            AwsSignatureVersion4.CreateAuthorizationRequest(
                 dateTime,
                 credential.Username,
                 credential.GetInsecurePassword(),
@@ -131,7 +138,72 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
 
         [Theory]
         [ParameterAttributeData]
-        public void Authenticate_with_session_token_should_work_as_expected(
+        public void Authenticate_should_throw_an_AuthenticationException_when_authentication_fails(
+            [Values(false, true)] bool async)
+        {
+            var credential = new UsernamePasswordCredential("$external", "permanentuser", "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake");
+            var subject = new MongoAWSAuthenticator(credential, null);
+
+            var reply = MessageHelper.BuildNoDocumentsReturnedReply<RawBsonDocument>();
+            var connection = new MockConnection(__serverId);
+            connection.EnqueueReplyMessage(reply);
+
+            Exception exception;
+            if (async)
+            {
+                exception = Record.Exception(() => subject.AuthenticateAsync(connection, __connectionDescription, CancellationToken.None).GetAwaiter().GetResult());
+            }
+            else
+            {
+                exception = Record.Exception(() => subject.Authenticate(connection, __connectionDescription, CancellationToken.None));
+            }
+
+            exception.Should().BeOfType<MongoAuthenticationException>();
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Authenticate_should_throw_when_server_provides_invalid_nonce(
+            [Values(false, true)] bool async)
+        {
+            var clientNonce = __randomByteGenerator.Generate(ClientNonceLength);
+            var invalidServerNonce = __randomByteGenerator.Generate(ClientNonceLength * 2);
+            var host = "sts.amazonaws.com";
+            var credential = new UsernamePasswordCredential("$external", "permanentuser", "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake");
+
+            var mockRandomByteGenerator = new Mock<IRandomByteGenerator>();
+            mockRandomByteGenerator.Setup(x => x.Generate(It.IsAny<int>())).Returns(clientNonce);
+
+            var serverFirstMessage = new BsonDocument
+            {
+                { "s", invalidServerNonce },
+                { "h", host }
+            };
+
+            var saslStartReply = MessageHelper.BuildReply<RawBsonDocument>(RawBsonDocumentHelper.FromJson(
+                $"{{ conversationId : 1, done : false, payload : BinData(0,\"{ToBase64(serverFirstMessage.ToBson())}\"), ok : 1 }}"));
+
+            var subject = new MongoAWSAuthenticator(credential, null, mockRandomByteGenerator.Object, SystemClock.Instance);
+
+            var connection = new MockConnection(__serverId);
+            connection.EnqueueReplyMessage(saslStartReply);
+
+            Exception exception;
+            if (async)
+            {
+                exception = Record.Exception(() => subject.AuthenticateAsync(connection, __connectionDescription, CancellationToken.None).GetAwaiter().GetResult());
+            }
+            else
+            {
+                exception = Record.Exception(() => subject.Authenticate(connection, __connectionDescription, CancellationToken.None));
+            }
+
+            exception.Should().BeOfType<MongoAuthenticationException>();
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Authenticate_with_session_token_should_have_expected_result(
             [Values(false, true)] bool async)
         {
             var dateTime = DateTime.UtcNow;
@@ -141,7 +213,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
             var credential = new UsernamePasswordCredential("$external", "permanentuser", "FAKEFAKEFAKEFAKEFAKEfakefakefakefakefake");
             var sessionToken = "MXUpbuzwzPo67WKCNYtdBq47taFtIpt+SVx58hNx1/jSz37h9d67dtUOg0ejKrv83u8ai+VFZxMx=";
 
-            AwsSignatureVersion4.SignRequest(
+            AwsSignatureVersion4.CreateAuthorizationRequest(
                 dateTime,
                 credential.Username,
                 credential.GetInsecurePassword(),
@@ -219,12 +291,12 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         {
             return
                 "{" +
-                    "opcode: \"query\", " +
-                    $"requestId: {requestId}, " +
-                    "database: \"$external\", " +
-                    "collection: \"$cmd\", " +
-                    "batchSize: -1, " +
-                    "slaveOk: true, " +
+                    "opcode : \"query\", " +
+                    $"requestId : {requestId}, " +
+                    "database : \"$external\", " +
+                    "collection : \"$cmd\", " +
+                    "batchSize : -1, " +
+                    "slaveOk : true, " +
                     "query: " +
                     "{ " +
                         "\"saslContinue\" : 1, " +
@@ -238,12 +310,12 @@ namespace MongoDB.Driver.Core.Tests.Core.Authentication
         {
             return
                 "{" +
-                    "opcode: \"query\", " +
-                    $"requestId: {requestId}, " +
-                    "database: \"$external\", " +
-                    "collection: \"$cmd\", " +
-                    "batchSize: -1, " +
-                    "slaveOk: true, " +
+                    "opcode : \"query\", " +
+                    $"requestId : {requestId}, " +
+                    "database : \"$external\", " +
+                    "collection : \"$cmd\", " +
+                    "batchSize : -1, " +
+                    "slaveOk : true, " +
                     "query: " +
                     "{ " +
                         "\"saslStart\" : 1, " +

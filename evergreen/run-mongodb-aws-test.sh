@@ -31,6 +31,7 @@ if [[ -n ${SESSION_TOKEN} ]]; then
     MONGODB_URI="${MONGODB_URI}&authMechanismProperties=AWS_SESSION_TOKEN:${SESSION_TOKEN}"
 fi
 export MONGODB_URI
+export AWS_TESTS_ENABLED=true
 
 # show test output
 set -x

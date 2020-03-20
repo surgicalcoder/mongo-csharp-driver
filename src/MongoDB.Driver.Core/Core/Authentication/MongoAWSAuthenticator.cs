@@ -32,9 +32,7 @@ namespace MongoDB.Driver.Core.Authentication
     public class MongoAWSAuthenticator : SaslAuthenticator
     {
         // constants
-        private const string AccessKeyIdExceptionMessage = "A MONGODB-AWS credential must have access key ID.";
         private const int ClientNonceLength = 32;
-        private const string SecretAccessKeyExceptionMessage = "A MONGODB-AWS credential must have secret access key.";
 
         // static properties
         /// <summary>
@@ -102,7 +100,7 @@ namespace MongoDB.Driver.Core.Authentication
         {
             if (credential.Source != "$external")
             {
-                throw new ArgumentException("MONGO AWS authentication may only use the $external source.", nameof(credential));
+                throw new ArgumentException("MONGODB-AWS authentication may only use the $external source.", nameof(credential));
             }
 
             return CreateMechanism(credential.Username, credential.Password, properties, randomByteGenerator, clock);
@@ -115,48 +113,43 @@ namespace MongoDB.Driver.Core.Authentication
             IRandomByteGenerator randomByteGenerator,
             IClock clock)
         {
-            var awsCredentialsCreators = new Func<AwsCredentials>[]
+            ValidateMechanismProperties(properties);
+
+            var awsCredentials =
+                CreateAwsCredentialsFromMongoCredentials(username, securePassword, properties) ??
+                CreateAwsCredentialsFromEnvironmentVariables() ??
+                CreateAwsCredentialsFromEcsResponse() ??
+                CreateAwsCredentialsFromEc2Response();
+
+            if (awsCredentials == null)
             {
-                () => CreateAwsCredentialsFromMongoCredentials(username, securePassword, properties),
-                () => CreateAwsCredentialsFromEnvironmentVariables(),
-                () => CreateAwsCredentialsFromEcsResponse(),
-                () => CreateAwsCredentialsFromEc2Response()
-            };
-
-            foreach (var awsCredentialsCreator in awsCredentialsCreators)
-            {
-                var awsCredentials = awsCredentialsCreator();
-
-                if (awsCredentials == null)
-                {
-                    continue;
-                }
-
-                ValidateAwsCredentials(awsCredentials);
-
-                if (awsCredentials.Username == null)
-                {
-                    continue;
-                }
-
-                var credentials = new UsernamePasswordCredential("$external", awsCredentials.Username, awsCredentials.Password);
-
-                return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, clock);
+                throw new InvalidOperationException("A MONGODB-AWS credential must have an access key ID.");
             }
 
-            throw new InvalidOperationException(AccessKeyIdExceptionMessage);
+            var credentials = new UsernamePasswordCredential("$external", awsCredentials.Username, awsCredentials.Password);
+
+            return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, clock);
         }
 
         private static AwsCredentials CreateAwsCredentialsFromMongoCredentials(string username, SecureString securePassword, IEnumerable<KeyValuePair<string, string>> properties)
         {
             var sessionToken = ExtractSessionTokenFromMechanismProperties(properties);
 
-            return new AwsCredentials
+            var awsCredentials = new AwsCredentials
             {
                 Username = username,
                 Password = securePassword,
                 SessionToken = sessionToken
             };
+
+            ValidateAwsCredentials(awsCredentials);
+
+            if (awsCredentials.Username == null)
+            {
+                return null;
+            }
+            
+            return awsCredentials;
         }
 
         private static AwsCredentials CreateAwsCredentialsFromEnvironmentVariables()
@@ -165,12 +158,21 @@ namespace MongoDB.Driver.Core.Authentication
             var password = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
             var sessionToken = Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
 
-            return new AwsCredentials
+            var awsCredentials = new AwsCredentials
             {
                 Username = username,
                 Password = ToSecureString(password),
                 SessionToken = sessionToken
             };
+
+            ValidateAwsCredentials(awsCredentials);
+
+            if (awsCredentials.Username == null)
+            {
+                return null;
+            }
+
+            return awsCredentials;
         }
 
         private static AwsCredentials CreateAwsCredentialsFromEcsResponse()
@@ -188,12 +190,21 @@ namespace MongoDB.Driver.Core.Authentication
             var password = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
             var sessionToken = parsedResponse.GetValue("Token", null)?.AsString;
 
-            return new AwsCredentials
+            var awsCredentials = new AwsCredentials
             {
                 Username = username,
                 Password = ToSecureString(password),
                 SessionToken = sessionToken
             };
+
+            ValidateAwsCredentials(awsCredentials);
+
+            if (awsCredentials.Username == null)
+            {
+                return null;
+            }
+
+            return awsCredentials;
         }
 
         private static AwsCredentials CreateAwsCredentialsFromEc2Response()
@@ -204,33 +215,39 @@ namespace MongoDB.Driver.Core.Authentication
             var password = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
             var sessionToken = parsedResponse.GetValue("Token", null)?.AsString;
 
-            return new AwsCredentials
+            var awsCredentials = new AwsCredentials
             {
                 Username = username,
                 Password = ToSecureString(password),
                 SessionToken = sessionToken
             };
+
+            ValidateAwsCredentials(awsCredentials);
+
+            if (awsCredentials.Username == null)
+            {
+                return null;
+            }
+
+            return awsCredentials;
         }
 
         private static string ExtractSessionTokenFromMechanismProperties(IEnumerable<KeyValuePair<string, string>> properties)
         {
-            string sessionToken = null;
-            if (properties != null)
+            if (properties == null)
             {
-                foreach (var pair in properties)
+                return null;
+            }
+
+            foreach (var pair in properties)
+            {
+                if (pair.Key.ToUpperInvariant() == "AWS_SESSION_TOKEN")
                 {
-                    switch (pair.Key.ToUpperInvariant())
-                    {
-                        case "AWS_SESSION_TOKEN":
-                            sessionToken = pair.Value;
-                            break;
-                        default:
-                            throw new ArgumentException($"Unknown AWS property '{pair.Key}'.", nameof(properties));
-                    }
+                    return pair.Value;
                 }
             }
 
-            return sessionToken;
+            return null;
         }
 
         private static SecureString ToSecureString(string str)
@@ -254,11 +271,27 @@ namespace MongoDB.Driver.Core.Authentication
         {
             if (awsCredentials.Username == null && (awsCredentials.Password != null || awsCredentials.SessionToken != null))
             {
-                throw new InvalidOperationException(AccessKeyIdExceptionMessage);
+                throw new InvalidOperationException("A MONGODB-AWS credential must have an access key ID.");
             }
             if (awsCredentials.Username != null && awsCredentials.Password == null)
             {
-                throw new InvalidOperationException(SecretAccessKeyExceptionMessage);
+                throw new InvalidOperationException("A MONGODB-AWS credential must have a secret access key.");
+            }
+        }
+
+        private static void ValidateMechanismProperties(IEnumerable<KeyValuePair<string, string>> properties)
+        {
+            if (properties == null)
+            {
+                return;
+            }
+
+            foreach (var pair in properties)
+            {
+                if (pair.Key.ToUpperInvariant() != "AWS_SESSION_TOKEN")
+                {
+                    throw new ArgumentException($"Unknown AWS property '{pair.Key}'.", nameof(properties));
+                }
             }
         }
 
@@ -351,11 +384,7 @@ namespace MongoDB.Driver.Core.Authentication
                     response = await __httpClientInstance.Value.SendAsync(request).ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
                 }
-                catch (OperationCanceledException ex)
-                {
-                    throw new MongoClientException(exceptionMessage, ex);
-                }
-                catch (HttpRequestException ex)
+                catch (Exception ex) when (ex is OperationCanceledException || ex is MongoClientException)
                 {
                     throw new MongoClientException(exceptionMessage, ex);
                 }
@@ -452,14 +481,14 @@ namespace MongoDB.Driver.Core.Authentication
 
                 if (serverNonce.Length != ClientNonceLength * 2 || !serverNonce.Take(ClientNonceLength).SequenceEqual(_nonce))
                 {
-                    throw new MongoAuthenticationException(conversation.ConnectionId, message: "Server sent an invalid nonce.");
+                    throw new MongoAuthenticationException(conversation.ConnectionId, "Server sent an invalid nonce.");
                 }
                 if (host.Length < 1 || host.Length > 255 || host.Contains(".."))
                 {
-                    throw new MongoAuthenticationException(conversation.ConnectionId, message: "Server returned an invalid sts host.");
+                    throw new MongoAuthenticationException(conversation.ConnectionId, "Server returned an invalid sts host.");
                 }
 
-                AwsSignatureVersion4.SignRequest(
+                AwsSignatureVersion4.CreateAuthorizationRequest(
                     _clock.UtcNow,
                     _credential.Username,
                     _credential.GetInsecurePassword(),

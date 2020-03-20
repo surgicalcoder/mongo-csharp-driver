@@ -28,7 +28,7 @@ namespace MongoDB.Driver.Core.Authentication
     internal static class AwsSignatureVersion4
     {
         /// <summary>
-        /// Signs the request.
+        /// Creates authorization request.
         /// </summary>
         /// <param name="dateTime">The date time.</param>
         /// <param name="accessKey">The access key.</param>
@@ -38,7 +38,7 @@ namespace MongoDB.Driver.Core.Authentication
         /// <param name="host">The host.</param>
         /// <param name="authorizationHeader">The authorization header.</param>
         /// <param name="timestamp">The timestamp.</param>
-        public static void SignRequest(
+        public static void CreateAuthorizationRequest(
             DateTime dateTime,
             string accessKey,
             string secretKey,

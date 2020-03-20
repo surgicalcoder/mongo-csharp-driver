@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Communication.Security
@@ -23,8 +24,10 @@ namespace MongoDB.Driver.Tests.Communication.Security
     public class AwsAuthenticationTests
     {
         [Fact]
-        public void Aws_authentication_should_behave_as_expected()
+        public void Aws_authentication_should_should_have_expected_result()
         {
+            RequireEnvironment.Check().EnvironmentVariable("AWS_TESTS_ENABLED");
+
             using (var client = DriverTestConfiguration.CreateDisposableClient())
             {
                 // test that a command that doesn't require auth completes normally
