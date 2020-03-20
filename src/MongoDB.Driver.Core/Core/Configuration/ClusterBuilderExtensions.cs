@@ -253,7 +253,9 @@ namespace MongoDB.Driver.Core.Configuration
 
         private static string GetDefaultSource(ConnectionString connectionString)
         {
-            if (connectionString.AuthMechanism != null && connectionString.AuthMechanism.Equals("GSSAPI", StringComparison.OrdinalIgnoreCase))
+            if (connectionString.AuthMechanism != null && (
+                connectionString.AuthMechanism == GssapiAuthenticator.MechanismName ||
+                connectionString.AuthMechanism == MongoAWSAuthenticator.MechanismName))
             {
                 return "$external";
             }
