@@ -364,7 +364,7 @@ functions:
           cat <<'EOF' > "${PROJECT_DIRECTORY}/prepare_mongodb_aws.sh"
             MONGODB_URI="mongodb://localhost"
           EOF
-          evergreen/run-mongodb-aws-test.sh
+          PROJECT_DIRECTORY=${PROJECT_DIRECTORY} evergreen/run-mongodb-aws-test.sh
 
   run-aws-auth-test-with-aws-credentials-as-environment-variables:
     - command: shell.exec
