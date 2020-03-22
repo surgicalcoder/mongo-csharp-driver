@@ -31,10 +31,14 @@ namespace MongoDB.Driver.Core.Authentication
     /// </summary>
     public class MongoAWSAuthenticator : SaslAuthenticator
     {
+        #region static
+        // put static properties and methods here
+        #endregion
+
         // constants
         private const int ClientNonceLength = 32;
 
-        // static properties
+        // public static properties
         /// <summary>
         /// Gets the name of the mechanism.
         /// </summary>
@@ -108,77 +112,79 @@ namespace MongoDB.Driver.Core.Authentication
 
         private static MongoAWSMechanism CreateMechanism(
             string username,
-            SecureString securePassword,
+            SecureString password,
             IEnumerable<KeyValuePair<string, string>> properties,
             IRandomByteGenerator randomByteGenerator,
             IClock clock)
         {
-            ValidateMechanismProperties(properties);
-
             var awsCredentials =
-                CreateAwsCredentialsFromMongoCredentials(username, securePassword, properties) ??
+                CreateAwsCredentialsFromMongoCredentials(username, password, properties) ??
                 CreateAwsCredentialsFromEnvironmentVariables() ??
                 CreateAwsCredentialsFromEcsResponse() ??
                 CreateAwsCredentialsFromEc2Response();
 
             if (awsCredentials == null)
             {
-                throw new InvalidOperationException("A MONGODB-AWS credential must have an access key ID.");
+                throw new InvalidOperationException("Unable to find credentials for MONGODB-AWS authentication.");
             }
 
-            var credentials = new UsernamePasswordCredential("$external", awsCredentials.Username, awsCredentials.Password);
-
-            return new MongoAWSMechanism(credentials, awsCredentials.SessionToken, randomByteGenerator, clock);
+            return new MongoAWSMechanism(awsCredentials, randomByteGenerator, clock);
         }
 
-        private static AwsCredentials CreateAwsCredentialsFromMongoCredentials(string username, SecureString securePassword, IEnumerable<KeyValuePair<string, string>> properties)
+        private static AwsCredentials CreateAwsCredentialsFromMongoCredentials(string username, SecureString password, IEnumerable<KeyValuePair<string, string>> properties)
         {
+            ValidateMechanismProperties(properties);
             var sessionToken = ExtractSessionTokenFromMechanismProperties(properties);
 
-            var awsCredentials = new AwsCredentials
-            {
-                Username = username,
-                Password = securePassword,
-                SessionToken = sessionToken
-            };
-
-            ValidateAwsCredentials(awsCredentials);
-
-            if (awsCredentials.Username == null)
+            if (username == null && password == null && sessionToken == null)
             {
                 return null;
             }
-            
-            return awsCredentials;
+            if (password != null && username == null)
+            {
+                throw new InvalidOperationException("When using MONGODB-AWS authentication if a password is provided via settings then a username must be provided also.");
+            }
+            if (username != null && password == null)
+            {
+                throw new InvalidOperationException("When using MONGODB-AWS authentication if a username is provided via settings then a password must be provided also.");
+            }
+            if (sessionToken != null && (username == null || password == null))
+            {
+                throw new InvalidOperationException("When using MONGODB-AWS authentication if a session token is provided via settings then a username and password must be provided also.");
+            }
+
+            return new AwsCredentials(accessKeyId: username, secretAccessKey: password, sessionToken);
         }
 
         private static AwsCredentials CreateAwsCredentialsFromEnvironmentVariables()
         {
-            var username = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-            var password = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+            var accessKeyId = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+            var secretAccessKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
             var sessionToken = Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
 
-            var awsCredentials = new AwsCredentials
-            {
-                Username = username,
-                Password = ToSecureString(password),
-                SessionToken = sessionToken
-            };
-
-            ValidateAwsCredentials(awsCredentials);
-
-            if (awsCredentials.Username == null)
+            if (accessKeyId == null && secretAccessKey == null && sessionToken == null)
             {
                 return null;
             }
+            if (secretAccessKey != null && accessKeyId == null)
+            {
+                throw new InvalidOperationException("When using MONGODB-AWS authentication if a secret access key is provided via environment variables then an access key ID must be provided also.");
+            }
+            if (accessKeyId != null && secretAccessKey == null)
+            {
+                throw new InvalidOperationException("When using MONGODB-AWS authentication if an access key ID is provided via environment variables then a secret access key must be provided also.");
+            }
+            if (sessionToken != null && (accessKeyId == null || secretAccessKey == null))
+            {
+                throw new InvalidOperationException("When using MONGODB-AWS authentication if a session token is provided via environment variables then an access key ID and a secret access key must be provided also.");
+            }
 
-            return awsCredentials;
+            return new AwsCredentials(accessKeyId, ToSecureString(secretAccessKey), sessionToken);
         }
 
         private static AwsCredentials CreateAwsCredentialsFromEcsResponse()
         {
             var relativeUri = Environment.GetEnvironmentVariable("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI");
-
             if (relativeUri == null)
             {
                 return null;
@@ -186,64 +192,34 @@ namespace MongoDB.Driver.Core.Authentication
 
             var response = AwsHttpClientHelper.GetECSResponseAsync(relativeUri).GetAwaiter().GetResult();
             var parsedResponse = BsonDocument.Parse(response);
-            var username = parsedResponse.GetValue("AccessKeyId", null)?.AsString;
-            var password = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
+            var accessKeyId = parsedResponse.GetValue("AccessKeyId", null)?.AsString;
+            var secretAccessKey = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
             var sessionToken = parsedResponse.GetValue("Token", null)?.AsString;
 
-            var awsCredentials = new AwsCredentials
-            {
-                Username = username,
-                Password = ToSecureString(password),
-                SessionToken = sessionToken
-            };
-
-            ValidateAwsCredentials(awsCredentials);
-
-            if (awsCredentials.Username == null)
-            {
-                return null;
-            }
-
-            return awsCredentials;
+            return new AwsCredentials(accessKeyId, ToSecureString(secretAccessKey), sessionToken);
         }
 
         private static AwsCredentials CreateAwsCredentialsFromEc2Response()
         {
             var response = AwsHttpClientHelper.GetEC2ResponseAsync().GetAwaiter().GetResult();
             var parsedResponse = BsonDocument.Parse(response);
-            var username = parsedResponse.GetValue("AccessKeyId", null)?.AsString;
-            var password = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
+            var accessKeyId = parsedResponse.GetValue("AccessKeyId", null)?.AsString;
+            var secretAccessKey = parsedResponse.GetValue("SecretAccessKey", null)?.AsString;
             var sessionToken = parsedResponse.GetValue("Token", null)?.AsString;
 
-            var awsCredentials = new AwsCredentials
-            {
-                Username = username,
-                Password = ToSecureString(password),
-                SessionToken = sessionToken
-            };
-
-            ValidateAwsCredentials(awsCredentials);
-
-            if (awsCredentials.Username == null)
-            {
-                return null;
-            }
-
-            return awsCredentials;
+            return new AwsCredentials(accessKeyId, ToSecureString(secretAccessKey), sessionToken);
         }
 
         private static string ExtractSessionTokenFromMechanismProperties(IEnumerable<KeyValuePair<string, string>> properties)
         {
-            if (properties == null)
+            if (properties != null)
             {
-                return null;
-            }
-
-            foreach (var pair in properties)
-            {
-                if (pair.Key.ToUpperInvariant() == "AWS_SESSION_TOKEN")
+                foreach (var pair in properties)
                 {
-                    return pair.Value;
+                    if (pair.Key.ToUpperInvariant() == "AWS_SESSION_TOKEN")
+                    {
+                        return pair.Value;
+                    }
                 }
             }
 
@@ -267,30 +243,16 @@ namespace MongoDB.Driver.Core.Authentication
             return secureString;
         }
 
-        private static void ValidateAwsCredentials(AwsCredentials awsCredentials)
-        {
-            if (awsCredentials.Username == null && (awsCredentials.Password != null || awsCredentials.SessionToken != null))
-            {
-                throw new InvalidOperationException("A MONGODB-AWS credential must have an access key ID.");
-            }
-            if (awsCredentials.Username != null && awsCredentials.Password == null)
-            {
-                throw new InvalidOperationException("A MONGODB-AWS credential must have a secret access key.");
-            }
-        }
-
         private static void ValidateMechanismProperties(IEnumerable<KeyValuePair<string, string>> properties)
         {
-            if (properties == null)
+            if (properties != null)
             {
-                return;
-            }
-
-            foreach (var pair in properties)
-            {
-                if (pair.Key.ToUpperInvariant() != "AWS_SESSION_TOKEN")
+                foreach (var pair in properties)
                 {
-                    throw new ArgumentException($"Unknown AWS property '{pair.Key}'.", nameof(properties));
+                    if (pair.Key.ToUpperInvariant() != "AWS_SESSION_TOKEN")
+                    {
+                        throw new ArgumentException($"Unknown AWS property '{pair.Key}'.", nameof(properties));
+                    }
                 }
             }
         }
@@ -298,9 +260,20 @@ namespace MongoDB.Driver.Core.Authentication
         // nested classes
         private class AwsCredentials
         {
-            public string Username;
-            public SecureString Password;
-            public string SessionToken;
+            private readonly string _accessKeyId;
+            private readonly SecureString _secretAccessKey;
+            private readonly string _sessionToken;
+
+            public AwsCredentials(string accessKeyId, SecureString secretAccessKey, string sessionToken)
+            {
+                _accessKeyId = Ensure.IsNotNull(accessKeyId, nameof(accessKeyId));
+                _secretAccessKey = Ensure.IsNotNull(secretAccessKey, nameof(secretAccessKey));
+                _sessionToken = sessionToken; // can be null
+            }
+
+            public string AccessKeyId => _accessKeyId;
+            public SecureString SecretAccessKey => _secretAccessKey;
+            public string SessionToken => _sessionToken;
         }
 
         private static class AwsHttpClientHelper
@@ -395,19 +368,16 @@ namespace MongoDB.Driver.Core.Authentication
 
         private class MongoAWSMechanism : ISaslMechanism
         {
+            private readonly AwsCredentials _awsCredentials;
             private readonly IClock _clock;
-            private readonly UsernamePasswordCredential _credential;
             private readonly IRandomByteGenerator _randomByteGenerator;
-            private readonly string _sessionToken;
 
             public MongoAWSMechanism(
-                UsernamePasswordCredential credential,
-                string sessionToken,
+                AwsCredentials awsCredentials,
                 IRandomByteGenerator randomByteGenerator,
                 IClock clock)
             {
-                _credential = Ensure.IsNotNull(credential, nameof(credential));
-                _sessionToken = sessionToken;
+                _awsCredentials = Ensure.IsNotNull(awsCredentials, nameof(awsCredentials));
                 _randomByteGenerator = Ensure.IsNotNull(randomByteGenerator, nameof(randomByteGenerator));
                 _clock = Ensure.IsNotNull(clock, nameof(clock));
             }
@@ -432,7 +402,7 @@ namespace MongoDB.Driver.Core.Authentication
 
                 var clientMessageBytes = document.ToBson();
 
-                return new ClientFirst(clientMessageBytes, nonce, _credential, _sessionToken, _clock);
+                return new ClientFirst(clientMessageBytes, nonce, _awsCredentials, _clock);
             }
 
             private byte[] GenerateRandomBytes()
@@ -443,24 +413,21 @@ namespace MongoDB.Driver.Core.Authentication
 
         private class ClientFirst : ISaslStep
         {
+            private readonly AwsCredentials _awsCredentials;
             private readonly byte[] _bytesToSendToServer;
             private readonly IClock _clock;
-            private readonly UsernamePasswordCredential _credential;
             private readonly byte[] _nonce;
-            private readonly string _sessionToken;
 
             public ClientFirst(
                 byte[] bytesToSendToServer,
                 byte[] nonce,
-                UsernamePasswordCredential credential,
-                string sessionToken,
+                AwsCredentials awsCredentials,
                 IClock clock)
             {
                 _bytesToSendToServer = bytesToSendToServer;
-                _clock = clock;
-                _credential = credential;
                 _nonce = nonce;
-                _sessionToken = sessionToken;
+                _awsCredentials = awsCredentials;
+                _clock = clock;
             }
 
             public byte[] BytesToSendToServer
@@ -490,9 +457,9 @@ namespace MongoDB.Driver.Core.Authentication
 
                 AwsSignatureVersion4.CreateAuthorizationRequest(
                     _clock.UtcNow,
-                    _credential.Username,
-                    _credential.GetInsecurePassword(),
-                    _sessionToken,
+                    _awsCredentials.AccessKeyId,
+                    _awsCredentials.SecretAccessKey,
+                    _awsCredentials.SessionToken,
                     serverNonce,
                     host,
                     out var authorizationHeader,
@@ -502,7 +469,7 @@ namespace MongoDB.Driver.Core.Authentication
                 {
                     { "a", authorizationHeader },
                     { "d", timestamp },
-                    { "t",  _sessionToken, _sessionToken != null }
+                    { "t",  _awsCredentials.SessionToken, _awsCredentials.SessionToken != null }
                 };
 
                 var clientSecondMessageBytes = document.ToBson();
