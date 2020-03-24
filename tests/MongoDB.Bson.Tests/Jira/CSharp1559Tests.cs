@@ -38,6 +38,8 @@ namespace MongoDB.Bson.Tests.Jira
         [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutable), new[] { 2 })]
         [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor), new[] { 1, 2})]
         [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor), new[] { 1, 2 })]
+        [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithAbstractProperty), new[] { 2 })]
+        [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithConstructor), new[] { 1 })]
         public void Serialization_should_return_expected_result(Type testCaseType, int[] arguments)
         {
             var testCase = Activator.CreateInstance(testCaseType, arguments.Select(a => (object)a).ToArray());
@@ -299,6 +301,36 @@ namespace MongoDB.Bson.Tests.Jira
 
             [BsonElement]
             public int Y { get; }
+        }
+
+        public class DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithConstructor : AbstractBaseImmutableWithConstructor
+        {
+            public DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithConstructor(int x) : base(x)
+            {
+            }
+
+            [BsonIgnore]
+            public int Y { get; } = 2;
+        }
+
+
+        public abstract class AbstractBaseImmutableWithAbstractProperty
+        {
+            [BsonIgnore]
+            public abstract int X { get; }
+        }
+
+        public class DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithAbstractProperty : AbstractBaseImmutableWithAbstractProperty
+        {
+            public DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithAbstractProperty(int y)
+            {
+                Y = y;
+            }
+
+            [BsonIgnore]
+            public override int X { get; } = 1;
+
+            public int Y { get; } = 0; // should be overwritten
         }
     }
 }

@@ -17,6 +17,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoDB.Bson.Serialization.Conventions
 {
@@ -25,9 +26,6 @@ namespace MongoDB.Bson.Serialization.Conventions
     /// </summary>
     public class ImmutableTypeClassMapConvention : ConventionBase, IClassMapConvention, IPostProcessingConvention
     {
-        // private constants
-        private const BindingFlags PropertyBindingsFlags = BindingFlags.Public | BindingFlags.Instance;
-
         /// <inheritdoc />
         public void Apply(BsonClassMap classMap)
         {
@@ -38,7 +36,7 @@ namespace MongoDB.Bson.Serialization.Conventions
                 return;
             }
 
-            var properties = typeInfo.GetProperties(PropertyBindingsFlags);
+            var properties = GetProperties(typeInfo);
             if (properties.Any(CanWrite))
             {
                 return; // a type that has any writable properties is not immutable
@@ -99,7 +97,7 @@ namespace MongoDB.Bson.Serialization.Conventions
         {
             var typeInfo = classMap.ClassType.GetTypeInfo();
 
-            var properties = typeInfo.GetProperties(PropertyBindingsFlags);
+            var properties = GetProperties(typeInfo);
 
             if (properties.Length == 0 || // no properties to map
                 properties.Any(CanWrite)) // a type that has any writable properties is not immutable
@@ -136,6 +134,16 @@ namespace MongoDB.Bson.Serialization.Conventions
         {
             // CanWrite gets true even if a property has only a private setter
             return propertyInfo.CanWrite && (propertyInfo.SetMethod?.IsPublic ?? false);
+        }
+
+        private PropertyInfo[] GetProperties(TypeInfo typeInfo)
+        {
+            var propertyBindingsFlags = BindingFlags.Public | BindingFlags.Instance;
+
+            return
+                typeInfo.GetProperties(propertyBindingsFlags)
+                .Where(p => p.GetCustomAttribute<BsonIgnoreAttribute>() == null)
+                .ToArray();
         }
 
         private void MapPropertyIfPossible(BsonClassMap classMap, PropertyInfo property)
