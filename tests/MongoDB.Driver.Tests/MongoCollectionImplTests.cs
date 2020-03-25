@@ -3429,6 +3429,7 @@ namespace MongoDB.Driver
             var client = DriverTestConfiguration.Client;
             var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
             var collection = database.GetCollection<BsonDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
+            collection.InsertOne(new BsonDocument("_id", 1)); // ensure database exists
             database.DropCollection(collection.CollectionNamespace.CollectionName);
 
             try
