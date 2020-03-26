@@ -63,7 +63,7 @@ namespace MongoDB.Driver.Core.Operations
             if (readPreference.ReadPreferenceMode == ReadPreferenceMode.Primary || readPreference.ReadPreferenceMode == ReadPreferenceMode.SecondaryPreferred)
             {
                 var hasTagSets = readPreference.TagSets != null && readPreference.TagSets.Count > 0;
-                if (!hasTagSets && !readPreference.MaxStaleness.HasValue)
+                if (!hasTagSets && !readPreference.MaxStaleness.HasValue && readPreference.Hedge == null)
                 {
                     return null;
                 }
@@ -92,7 +92,8 @@ namespace MongoDB.Driver.Core.Operations
             {
                 { "mode", modeString },
                 { "tags", tagSets, tagSets != null },
-                { "maxStalenessSeconds", () => (int)readPreference.MaxStaleness.Value.TotalSeconds, readPreference.MaxStaleness.HasValue }
+                { "maxStalenessSeconds", () => (int)readPreference.MaxStaleness.Value.TotalSeconds, readPreference.MaxStaleness.HasValue },
+                { "hedge", () => readPreference.Hedge.ToBsonDocument(), readPreference.Hedge != null }
             };
         }
     }

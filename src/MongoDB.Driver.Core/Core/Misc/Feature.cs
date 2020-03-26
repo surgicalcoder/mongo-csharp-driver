@@ -58,6 +58,7 @@ namespace MongoDB.Driver.Core.Misc
         private static readonly Feature __findCommand = new Feature("FindCommand", new SemanticVersion(3, 2, 0));
         private static readonly Feature __geoNearCommand = new Feature("GeoNearCommand", new SemanticVersion(1, 0, 0), new SemanticVersion(4, 1, 0, ""));
         private static readonly Feature __groupCommand = new Feature("GroupCommand", new SemanticVersion(1, 0, 0), new SemanticVersion(4, 1, 1, ""));
+        private static readonly Feature __hedgedReads = new Feature("HedgedReads", new SemanticVersion(4, 3, 1, ""));
         private static readonly HintForFindAndModifyFeature __hintForFindAndModifyFeature = new HintForFindAndModifyFeature("HintForFindAndModify", new SemanticVersion(4, 3, 0, ""));
         private static readonly HintForUpdateAndReplaceOperationsFeature __hintForUpdateAndReplaceOperations = new HintForUpdateAndReplaceOperationsFeature("HintForUpdateAndReplaceOperations", new SemanticVersion(4, 2, 0));
         private static readonly Feature __keepConnectionPoolWhenNotMasterConnectionException = new Feature("KeepConnectionPoolWhenNotMasterConnectionException", new SemanticVersion(4, 1, 10));
@@ -261,6 +262,11 @@ namespace MongoDB.Driver.Core.Misc
         /// Gets the group command feature.
         /// </summary>
         public static Feature GroupCommand => __groupCommand;
+
+        /// <summary>
+        /// Gets the hedged reads feature.
+        /// </summary>
+        public static Feature HedgedReads => __hedgedReads;
 
         /// <summary>
         /// Gets the hint for find and modify operations feature.

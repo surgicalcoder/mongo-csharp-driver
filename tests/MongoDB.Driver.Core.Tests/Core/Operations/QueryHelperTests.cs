@@ -16,6 +16,7 @@
 using System;
 using FluentAssertions;
 using MongoDB.Driver.Core.Servers;
+using MongoDB.Driver.Core.Tests;
 using Xunit;
 
 namespace MongoDB.Driver.Core.Operations
@@ -86,6 +87,23 @@ namespace MongoDB.Driver.Core.Operations
             var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.PrimaryPreferred);
 
             result.Should().Be("{mode: \"primaryPreferred\"}");
+        }
+
+        [Theory]
+        [InlineData("null", "{ mode : 'secondary' }")]
+        [InlineData("false", "{ mode : 'secondary', hedge : { enabled : false } }")]
+        [InlineData("true", "{ mode : 'secondary', hedge : { enabled : true }  }")]
+        [InlineData("serverdefault", "{ mode : 'secondary', hedge : { } }")]
+        public void CreateReadPreferenceDocument_should_return_expected_result_when_hedge_is_used(
+            string hedgeValue,
+            string expectedResult)
+        {
+            var hedge = ReadPreferenceHedgeHelper.Create(hedgeValue);
+            var readPreference = ReadPreference.Secondary.With(hedge: hedge);
+
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, readPreference);
+
+            result.Should().Be(expectedResult);
         }
     }
 }
