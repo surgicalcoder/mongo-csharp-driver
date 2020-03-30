@@ -17,3 +17,4 @@ The MongoDB.Bson library handles [BSON](http://bsonspec.org) and [JSON](http://j
 - [BsonDocument]({{< relref "reference\bson\bson_document.md" >}})
 - [Serialization]({{< relref "reference\bson\serialization.md" >}})
 - [Mapping Classes]({{< relref "reference\bson\mapping\index.md" >}})
+- [Guid Serialization]({{< relref "reference\bson\guidserialization\index.md" >}})
