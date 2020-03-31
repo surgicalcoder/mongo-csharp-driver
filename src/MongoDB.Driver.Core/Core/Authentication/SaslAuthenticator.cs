@@ -73,7 +73,7 @@ namespace MongoDB.Driver.Core.Authentication
             }
             else
             {
-                (var firstStep, _) = CreateFirstStepAndCommand(_mechanism, connection, conversation: null, description);
+                var (firstStep, _) = CreateFirstStepAndCommand(_mechanism, connection, conversation: null, description);
                 Authenticate(
                     connection,
                     description,
@@ -99,9 +99,12 @@ namespace MongoDB.Driver.Core.Authentication
 
             using (var conversation = new SaslConversation(description.ConnectionId))
             {
-                (ISaslStep currentStep, BsonDocument command) = previousStep == null
+                /* We cannot combine the two statements below into a single statement without adding a reference to
+                 * ValueTuple */
+                var currentStepAndCommand = previousStep == null
                     ? CreateFirstStepAndCommand(_mechanism, connection, conversation, description)
                     : CreateNextStepAndCommand(conversation, previousStep, previousStepResult);
+                var (currentStep, command) = currentStepAndCommand;
 
                 while (currentStep != null)
                 {
@@ -136,7 +139,7 @@ namespace MongoDB.Driver.Core.Authentication
             }
             else
             {
-                (var firstStep, _) = CreateFirstStepAndCommand(_mechanism, connection, conversation: null, description);
+                var (firstStep, _) = CreateFirstStepAndCommand(_mechanism, connection, conversation: null, description);
                 await AuthenticateAsync(
                     connection,
                     description,
@@ -162,10 +165,12 @@ namespace MongoDB.Driver.Core.Authentication
 
             using (var conversation = new SaslConversation(description.ConnectionId))
             {
-                (ISaslStep currentStep, BsonDocument command) = previousStep == null
+                /* We cannot combine the two statements below into a single statement without adding a reference to
+                 * ValueTuple */
+                var currentStepAndCommand = previousStep == null
                     ? CreateFirstStepAndCommand(_mechanism, connection, conversation, description)
                     : CreateNextStepAndCommand(conversation, previousStep, previousStepResult);
-
+                var (currentStep, command) = currentStepAndCommand;
                 while (currentStep != null)
                 {
                     BsonDocument result;
@@ -224,7 +229,7 @@ namespace MongoDB.Driver.Core.Authentication
             return new MongoAuthenticationException(connection.ConnectionId, message, ex);
         }
 
-        private (ISaslStep step, BsonDocument command) CreateFirstStepAndCommand(
+        private StepAndCommand CreateFirstStepAndCommand(
             ISaslMechanism mechanism,
             IConnection connection,
             SaslConversation conversation,
@@ -232,16 +237,18 @@ namespace MongoDB.Driver.Core.Authentication
         {
             var currentStep =  mechanism.Initialize(connection, conversation, description);
             var command = CreateStartCommand(currentStep);
-            return (currentStep, command);
+            return new StepAndCommand(currentStep, command);
         }
 
-        private (ISaslStep step, BsonDocument command) CreateNextStepAndCommand(
+        private StepAndCommand CreateNextStepAndCommand(
             SaslConversation conversation,
             ISaslStep currentStep,
             BsonDocument result)
         {
             currentStep = Transition(conversation, currentStep, result);
-            return currentStep == null ? (null, null) : (currentStep, CreateContinueCommand(currentStep, result));
+            return currentStep == null
+                ? new StepAndCommand(null, null)
+                : new StepAndCommand(currentStep, CreateContinueCommand(currentStep, result));
         }
 
         private BsonDocument CreateStartCommand(ISaslStep currentStep)
@@ -452,6 +459,28 @@ namespace MongoDB.Driver.Core.Authentication
             public ISaslStep Transition(SaslConversation conversation, byte[] bytesReceivedFromServer)
             {
                 throw new InvalidOperationException("Sasl conversation has completed.");
+            }
+        }
+
+        private readonly struct StepAndCommand
+        {
+            private readonly BsonDocument _command;
+            private readonly ISaslStep _step;
+
+            public BsonDocument Command => _command;
+
+            public ISaslStep Step => _step;
+
+            public StepAndCommand(ISaslStep step, BsonDocument command)
+            {
+                _step = step;
+                _command = command;
+            }
+
+            public void Deconstruct(out ISaslStep step, out BsonDocument command)
+            {
+                step = Step;
+                command = Command;
             }
         }
     }
