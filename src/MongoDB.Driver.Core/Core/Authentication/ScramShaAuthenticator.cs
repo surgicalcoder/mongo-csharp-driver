@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Core.Authentication
         /// </summary>
         /// <param name="data">The data to hash. Also called "str" in RFC5802.</param>
         protected internal delegate byte[] H(byte[] data);
-        
+
         /// <summary>
         /// A Hi function used to compute the SaltedPassword as defined in RFC5802, except with "str" parameter replaced
         /// with a UsernamePassword credential so that the password can be optionally digested/prepped in a secure fashion
@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Core.Authentication
         /// <param name="salt">The salt.</param>
         /// <param name="iterations">The iteration count.</param>
         protected internal delegate byte[] Hi(UsernamePasswordCredential credentials, byte[] salt, int iterations);
-        
+
         /// <summary>
         /// An HMAC function as defined in RFC5802, plus the encoding of the data.
         /// </summary>
@@ -54,7 +54,7 @@ namespace MongoDB.Driver.Core.Authentication
         /// <param name="data">The data. Also called "str" in RFC5802.</param>
         /// <param name="key">The key.</param>
         protected internal delegate byte[] Hmac(UTF8Encoding encoding, byte[] data, string key);
-        
+
         // fields
         private readonly string _databaseName;
 
@@ -67,7 +67,7 @@ namespace MongoDB.Driver.Core.Authentication
         /// <param name="h">The H function to use.</param>
         /// <param name="hi">The Hi function to use.</param>
         /// <param name="hmac">The Hmac function to use.</param>
-        protected ScramShaAuthenticator(UsernamePasswordCredential credential, 
+        protected ScramShaAuthenticator(UsernamePasswordCredential credential,
             HashAlgorithmName hashAlgorithmName,
             H h,
             Hi hi,
@@ -85,7 +85,7 @@ namespace MongoDB.Driver.Core.Authentication
         /// <param name="hmac">The Hmac function to use.</param>
         /// <param name="cache">The cache to use.</param>
         internal ScramShaAuthenticator(
-            UsernamePasswordCredential credential, 
+            UsernamePasswordCredential credential,
             HashAlgorithmName hashAlgorithName,
             IRandomStringGenerator randomStringGenerator,
             H h,
@@ -113,8 +113,8 @@ namespace MongoDB.Driver.Core.Authentication
             private ScramCache _cache;
 
             public ScramShaMechanism(
-                UsernamePasswordCredential credential, 
-                HashAlgorithmName hashAlgorithmName, 
+                UsernamePasswordCredential credential,
+                HashAlgorithmName hashAlgorithmName,
                 IRandomStringGenerator randomStringGenerator,
                 H h,
                 Hi hi,
@@ -138,9 +138,6 @@ namespace MongoDB.Driver.Core.Authentication
 
             public ISaslStep Initialize(IConnection connection, SaslConversation conversation, ConnectionDescription description)
             {
-                Ensure.IsNotNull(connection, nameof(connection));
-                Ensure.IsNotNull(description, nameof(description));
-
                 const string gs2Header = "n,,";
                 var username = "n=" + PrepUsername(_credential.Username);
                 var r = GenerateRandomString();
@@ -165,13 +162,13 @@ namespace MongoDB.Driver.Core.Authentication
                 return username.Replace("=", "=3D").Replace(",", "=2C");
             }
         }
-        
+
         private class ClientFirst : ISaslStep
         {
             private readonly byte[] _bytesToSendToServer;
             private readonly string _clientFirstMessageBare;
             private readonly UsernamePasswordCredential _credential;
-           
+
             private readonly string _rPrefix;
             private readonly H _h;
             private readonly Hi _hi;
@@ -180,9 +177,9 @@ namespace MongoDB.Driver.Core.Authentication
             private ScramCache _cache;
 
             public ClientFirst(
-                byte[] bytesToSendToServer, 
-                string clientFirstMessageBare, 
-                UsernamePasswordCredential credential, 
+                byte[] bytesToSendToServer,
+                string clientFirstMessageBare,
+                UsernamePasswordCredential credential,
                 string rPrefix,
                 H h,
                 Hi hi,
@@ -266,7 +263,7 @@ namespace MongoDB.Driver.Core.Authentication
         }
 
         private class ClientLast : ISaslStep
-        {            
+        {
             private readonly byte[] _bytesToSendToServer;
             private readonly byte[] _serverSignature64;
 
@@ -293,7 +290,7 @@ namespace MongoDB.Driver.Core.Authentication
 
                 return new CompletedStep();
             }
-            
+
             private bool ConstantTimeEquals(byte[] a, byte[] b)
             {
                 var diff = a.Length ^ b.Length;

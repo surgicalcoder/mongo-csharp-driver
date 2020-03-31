@@ -135,6 +135,7 @@ namespace MongoDB.Driver.Core.Authentication
         [Theory]
         [ParameterAttributeData]
         public void Authenticate_should_not_throw_when_authentication_succeeds(
+            [Values(false, true)] bool useSpeculativeAuthenticate,
             [Values(false, true)] bool useLongAuthentication,
             [Values(false, true)] bool async)
         {
@@ -155,26 +156,41 @@ namespace MongoDB.Driver.Core.Authentication
                    ok: 1}"));
 
             var connection = new MockConnection(__serverId);
-            connection.EnqueueReplyMessage(saslStartReply);
+            var isMasterResult = (BsonDocument)__description.IsMasterResult.Wrapped.Clone();
+            if (useSpeculativeAuthenticate)
+            {
+                isMasterResult.Add("speculativeAuthenticate", saslStartReply.Documents[0].ToBsonDocument());
+            }
+
+            /* set buildInfoResult to 3.4 to force authenticator to use Query Message Wire Protocol because MockConnection
+             * does not support OP_MSG */
+            connection.Description = new ConnectionDescription(
+                __description.ConnectionId, new IsMasterResult(isMasterResult), new BuildInfoResult(new BsonDocument("version","3.4")));
+            if (!useSpeculativeAuthenticate)
+            {
+                connection.EnqueueReplyMessage(saslStartReply);
+            }
             connection.EnqueueReplyMessage(saslContinueReply);
             if (useLongAuthentication)
             {
                 connection.EnqueueReplyMessage(saslLastStepReply);
             }
+
             var expectedRequestId = RequestMessage.CurrentGlobalRequestId + 1;
 
             Action act;
             if (async)
             {
-                act = () => subject.AuthenticateAsync(connection, __description, CancellationToken.None).GetAwaiter().GetResult();
+                act = () => subject.AuthenticateAsync(connection, connection.Description, CancellationToken.None).GetAwaiter().GetResult();
             }
             else
             {
-                act = () => subject.Authenticate(connection, __description, CancellationToken.None);
+                act = () => subject.Authenticate(connection, connection.Description, CancellationToken.None);
             }
 
-            act.ShouldNotThrow();
-            var expectedSentMessageCount = useLongAuthentication ? 3 : 2;
+            var exception = Record.Exception(act);
+            exception.Should().BeNull();
+            var expectedSentMessageCount = 3 - (useLongAuthentication ? 0 : 1) - (useSpeculativeAuthenticate ? 1 : 0);
             SpinWait.SpinUntil(
                 () => connection.GetSentMessages().Count >= expectedSentMessageCount,
                 TimeSpan.FromSeconds(5)
@@ -189,27 +205,47 @@ namespace MongoDB.Driver.Core.Authentication
                 actualRequestIds[i].Should().BeInRange(expectedRequestId + i, expectedRequestId + 10 + i);
             }
 
-            sentMessages[0].Should().Be(
-                $"{{opcode: \"query\", " +
+            var saslStartMessage = BsonDocument.Parse(
+                @"{ opcode: ""query""," +
                 $"  requestId: {actualRequestIds[0]}, " +
-                $"  database: \"source\", collection: \"$cmd\", batchSize: -1, slaveOk: true, " +
-                $"  query: {{saslStart: 1, mechanism: \"SCRAM-SHA-1\", " +
+                @"  database: ""source"",
+                    collection: ""$cmd"",
+                    batchSize: -1,
+                    slaveOk: true,
+                    query: { saslStart: 1,
+                             mechanism: ""SCRAM-SHA-1""," +
                 $"           payload: new BinData(0, \"biwsbj11c2VyLHI9ZnlrbytkMmxiYkZnT05Sdjlxa3hkYXdM\")" +
                 @"           options: { skipEmptyExchange: true }}}");
-            sentMessages[1].Should().Be("{opcode: \"query\", requestId: " + actualRequestIds[1] + ", database: \"source\", collection: \"$cmd\", batchSize: -1, slaveOk: true, query: {saslContinue: 1, conversationId: 1, payload: new BinData(0, \"Yz1iaXdzLHI9ZnlrbytkMmxiYkZnT05Sdjlxa3hkYXdMSG8rVmdrN3F2VU9LVXd1V0xJV2c0bC85U3JhR01IRUUscD1NQzJUOEJ2Ym1XUmNrRHc4b1dsNUlWZ2h3Q1k9\")}}");
-            if (useLongAuthentication)
-            {
-                sentMessages[2].Should().Be(
+
+            var saslContinueMessage = BsonDocument.Parse(
+                @"{ opcode: ""query""," +
+                $"  requestId: {(useSpeculativeAuthenticate ? actualRequestIds[0] : actualRequestIds[1])}," +
+                @"  database: ""source"",
+                    collection: ""$cmd"",
+                    batchSize: -1,
+                    slaveOk: true,
+                    query: { saslContinue: 1,
+                             conversationId: 1, " +
+                $"           payload: new BinData(0, \"Yz1iaXdzLHI9ZnlrbytkMmxiYkZnT05Sdjlxa3hkYXdMSG8rVmdrN3F2VU9LVXd1V0xJV2c0bC85U3JhR01IRUUscD1NQzJUOEJ2Ym1XUmNrRHc4b1dsNUlWZ2h3Q1k9\")}}}}");
+             var saslOptionalFinalMessage = new Lazy<BsonDocument>(() => BsonDocument.Parse(
                     @"{opcode: ""query""," +
-                    $" requestId: {actualRequestIds[2]}," +
+                    $" requestId: {(useSpeculativeAuthenticate ? actualRequestIds[1] : actualRequestIds[2])}," +
                     @" database: ""source"",
                        collection: ""$cmd"",
                        batchSize: -1,
                        slaveOk: true,
-                       query: {saslContinue: 1,
-                               conversationId: 1, " +
-                    $"         payload: new BinData(0, \"\")}}}}");
-            }
+                       query: { saslContinue: 1,
+                                conversationId: 1, " +
+                    $"          payload: new BinData(0, \"\")}}}}"));
+
+            var expectedMessages = new[]
+            {
+                useSpeculativeAuthenticate ? null : saslStartMessage,
+                saslContinueMessage,
+                useLongAuthentication ? saslOptionalFinalMessage.Value : null
+            }.Where(m => m != null);
+
+            sentMessages.Should().Equal(expectedMessages);
         }
 
         [Theory]

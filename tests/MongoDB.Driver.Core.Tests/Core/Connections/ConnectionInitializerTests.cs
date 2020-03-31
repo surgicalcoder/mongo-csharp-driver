@@ -24,8 +24,10 @@ using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.Helpers;
 using Xunit;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
+using MongoDB.Driver.Core.Authentication;
 using MongoDB.Driver.Core.Compression;
 using MongoDB.Driver.Core.Configuration;
+using MongoDB.Driver.Core.WireProtocol.Messages;
 
 namespace MongoDB.Driver.Core.Connections
 {
@@ -65,6 +67,63 @@ namespace MongoDB.Driver.Core.Connections
             var sentMessages = connection.GetSentMessages();
             sentMessages.Should().HaveCount(2);
             result.ConnectionId.ServerValue.Should().Be(1);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void InitializeConnection_should_speculatively_authenticate_with_SCRAM_SHA(
+            [Values("default", "SCRAM-SHA-256", "SCRAM-SHA-1")] string authenticatorType,
+            [Values(false, true)] bool async)
+        {
+            var isMasterReply = MessageHelper.BuildReply(
+                RawBsonDocumentHelper.FromJson("{ ok : 1, connectionId : 1 }"));
+            var buildInfoReply = MessageHelper.BuildReply(
+                RawBsonDocumentHelper.FromJson("{ ok : 1, version : \"4.2.0\" }"));
+            var credentials = new UsernamePasswordCredential(
+                source: "Voyager", username: "Seven of Nine", password: "Omega-Phi-9-3");
+            var authenticator = CreateAuthenticator();
+            var connectionSettings = new ConnectionSettings(new[] { authenticator });
+            var connection = new MockConnection(__serverId, connectionSettings, eventSubscriber: null);
+            connection.EnqueueReplyMessage(isMasterReply);
+            connection.EnqueueReplyMessage(buildInfoReply);
+
+            // We expect authentication to fail since we have not enqueued the expected authentication replies
+            try
+            {
+                if (async)
+                {
+                    _subject.InitializeConnectionAsync(connection, CancellationToken.None).GetAwaiter().GetResult();
+                }
+                else
+                {
+                     _subject.InitializeConnection(connection, CancellationToken.None);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                ex.Message.Should().Be("Queue empty.");
+            }
+
+            var sentMessages = connection.GetSentMessages();
+            var isMasterQuery = (QueryMessage)sentMessages[0];
+            var isMasterDocument = isMasterQuery.Query;
+            isMasterDocument.Should().Contain("speculativeAuthenticate");
+            var speculativeAuthenticateDocument = isMasterDocument["speculativeAuthenticate"].AsBsonDocument;
+            speculativeAuthenticateDocument.Should().Contain("mechanism");
+            var expectedMechanism = new BsonString(
+                authenticatorType == "default" ? "SCRAM-SHA-256" : authenticatorType);
+            speculativeAuthenticateDocument["mechanism"].Should().Be(expectedMechanism);
+
+            IAuthenticator CreateAuthenticator()
+            {
+                switch (authenticatorType)
+                {
+                    case "SCRAM-SHA-1": return new ScramSha1Authenticator(credentials);
+                    case "SCRAM-SHA-256": return new ScramSha256Authenticator(credentials);
+                    case "default": return new DefaultAuthenticator(credentials);
+                    default: throw new Exception("Invalid authenticator type.");
+                }
+            }
         }
 
         [Theory]

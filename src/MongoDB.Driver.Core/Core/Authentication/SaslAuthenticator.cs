@@ -65,12 +65,45 @@ namespace MongoDB.Driver.Core.Authentication
             Ensure.IsNotNull(connection, nameof(connection));
             Ensure.IsNotNull(description, nameof(description));
 
+            var firstStepResult = description.IsMasterResult.SpeculativeAuthenticate;
+
+            if (firstStepResult == null)
+            {
+                Authenticate(connection, description, previousStep: null, previousStepResult: null, cancellationToken);
+            }
+            else
+            {
+                (var firstStep, _) = CreateFirstStepAndCommand(_mechanism, connection, conversation: null, description);
+                Authenticate(
+                    connection,
+                    description,
+                    previousStep: firstStep,
+                    previousStepResult: firstStepResult,
+                    cancellationToken);
+            }
+        }
+
+        private void Authenticate(
+            IConnection connection,
+            ConnectionDescription description,
+            ISaslStep previousStep,
+            BsonDocument previousStepResult,
+            CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(connection, nameof(connection));
+            Ensure.IsNotNull(description, nameof(description));
+            if (previousStep != null)
+            {
+                Ensure.IsNotNull(previousStepResult, nameof(previousStepResult));
+            }
+
             using (var conversation = new SaslConversation(description.ConnectionId))
             {
-                var currentStep = _mechanism.Initialize( connection, conversation, description);
+                (ISaslStep currentStep, BsonDocument command) = previousStep == null
+                    ? CreateFirstStepAndCommand(_mechanism, connection, conversation, description)
+                    : CreateNextStepAndCommand(conversation, previousStep, previousStepResult);
 
-                var command = CreateStartCommand(currentStep);
-                while (true)
+                while (currentStep != null)
                 {
                     BsonDocument result;
                     try
@@ -82,14 +115,7 @@ namespace MongoDB.Driver.Core.Authentication
                     {
                         throw CreateException(connection, ex);
                     }
-
-                    currentStep = Transition(conversation, currentStep, result);
-                    if (currentStep == null)
-                    {
-                        return;
-                    }
-
-                    command = CreateContinueCommand(currentStep, result);
+                    (currentStep, command) = CreateNextStepAndCommand(conversation, currentStep, result);
                 }
             }
         }
@@ -100,12 +126,47 @@ namespace MongoDB.Driver.Core.Authentication
             Ensure.IsNotNull(connection, nameof(connection));
             Ensure.IsNotNull(description, nameof(description));
 
+            var firstStepResult = description.IsMasterResult.SpeculativeAuthenticate;
+
+            if (firstStepResult == null)
+            {
+                await AuthenticateAsync(
+                        connection, description, previousStep: null, previousStepResult: null, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                (var firstStep, _) = CreateFirstStepAndCommand(_mechanism, connection, conversation: null, description);
+                await AuthenticateAsync(
+                    connection,
+                    description,
+                    previousStep: firstStep,
+                    previousStepResult: firstStepResult,
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task AuthenticateAsync(
+            IConnection connection,
+            ConnectionDescription description,
+            ISaslStep previousStep,
+            BsonDocument previousStepResult,
+            CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(connection, nameof(connection));
+            Ensure.IsNotNull(description, nameof(description));
+            if (previousStep != null)
+            {
+                Ensure.IsNotNull(previousStepResult, nameof(previousStepResult));
+            }
+
             using (var conversation = new SaslConversation(description.ConnectionId))
             {
-                var currentStep = _mechanism.Initialize(connection, conversation, description);
+                (ISaslStep currentStep, BsonDocument command) = previousStep == null
+                    ? CreateFirstStepAndCommand(_mechanism, connection, conversation, description)
+                    : CreateNextStepAndCommand(conversation, previousStep, previousStepResult);
 
-                var command = CreateStartCommand(currentStep);
-                while (true)
+                while (currentStep != null)
                 {
                     BsonDocument result;
                     try
@@ -117,14 +178,7 @@ namespace MongoDB.Driver.Core.Authentication
                     {
                         throw CreateException(connection, ex);
                     }
-
-                    currentStep = Transition(conversation, currentStep, result);
-                    if (currentStep == null)
-                    {
-                        return;
-                    }
-
-                    command = CreateContinueCommand(currentStep, result);
+                    (currentStep, command) = CreateNextStepAndCommand(conversation, currentStep, result);
                 }
             }
         }
@@ -132,6 +186,15 @@ namespace MongoDB.Driver.Core.Authentication
         /// <inheritdoc/>
         public BsonDocument CustomizeInitialIsMasterCommand(BsonDocument isMasterCommand)
         {
+            switch (_mechanism.Name)
+            {
+                case "SCRAM-SHA-1":
+                case "SCRAM-SHA-256":
+                    (var firstStep, _) = CreateFirstStepAndCommand(_mechanism, null, null, null);
+                    isMasterCommand.Add("speculativeAuthenticate", CreateStartCommand(firstStep));
+                    break;
+            }
+
             return isMasterCommand;
         }
 
@@ -159,6 +222,26 @@ namespace MongoDB.Driver.Core.Authentication
         {
             var message = string.Format("Unable to authenticate using sasl protocol mechanism {0}.", Name);
             return new MongoAuthenticationException(connection.ConnectionId, message, ex);
+        }
+
+        private (ISaslStep step, BsonDocument command) CreateFirstStepAndCommand(
+            ISaslMechanism mechanism,
+            IConnection connection,
+            SaslConversation conversation,
+            ConnectionDescription description)
+        {
+            var currentStep =  mechanism.Initialize(connection, conversation, description);
+            var command = CreateStartCommand(currentStep);
+            return (currentStep, command);
+        }
+
+        private (ISaslStep step, BsonDocument command) CreateNextStepAndCommand(
+            SaslConversation conversation,
+            ISaslStep currentStep,
+            BsonDocument result)
+        {
+            currentStep = Transition(conversation, currentStep, result);
+            return currentStep == null ? (null, null) : (currentStep, CreateContinueCommand(currentStep, result));
         }
 
         private BsonDocument CreateStartCommand(ISaslStep currentStep)
