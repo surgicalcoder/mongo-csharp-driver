@@ -114,10 +114,10 @@ namespace MongoDB.Driver.Core.Authentication
         /// <inheritdoc/>
         public BsonDocument CustomizeInitialIsMasterCommand(BsonDocument isMasterCommand)
         {
-            isMasterCommand = isMasterCommand.Merge(
-                CreateSaslSupportedMechsRequest(_credential.Source, _credential.Username));
-            return new ScramSha256Authenticator(_credential, _randomStringGenerator)
-                .CustomizeInitialIsMasterCommand(isMasterCommand);
+            var saslSupportedMechs = CreateSaslSupportedMechsRequest(_credential.Source, _credential.Username);
+            isMasterCommand = isMasterCommand.Merge(saslSupportedMechs);
+            var authenticator = new ScramSha256Authenticator(_credential, _randomStringGenerator);
+            return authenticator.CustomizeInitialIsMasterCommand(isMasterCommand);
         }
 
         private static BsonDocument CreateSaslSupportedMechsRequest(string authenticationDatabaseName, string userName)

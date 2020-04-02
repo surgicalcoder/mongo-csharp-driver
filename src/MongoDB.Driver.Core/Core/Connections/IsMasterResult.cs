@@ -114,17 +114,6 @@ namespace MongoDB.Driver.Core.Connections
         }
 
         /// <summary>
-        /// Get whether SpectulativeAuthenticate was part of the isMaster response.
-        /// </summary>
-        /// <value>
-        /// Whether SaslSupportedMechs was part of the isMaster response.
-        /// </value>
-        public bool HasSpeculativeAuthenticate
-        {
-            get { return _wrapped.Contains("spectulativeAuthenticate"); }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this instance is an arbiter.
         /// </summary>
         /// <value>
@@ -337,15 +326,21 @@ namespace MongoDB.Driver.Core.Connections
         /// Get the SpeculativeAuthenticate reply.
         /// </summary>
         /// <value>
-        /// Null if isMaster["ok"] !=1 or if the SpeculativeAuthenticate reply was not included in the isMaster response.
+        /// Null if isMaster["ok"] != 1 or if the SpeculativeAuthenticate reply was not included in the isMaster response.
         /// </value>
         public BsonDocument SpeculativeAuthenticate
         {
             get
             {
-                return _wrapped.GetValue("ok", defaultValue: false).ToBoolean()
-                    ? (BsonDocument)_wrapped.GetValue("speculativeAuthenticate", defaultValue: null)
-                    : null;
+                if (_wrapped.TryGetValue("ok", out var ok) && ok.ToBoolean() &&
+                    _wrapped.TryGetValue("speculativeAuthenticate", out var speculativeAuthenticate))
+                {
+                    return (BsonDocument)SpeculativeAuthenticate;
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 
