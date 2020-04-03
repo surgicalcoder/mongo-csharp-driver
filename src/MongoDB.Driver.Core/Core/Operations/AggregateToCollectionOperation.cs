@@ -292,7 +292,7 @@ namespace MongoDB.Driver.Core.Operations
 
         private IReadOnlyList<BsonDocument> SimplifyOutStageIfOutputDatabaseIsSameAsInputDatabase(IReadOnlyList<BsonDocument> pipeline)
         {
-            var lastStage = _pipeline.Last();
+            var lastStage = pipeline.Last();
             var lastStageName = lastStage.GetElement(0).Name;
             if (lastStageName == "$out" && lastStage["$out"] is BsonDocument outDocument)
             {
