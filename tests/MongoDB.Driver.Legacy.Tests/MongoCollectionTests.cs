@@ -193,16 +193,17 @@ namespace MongoDB.Driver.Tests
         {
             RequireServer.Check();
 
+            var inputDatabaseName = _collection.Database.Name;
+            var inputCollectionName = _collection.Name;
+            var outputDatabaseName = usingDifferentOutputDatabase ? $"{inputDatabaseName}-output" : inputDatabaseName;
+            var outputCollectionName = $"{inputCollectionName}-output";
+
             _collection.Drop();
             _collection.Insert(new BsonDocument("x", 1));
             _collection.Insert(new BsonDocument("x", 2));
             _collection.Insert(new BsonDocument("x", 3));
             _collection.Insert(new BsonDocument("x", 3));
-
-            var inputDatabaseName = _collection.Database.Name;
-            var inputCollectionName = _collection.Name;
-            var outputDatabaseName = usingDifferentOutputDatabase ? $"{inputDatabaseName}-output" : inputDatabaseName;
-            var outputCollectionName = $"{inputCollectionName}-output";
+            EnsureDatabaseExists(outputDatabaseName);
 
             var pipeline = new List<BsonDocument> { new BsonDocument("$group", new BsonDocument { { "_id", "$x" }, { "count", new BsonDocument("$sum", 1) } }) };
             switch (lastStageName)
@@ -3593,6 +3594,16 @@ namespace MongoDB.Driver.Tests
         {
             _database.DropCollection(collectionName);
             _database.CreateCollection(collectionName);
+        }
+
+        private void EnsureDatabaseExists(string databaseName)
+        {
+            var server = _database.Server;
+            var database = server.GetDatabase(databaseName);
+            var tempCollectionName = Guid.NewGuid().ToString();
+            var tempCollection = database.GetCollection(tempCollectionName);
+            tempCollection.Insert(new BsonDocument("_id", 1));
+            tempCollection.Drop();
         }
 
         private MongoCollection<BsonDocument> GetCollection(MongoServer server)
