@@ -607,7 +607,7 @@ namespace MongoDB.Driver.Tests
                 return
                     renderedPipeline.Documents.Count == 2 &&
                     renderedPipeline.Documents[0] == BsonDocument.Parse("{ $match : { X : 1 } }") &&
-                    renderedPipeline.Documents[1] == BsonDocument.Parse("{ $out : { db : \"outputDatabaseName\", coll : \"outputCollectionName\" } }") &&
+                    renderedPipeline.Documents[1] == BsonDocument.Parse("{ $out : { db : 'outputDatabaseName', coll : 'outputCollectionName' } }") &&
                     renderedPipeline.OutputSerializer.ValueType == typeof(C);
             };
 
@@ -654,7 +654,7 @@ namespace MongoDB.Driver.Tests
                 return
                     renderedPipeline.Documents.Count == 2 &&
                     renderedPipeline.Documents[0] == BsonDocument.Parse("{ $match : { X : 1 } }") &&
-                    renderedPipeline.Documents[1] == BsonDocument.Parse("{ $out : { db : \"inputDatabaseName\", coll : \"outputCollectionName\" } }") &&
+                    renderedPipeline.Documents[1] == BsonDocument.Parse("{ $out : { db : 'inputDatabaseName', coll : 'outputCollectionName' } }") &&
                     renderedPipeline.OutputSerializer.ValueType == typeof(C);
             };
 
