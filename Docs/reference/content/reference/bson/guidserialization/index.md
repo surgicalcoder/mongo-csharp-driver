@@ -1,5 +1,5 @@
 +++
-date = "2020-03-30T14:34:00Z"
+date = "2020-04-09T15:36:56Z"
 draft = false
 title = "Guid Serialization"
 [menu.main]
@@ -13,7 +13,7 @@ title = "Guid Serialization"
 
 Guids were originally represented in BSON as BsonBinaryData values of subtype 3. Unfortunately, different drivers
 inadvertently used different byte orders when converting the Guid to a 16 byte binary value. To standardize on a
-single canonical order BsonBinaryData subtype 4 was created with a well defined byte order.
+single canonical representation BsonBinaryData subtype 4 was created with a well defined byte order.
 
 The C# driver's support for Guids was originally based on the premise that all Guids in a single collection must
 be represented the same way (i.e. using the same BsonBinaryData sub type and byte order). In order to accomplish this
@@ -24,7 +24,7 @@ However, this original premise has not stood the test of time.
 
 The first issue we ran into was when the server
 started returning UUIDs (i.e. Guids) in metadata using standard subtype 4. If a collection was configured to use
-subtype 3 (which it usually is since that is the default) the driver could not deserialize the Guids in the metadata
+subtype 3 (which it usually was since that is the default) the driver could not deserialize the Guids in the metadata
 without throwing an exception. We worked around this by temporarily reconfiguring the BSON reader to not expect that
 Guids would be in subtype 3 while reading the metadata.
 
@@ -38,10 +38,22 @@ will handle Guids in the new way. An application can opt in to V3 mode to transi
 In the v2.x versions of the driver V2 is the default mode but V3 mode is supported. In future v3.x versions of the driver
 V3 will be the default mode (and support for V2 mode will be removed).
 
-## V2 Guid Representation Mode (Deprecated)
+## V2 GuidRepresentationMode (Deprecated)
 
-## V3 Guid Representation Mode
+In V2 mode the central principle is that all Guids in a collection must be represented the same way. In order to enforce
+this the representation of Guids is not controlled at the individual serializer level, but rather at the reader/writer
+level since the same reader/writer is used to read/write an entire document.
 
-## Summary of changes from V2 to V3 Guid Representation Mode
+Read more about V2 mode [here]({{< relref "reference\bson\guidserialization\v2mode.md" >}}).
+
+## V3 GuidRepresentationMode
+
+In V3 mode the central principle is that the representation of Guids is controlled at the level of each individual
+property of a document by configuring the serializer for that property. The recommendation is that all Guids in a
+collection be represented uniformly using the now standard BsonBinaryData subtype 4, but when working with historical
+data it is now acceptable for different Guid fields in the same document to be represented differently.
+
+Read more about V3 mode [here]({{< relref "reference\bson\guidserialization\v3mode.md" >}}).
+
 
 
