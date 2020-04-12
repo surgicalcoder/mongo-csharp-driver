@@ -15,7 +15,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Core.Clusters.ServerSelectors
@@ -55,8 +54,6 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
             {
                 return servers;
             }
-
-            servers = servers.Where(s => s.EndPoint is DnsEndPoint dnsEndPoint && !dnsEndPoint.Host.Contains("shard-00-00"));
 
             return servers.Where(x =>
                 x.Type == ServerType.ReplicaSetPrimary ||

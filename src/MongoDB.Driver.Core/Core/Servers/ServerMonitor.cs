@@ -214,18 +214,12 @@ namespace MongoDB.Driver.Core.Servers
                 var isMasterResult = heartbeatInfo.IsMasterResult;
                 var buildInfoResult = heartbeatInfo.BuildInfoResult;
 
-                var logicalSessionTimeout = isMasterResult.LogicalSessionTimeout;
-                if (_endPoint is DnsEndPoint dnsEndPoint && dnsEndPoint.Host.Contains("shard-00-00"))
-                {
-                    logicalSessionTimeout = null;
-                }
-
                 newDescription = _baseDescription.With(
                     averageRoundTripTime: averageRoundTripTimeRounded,
                     canonicalEndPoint: isMasterResult.Me,
                     electionId: isMasterResult.ElectionId,
                     lastWriteTimestamp: isMasterResult.LastWriteTimestamp,
-                    logicalSessionTimeout: logicalSessionTimeout,
+                    logicalSessionTimeout: isMasterResult.LogicalSessionTimeout,
                     maxBatchCount: isMasterResult.MaxBatchCount,
                     maxDocumentSize: isMasterResult.MaxDocumentSize,
                     maxMessageSize: isMasterResult.MaxMessageSize,
