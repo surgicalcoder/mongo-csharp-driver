@@ -542,15 +542,15 @@ namespace MongoDB.Driver.Core.Operations
         [SkippableTheory]
         [ParameterAttributeData]
         public void Execute_should_find_all_the_documents_matching_the_query_when_hedge_is_used(
-            [Values("null", "false", "true", "serverdefault")]
-            string hedgeValue,
+            [Values(null, false, true)]
+            bool? isEnabled,
             [Values(false, true)]
             bool async)
         {
-            RequireServer.Check().Supports(Feature.HedgedReads);
+            RequireServer.Check().ClusterType(ClusterType.Sharded).Supports(Feature.HedgedReads);
             EnsureTestData();
             var subject = new FindOperation<BsonDocument>(_collectionNamespace, BsonDocumentSerializer.Instance, _messageEncoderSettings);
-            var hedge = ReadPreferenceHedgeHelper.Create(hedgeValue);
+            var hedge = isEnabled.HasValue? new ReadPreferenceHedge(isEnabled.Value) : null;
             var readPreference = new ReadPreference(ReadPreferenceMode.SecondaryPreferred, hedge: hedge);
 
             // the count could be short temporarily until replication catches up

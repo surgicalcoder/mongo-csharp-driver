@@ -90,15 +90,14 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         [Theory]
-        [InlineData("null", "{ mode : 'secondary' }")]
-        [InlineData("false", "{ mode : 'secondary', hedge : { enabled : false } }")]
-        [InlineData("true", "{ mode : 'secondary', hedge : { enabled : true }  }")]
-        [InlineData("serverdefault", "{ mode : 'secondary', hedge : { } }")]
+        [InlineData(null, "{ mode : 'secondary' }")]
+        [InlineData(false, "{ mode : 'secondary', hedge : { enabled : false } }")]
+        [InlineData(true, "{ mode : 'secondary', hedge : { enabled : true }  }")]
         public void CreateReadPreferenceDocument_should_return_expected_result_when_hedge_is_used(
-            string hedgeValue,
+            bool? isEnabled,
             string expectedResult)
         {
-            var hedge = ReadPreferenceHedgeHelper.Create(hedgeValue);
+            var hedge = isEnabled.HasValue ? new ReadPreferenceHedge(isEnabled.Value) : null;
             var readPreference = ReadPreference.Secondary.With(hedge: hedge);
 
             var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, readPreference);

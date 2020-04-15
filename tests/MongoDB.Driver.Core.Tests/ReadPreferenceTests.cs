@@ -110,10 +110,10 @@ namespace MongoDB.Driver
         [Theory]
         [ParameterAttributeData]
         public void constructor_with_hedge_should_initialize_instance(
-            [Values("null", "false", "true", "serverdefault")]
-            string hedgeValue)
+            [Values(null, false, true)]
+            bool? isEnabled)
         {
-            var hedge = ReadPreferenceHedgeHelper.Create(hedgeValue);
+            var hedge = isEnabled.HasValue ? new ReadPreferenceHedge(isEnabled.Value) : null;
 
             var result = new ReadPreference(ReadPreferenceMode.Secondary, hedge: hedge);
 
@@ -160,8 +160,8 @@ namespace MongoDB.Driver
         [InlineData(true, true, true)]
         public void Equals_should_compare_hedge_fields(bool? lhsEnabled, bool ?rhsEnabled, bool expectedResult)
         {
-            var lhsHedge = lhsEnabled.HasValue ? new CustomReadPreferenceHedge(lhsEnabled.Value) : null;
-            var rhsHedge = rhsEnabled.HasValue ? new CustomReadPreferenceHedge(rhsEnabled.Value) : null;
+            var lhsHedge = lhsEnabled.HasValue ? new ReadPreferenceHedge(lhsEnabled.Value) : null;
+            var rhsHedge = rhsEnabled.HasValue ? new ReadPreferenceHedge(rhsEnabled.Value) : null;
             var lhs = new ReadPreference(ReadPreferenceMode.Primary, hedge: lhsHedge);
             var rhs = new ReadPreference(ReadPreferenceMode.Primary, hedge: rhsHedge);
 
@@ -310,13 +310,12 @@ namespace MongoDB.Driver
         }
 
         [Theory]
-        [InlineData("null", "{ Mode : Secondary }")]
-        [InlineData("false", "{ Mode : Secondary, Hedge : { \"enabled\" : false } }")]
-        [InlineData("true", "{ Mode : Secondary, Hedge : { \"enabled\" : true } }")]
-        [InlineData("serverdefault", "{ Mode : Secondary, Hedge : { } }")]
-        public void ToString_should_return_expected_result_when_hedge_is_set(string hedgeValue, string expectedResult)
+        [InlineData(null, "{ Mode : Secondary }")]
+        [InlineData(false, "{ Mode : Secondary, Hedge : { \"enabled\" : false } }")]
+        [InlineData(true, "{ Mode : Secondary, Hedge : { \"enabled\" : true } }")]
+        public void ToString_should_return_expected_result_when_hedge_is_set(bool? isEnabled, string expectedResult)
         {
-            var hedge = ReadPreferenceHedgeHelper.Create(hedgeValue);
+            var hedge =  isEnabled.HasValue ? new  ReadPreferenceHedge(isEnabled.Value) : null;
             var subject = new ReadPreference(ReadPreferenceMode.Secondary, hedge: hedge);
 
             var result = subject.ToString();
@@ -332,8 +331,8 @@ namespace MongoDB.Driver
             [Values(false, true)]
             bool isEnabled)
         {
-            var originalHedge = new CustomReadPreferenceHedge(isEnabled: originalIsEnabled);
-            var hedge = new CustomReadPreferenceHedge(isEnabled: isEnabled);
+            var originalHedge = new ReadPreferenceHedge(isEnabled: originalIsEnabled);
+            var hedge = new ReadPreferenceHedge(isEnabled: isEnabled);
             var subject = new ReadPreference(ReadPreferenceMode.Secondary, hedge: originalHedge);
 
             var result = subject.With(hedge);

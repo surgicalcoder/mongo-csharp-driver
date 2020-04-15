@@ -13,7 +13,6 @@
 * limitations under the License.
 */
 
-using System;
 using FluentAssertions;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using Xunit;
@@ -23,96 +22,27 @@ namespace MongoDB.Driver.Core.Tests
     public class ReadPreferenceHedgeTests
     {
         [Fact]
+        public void Disabled_should_return_expected_result()
+        {
+            var result = ReadPreferenceHedge.Disabled;
+
+            result.IsEnabled.Should().BeFalse();
+        }
+
+        [Fact]
         public void Enabled_should_return_expected_result()
         {
             var result = ReadPreferenceHedge.Enabled;
 
-            var enabled = result.Should().BeOfType<CustomReadPreferenceHedge>().Subject;
-            enabled.IsEnabled.Should().BeTrue();
+            result.IsEnabled.Should().BeTrue();
         }
 
-        [Fact]
-        public void ServerDefault_should_return_expected_result()
-        {
-            var result = ReadPreferenceHedge.ServerDefault;
-
-            result.Should().BeOfType<ServerDefaultReadPreferenceHedge>();
-        }
-
-        [Theory]
-        [InlineData("false", "null", false)]
-        [InlineData("false", "false", true)]
-        [InlineData("false", "true", false)]
-        [InlineData("false", "serverdefault", false)]
-        [InlineData("true", "null", false)]
-        [InlineData("true", "false", false)]
-        [InlineData("true", "true", true)]
-        [InlineData("true", "serverdefault", false)]
-        [InlineData("serverdefault", "null", false)]
-        [InlineData("serverdefault", "false", false)]
-        [InlineData("serverdefault", "true", false)]
-        [InlineData("serverdefault", "serverdefault", true)]
-        public void Equals_should_return_expected_result(string lhsValue, string rhsValue, bool expectedResult)
-        {
-            var subject = ReadPreferenceHedgeHelper.Create(lhsValue);
-            var other = ReadPreferenceHedgeHelper.Create(rhsValue);
-
-            var result1 = subject.Equals(other);
-            var result2 = subject.Equals((object)other);
-
-            result1.Should().Be(expectedResult);
-            result2.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData("false")]
-        [InlineData("true")]
-        [InlineData("serverdefault")]
-        public void Equals_object_should_return_false(string lhsValue)
-        {
-            var subject = ReadPreferenceHedgeHelper.Create(lhsValue);
-            var other = new object();
-
-            var result = subject.Equals(other);
-
-            result.Should().BeFalse();
-        }
-
-        [Theory]
-        [InlineData("false", "{ enabled : false }")]
-        [InlineData("true", "{ enabled : true }")]
-        [InlineData("serverdefault", "{ }")]
-        public void ToBsonDocument_should_return_expected_result(string hedgeValue, string expectedResult)
-        {
-            var subject = ReadPreferenceHedgeHelper.Create(hedgeValue);
-
-            var result = subject.ToBsonDocument();
-
-            result.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData("false", "{ \"enabled\" : false }")]
-        [InlineData("true", "{ \"enabled\" : true }")]
-        [InlineData("serverdefault", "{ }")]
-        public void ToString_should_return_expected_result(string hedgeValue, string expectedResult)
-        {
-            var subject = ReadPreferenceHedgeHelper.Create(hedgeValue);
-
-            var result = subject.ToString();
-
-            result.Should().Be(expectedResult);
-        }
-    }
-
-    public class CustomReadPreferenceHedgeTests
-    {
         [Theory]
         [ParameterAttributeData]
         public void constructor_should_initialize_instance(
             [Values(false, true)] bool isEnabled)
         {
-            var subject = new CustomReadPreferenceHedge(isEnabled);
+            var subject = new ReadPreferenceHedge(isEnabled);
 
             subject.IsEnabled.Should().Be(isEnabled);
         }
@@ -122,7 +52,7 @@ namespace MongoDB.Driver.Core.Tests
         public void IsEnabled_should_return_expected_result(
             [Values(false, true)] bool isEnabled)
         {
-            var subject = new CustomReadPreferenceHedge(isEnabled);
+            var subject = new ReadPreferenceHedge(isEnabled);
 
             var result = subject.IsEnabled;
 
@@ -130,11 +60,41 @@ namespace MongoDB.Driver.Core.Tests
         }
 
         [Theory]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, true)]
+        public void Equals_should_return_expected_result(bool lhsIsEnabled, bool rhsIsEnabled, bool expectedResult)
+        {
+            var subject = new ReadPreferenceHedge(lhsIsEnabled);
+            var other = new ReadPreferenceHedge(rhsIsEnabled);
+
+            var result1 = subject.Equals(other);
+            var result2 = subject.Equals((object)other);
+
+            result1.Should().Be(expectedResult);
+            result2.Should().Be(expectedResult);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Equals_should_return_false_when_other_is_not_a_ReadPreferenceHedge(bool isEnabled)
+        {
+            var subject = new ReadPreferenceHedge(isEnabled);
+            var other = new object();
+
+            var result = subject.Equals(other);
+
+            result.Should().BeFalse();
+        }
+
+        [Theory]
         [ParameterAttributeData]
         public void GetHashCode_should_return_expected_result(
             [Values(false, true)] bool isEnabled)
         {
-            var subject = new CustomReadPreferenceHedge(isEnabled);
+            var subject = new ReadPreferenceHedge(isEnabled);
 
             var result = subject.GetHashCode();
 
@@ -147,49 +107,23 @@ namespace MongoDB.Driver.Core.Tests
         [InlineData(true, "{ enabled : true }")]
         public void ToBsonDocument_should_return_expected_result(bool isEnabled, string expectedResult)
         {
-            var subject = new CustomReadPreferenceHedge(isEnabled);
+            var subject = new ReadPreferenceHedge(isEnabled);
 
             var result = subject.ToBsonDocument();
 
             result.Should().Be(expectedResult);
         }
-    }
 
-    public class ServerDefaultReadPreferenceHedgeTests
-    {
-        [Fact]
-        public void GetHashCode_should_return_expected_result()
+        [Theory]
+        [InlineData(false, "{ \"enabled\" : false }")]
+        [InlineData(true, "{ \"enabled\" : true }")]
+        public void ToString_should_return_expected_result(bool isEnabled, string expectedResult)
         {
-            var subject = new ServerDefaultReadPreferenceHedge();
+            var subject = new ReadPreferenceHedge(isEnabled);
 
-            var result = subject.GetHashCode();
+            var result = subject.ToString();
 
-            result.Should().Be(0);
-        }
-
-        [Fact]
-        public void ToBsonDocument_should_return_expected_result()
-        {
-            var subject = new ServerDefaultReadPreferenceHedge();
-
-            var result = subject.ToBsonDocument();
-
-            result.Should().Be("{ }");
-        }
-    }
-
-    public static class ReadPreferenceHedgeHelper
-    {
-        public static ReadPreferenceHedge Create(string value)
-        {
-            switch (value)
-            {
-                case "null": return null;
-                case "serverdefault": return new ServerDefaultReadPreferenceHedge();
-                case "false": return new CustomReadPreferenceHedge(isEnabled: false);
-                case "true": return new CustomReadPreferenceHedge(isEnabled: true);
-                default: throw new Exception($"Unexpected value: \"{value}\".");
-            }
+            result.Should().Be(expectedResult);
         }
     }
 }
