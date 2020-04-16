@@ -60,13 +60,28 @@ namespace MongoDB.Driver.Core.Operations
             }
 
             // simple ReadPreferences of Primary and SecondaryPreferred are encoded in the slaveOk bit
-            if (readPreference.ReadPreferenceMode == ReadPreferenceMode.Primary || readPreference.ReadPreferenceMode == ReadPreferenceMode.SecondaryPreferred)
+            //if (readPreference.ReadPreferenceMode == ReadPreferenceMode.Primary || readPreference.ReadPreferenceMode == ReadPreferenceMode.SecondaryPreferred)
+            //{
+            //    var hasTagSets = readPreference.TagSets != null && readPreference.TagSets.Count > 0;
+            //    if (!hasTagSets && !readPreference.MaxStaleness.HasValue && readPreference.Hedge == null)
+            //    {
+            //        return null;
+            //    }
+            //}
+
+            // simple ReadPreferences of Primary and SecondaryPreferred are encoded in the slaveOk bit
+            switch (readPreference.ReadPreferenceMode)
             {
-                var hasTagSets = readPreference.TagSets != null && readPreference.TagSets.Count > 0;
-                if (!hasTagSets && !readPreference.MaxStaleness.HasValue && readPreference.Hedge == null)
-                {
+                case ReadPreferenceMode.Primary:
                     return null;
-                }
+
+                case ReadPreferenceMode.SecondaryPreferred:
+                    var hasTagSets = readPreference.TagSets != null && readPreference.TagSets.Count > 0;
+                    if (!hasTagSets && !readPreference.MaxStaleness.HasValue && readPreference.Hedge == null)
+                    {
+                        return null;
+                    }
+                    break;
             }
 
             return CreateReadPreferenceDocument(readPreference);

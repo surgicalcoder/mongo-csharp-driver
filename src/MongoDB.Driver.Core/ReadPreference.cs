@@ -156,6 +156,11 @@ namespace MongoDB.Driver
                 Ensure.That(mode != ReadPreferenceMode.Primary, "MaxStaleness cannot be used with ReadPreferenceMode Primary.", nameof(maxStaleness));
             }
 
+            if (hedge  != null)
+            {
+                Ensure.That(mode != ReadPreferenceMode.Primary, "Hedged reads cannot be used with ReadPreferenceMode Primary.", nameof(hedge));
+            }
+
             _mode = mode;
             _tagSets = tagSetsArray;
             _maxStaleness = maxStaleness;

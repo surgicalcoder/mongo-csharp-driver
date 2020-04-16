@@ -57,6 +57,17 @@ namespace MongoDB.Driver
         }
 
         [Fact]
+        public void constructor_should_throw_when_hedge_is_not_null_and_mode_is_primary()
+        {
+            var hedge = new ReadPreferenceHedge(true);
+
+            var exception = Record.Exception(() => new ReadPreference(ReadPreferenceMode.Primary, hedge: hedge));
+
+            var argumentException = exception.Should().BeOfType<ArgumentException>().Subject;
+            argumentException.ParamName.Should().Be("hedge");
+        }
+
+        [Fact]
         public void constructor_with_mode_should_initialize_instance()
         {
             var mode = ReadPreferenceMode.Secondary; // use a value that is not the default
@@ -162,8 +173,8 @@ namespace MongoDB.Driver
         {
             var lhsHedge = lhsEnabled.HasValue ? new ReadPreferenceHedge(lhsEnabled.Value) : null;
             var rhsHedge = rhsEnabled.HasValue ? new ReadPreferenceHedge(rhsEnabled.Value) : null;
-            var lhs = new ReadPreference(ReadPreferenceMode.Primary, hedge: lhsHedge);
-            var rhs = new ReadPreference(ReadPreferenceMode.Primary, hedge: rhsHedge);
+            var lhs = new ReadPreference(ReadPreferenceMode.Secondary, hedge: lhsHedge);
+            var rhs = new ReadPreference(ReadPreferenceMode.Secondary, hedge: rhsHedge);
 
             Equals_Act_and_Assert(lhs, rhs, expectedResult);
         }
