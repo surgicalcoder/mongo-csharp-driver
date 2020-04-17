@@ -40,25 +40,28 @@ namespace MongoDB.Driver.Core.Operations
         [Fact]
         public void CreateReadPreferenceDocument_should_return_null_when_the_serverType_is_not_a_shard_router()
         {
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ReplicaSetSecondary, ReadPreference.PrimaryPreferred);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ReplicaSetSecondary, ReadPreference.PrimaryPreferred, out var slaveOk);
 
             result.Should().BeNull();
+            slaveOk.Should().BeTrue();
         }
 
         [Fact]
         public void CreateReadPreferenceDocument_should_return_null_when_the_readPreference_is_Primary_with_no_additional_options()
         {
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.Primary);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.Primary, out var slaveOk);
 
             result.Should().BeNull();
+            slaveOk.Should().BeFalse();
         }
 
         [Fact]
         public void CreateReadPreferenceDocument_should_return_null_when_the_readPreference_is_SecondaryPreferred_with_no_additional_options()
         {
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.SecondaryPreferred);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.SecondaryPreferred, out var slaveOk);
 
             result.Should().BeNull();
+            slaveOk.Should().BeTrue();
         }
 
         [Fact]
@@ -66,9 +69,10 @@ namespace MongoDB.Driver.Core.Operations
         {
             var rp = ReadPreference.Secondary.With(tagSets: new[] { new TagSet(new[] { new Tag("dc", "tx") }) });
 
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, rp);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, rp, out var slaveOk);
 
             result.Should().Be("{mode: \"secondary\", tags: [{dc: \"tx\"}]}");
+            slaveOk.Should().BeTrue();
         }
 
         [Fact]
@@ -76,17 +80,19 @@ namespace MongoDB.Driver.Core.Operations
         {
             var readPreference = ReadPreference.Secondary.With(maxStaleness: TimeSpan.FromSeconds(1));
 
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, readPreference);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, readPreference, out var slaveOk);
 
             result.Should().Be("{ mode : \"secondary\", maxStalenessSeconds : 1.0 }");
+            slaveOk.Should().BeTrue();
         }
 
         [Fact]
         public void CreateReadPreferenceDocument_should_return_a_document_when_the_mode_is_not_Primary_or_SecondaryPreferred()
         {
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.PrimaryPreferred);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, ReadPreference.PrimaryPreferred, out var slaveOk);
 
             result.Should().Be("{mode: \"primaryPreferred\"}");
+            slaveOk.Should().BeTrue();
         }
 
         [Theory]
@@ -100,9 +106,10 @@ namespace MongoDB.Driver.Core.Operations
             var hedge = isEnabled.HasValue ? new ReadPreferenceHedge(isEnabled.Value) : null;
             var readPreference = ReadPreference.Secondary.With(hedge: hedge);
 
-            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, readPreference);
+            var result = QueryHelper.CreateReadPreferenceDocument(ServerType.ShardRouter, readPreference, out var slaveOk);
 
             result.Should().Be(expectedResult);
+            slaveOk.Should().BeTrue();
         }
     }
 }
