@@ -77,7 +77,7 @@ namespace MongoDB.Driver.Core.Operations
             [Values(false, true)]
             bool async)
         {
-            RequireServer.Check().ClusterTypes(ClusterType.Standalone, ClusterType.ReplicaSet);
+            RequireServer.Check().ClusterTypes(ClusterType.Standalone);
             EnsureCollectionExists();
             var subject = new ReIndexOperation(_collectionNamespace, _messageEncoderSettings);
 
