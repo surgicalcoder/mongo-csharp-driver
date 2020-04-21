@@ -25,7 +25,7 @@ using Xunit;
 
 namespace MongoDB.Driver.Core.Operations
 {
-    [Obsolete("This class will be removed in a later version of the driver.")]
+#pragma warning disable 618
     public class ReIndexOperationTests : OperationTestBase
     {
         [Fact]
@@ -146,4 +146,5 @@ namespace MongoDB.Driver.Core.Operations
             ExecuteOperation(operation);
         }
     }
+#pragma warning restore 618
 }
