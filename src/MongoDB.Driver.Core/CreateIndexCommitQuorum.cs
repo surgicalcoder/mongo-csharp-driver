@@ -30,12 +30,12 @@ namespace MongoDB.Driver
 
         // public static properties
         /// <summary>
-        /// Gets a create index commit quorum of majority;
+        /// Gets a create index commit quorum of majority.
         /// </summary>
         public static CreateIndexCommitQuorum Majority => __majority;
 
         /// <summary>
-        /// Gets a create index commit quorum of voting members;
+        /// Gets a create index commit quorum of voting members.
         /// </summary>
         public static CreateIndexCommitQuorum VotingMembers => __votingMembers;
 
@@ -75,7 +75,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Initializes an instance of CreateIndexCommitQuorumWithMode.
         /// </summary>
-        /// <param name="mode"></param>
+        /// <param name="mode">The mode value.</param>
         public CreateIndexCommitQuorumWithMode(string mode)
         {
             _mode = Ensure.IsNotNullOrEmpty(mode, nameof(mode));
@@ -107,7 +107,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Initializes an instance of CreateIndexCommitQuorumWithW.
         /// </summary>
-        /// <param name="w"></param>
+        /// <param name="w">The w value.</param>
         public CreateIndexCommitQuorumWithW(int w)
         {
             _w = Ensure.IsGreaterThanOrEqualToZero(w, nameof(w));
