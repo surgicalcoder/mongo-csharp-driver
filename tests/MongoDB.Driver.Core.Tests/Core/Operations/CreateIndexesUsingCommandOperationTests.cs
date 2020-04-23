@@ -284,6 +284,41 @@ namespace MongoDB.Driver.Core.Operations
 
         [SkippableTheory]
         [ParameterAttributeData]
+        public void Execute_should_work_when_commitQuorum_is_specified(
+            [Values(0, 1, 2, "majority", "votingMembers")] object commitQuorumCase,
+            [Values(false, true)] bool async)
+        {
+            RequireServer.Check().ClusterTypes(ClusterType.ReplicaSet, ClusterType.Sharded).Supports(Feature.CreateIndexCommitQuorum);
+            DropCollection();
+            var requests = new[] { new CreateIndexRequest(new BsonDocument("x", 1)) };
+            CreateIndexCommitQuorum commitQuorum;
+            if (commitQuorumCase is int w)
+            {
+                commitQuorum = CreateIndexCommitQuorum.Create(w);
+            }
+            else if (commitQuorumCase is string mode)
+            {
+                switch (mode)
+                {
+                    case "majority": commitQuorum = CreateIndexCommitQuorum.Majority; break;
+                    case "votingMembers": commitQuorum = CreateIndexCommitQuorum.VotingMembers; break;
+                    default: commitQuorum = CreateIndexCommitQuorum.Create(mode); break;
+                }
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid commitQuorumCase: {commitQuorumCase}.", nameof(commitQuorumCase));
+            }
+            var subject = new CreateIndexesUsingCommandOperation(_collectionNamespace, requests, _messageEncoderSettings) { CommitQuorum = commitQuorum };
+
+            ExecuteOperation(subject, async);
+
+            var indexes = ListIndexes();
+            indexes.Select(index => index["name"].AsString).Should().BeEquivalentTo(new[] { "_id_", "x_1" });
+        }
+
+        [SkippableTheory]
+        [ParameterAttributeData]
         public void Execute_should_work_when_creating_one_index(
             [Values(false, true)]
             bool async)
