@@ -285,7 +285,7 @@ namespace MongoDB.Driver.Core.Operations
         [SkippableTheory]
         [ParameterAttributeData]
         public void Execute_should_work_when_commitQuorum_is_specified(
-            [Values(0, 1, 2, "majority", "votingMembers")] object commitQuorumCase,
+            [Values(1, "majority", "votingMembers")] object commitQuorumCase,
             [Values(false, true)] bool async)
         {
             RequireServer.Check().ClusterTypes(ClusterType.ReplicaSet, ClusterType.Sharded).Supports(Feature.CreateIndexCommitQuorum);
