@@ -66,7 +66,9 @@ namespace MongoDB.Driver.Tests
                 applicationName: "app1",
                 clusterConfigurator: clusterConfigurator,
                 compressors: new[] { new CompressorConfiguration(CompressorType.Zlib) },
+#pragma warning disable 618
                 connectionMode: ConnectionMode.ReplicaSet,
+#pragma warning restore 618
                 connectTimeout: TimeSpan.FromSeconds(1),
                 credentials: credentials,
                 heartbeatInterval: TimeSpan.FromSeconds(2),
@@ -90,7 +92,8 @@ namespace MongoDB.Driver.Tests
                 sslSettings: sslSettings,
                 useTls: true,
                 waitQueueSize: 13,
-                waitQueueTimeout: TimeSpan.FromSeconds(14));
+                waitQueueTimeout: TimeSpan.FromSeconds(14),
+                directConnection: null); // null because we cannot set both DirectConnection and ConnectMode
 
             var subject = new ClusterRegistry();
 
@@ -102,7 +105,9 @@ namespace MongoDB.Driver.Tests
                     new IPEndPoint(IPAddress.Parse("127.0.0.1"), 30000),
                     new IPEndPoint(IPAddress.Parse("[::1]"), 27018)
                 };
+#pragma warning disable 618
                 cluster.Settings.ConnectionMode.Should().Be(clusterKey.ConnectionMode.ToCore());
+#pragma warning restore 618
                 cluster.Settings.KmsProviders.Should().BeEquivalentTo(kmsProviders);
                 cluster.Settings.EndPoints.Should().Equal(expectedEndPoints);
                 cluster.Settings.MaxServerSelectionWaitQueueSize.Should().Be(clusterKey.WaitQueueSize);

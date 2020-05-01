@@ -81,16 +81,21 @@ namespace MongoDB.Driver
         private ClusterSettings ConfigureCluster(ClusterSettings settings, ClusterKey clusterKey)
         {
             var endPoints = clusterKey.Servers.Select(s => EndPointHelper.Parse(s.ToString()));
-            return settings.With(
-                connectionMode: clusterKey.ConnectionMode.ToCore(),
-                endPoints: Optional.Enumerable(endPoints),
-                kmsProviders: Optional.Create(clusterKey.KmsProviders),
-                localThreshold: clusterKey.LocalThreshold,
-                replicaSetName: clusterKey.ReplicaSetName,
-                maxServerSelectionWaitQueueSize: clusterKey.WaitQueueSize,
-                serverSelectionTimeout: clusterKey.ServerSelectionTimeout,
-                schemaMap: Optional.Create(clusterKey.SchemaMap),
-                scheme: clusterKey.Scheme);
+#pragma warning disable 618
+            return settings
+                .With(
+                    endPoints: Optional.Enumerable(endPoints),
+                    kmsProviders: Optional.Create(clusterKey.KmsProviders),
+                    localThreshold: clusterKey.LocalThreshold,
+                    replicaSetName: clusterKey.ReplicaSetName,
+                    maxServerSelectionWaitQueueSize: clusterKey.WaitQueueSize,
+                    serverSelectionTimeout: clusterKey.ServerSelectionTimeout,
+                    schemaMap: Optional.Create(clusterKey.SchemaMap),
+                    scheme: clusterKey.Scheme)
+                .WithConnection(
+                    connectionMode: clusterKey.ConnectionMode.ToCore(),
+                    directConnection: clusterKey.DirectConnection);
+#pragma warning restore 618
         }
 
         private ConnectionPoolSettings ConfigureConnectionPool(ConnectionPoolSettings settings, ClusterKey clusterKey)

@@ -16,7 +16,9 @@
 using System;
 using System.Net;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.Bson.TestHelpers.EqualityComparers;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using Xunit;
@@ -32,13 +34,27 @@ namespace MongoDB.Driver.Core.Configuration
         {
             var subject = new ClusterSettings();
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(null);
             subject.EndPoints.Should().EqualUsing(new[] { new DnsEndPoint("localhost", 27017) }, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(TimeSpan.FromMilliseconds(15));
             subject.MaxServerSelectionWaitQueueSize.Should().Be(500);
             subject.ReplicaSetName.Should().Be(null);
             subject.Scheme.Should().Be(ConnectionStringScheme.MongoDB);
             subject.ServerSelectionTimeout.Should().Be(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        public void constructor_should_throw_when_both_directConnection_and_connectionMode_are_specified()
+        {
+#pragma warning disable 618
+            var exception = Record.Exception(() => new ClusterSettings(connectionMode: ClusterConnectionMode.Automatic, directConnection: true));
+#pragma warning restore 618
+
+            var e = exception.Should().BeOfType<MongoConfigurationException>().Subject;
+            e.Message.Should().Be("Specifying both connect and directConnection is invalid.");
         }
 
         [Fact]
@@ -77,11 +93,34 @@ namespace MongoDB.Driver.Core.Configuration
         [Fact]
         public void constructor_with_connectionMode_should_initialize_instance()
         {
+#pragma warning disable 618
             var connectionMode = ClusterConnectionMode.ReplicaSet;
+#pragma warning restore 618
 
             var subject = new ClusterSettings(connectionMode: connectionMode);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(connectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
+            subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
+            subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
+            subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
+            subject.ReplicaSetName.Should().Be(__defaults.ReplicaSetName);
+            subject.Scheme.Should().Be(__defaults.Scheme);
+            subject.ServerSelectionTimeout.Should().Be(__defaults.ServerSelectionTimeout);
+        }
+
+        [Fact]
+        public void constructor_with_directConnection_should_initialize_instance()
+        {
+            var directConnection = false;
+            var subject = new ClusterSettings(directConnection: directConnection);
+
+#pragma warning disable 618
+            subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(directConnection);
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
@@ -97,7 +136,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var subject = new ClusterSettings(endPoints: endPoints);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
             subject.EndPoints.Should().EqualUsing(endPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
@@ -112,7 +154,10 @@ namespace MongoDB.Driver.Core.Configuration
             var localThreshold = TimeSpan.FromSeconds(1);
             var subject = new ClusterSettings(localThreshold: localThreshold);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(localThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
@@ -128,7 +173,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var subject = new ClusterSettings(maxServerSelectionWaitQueueSize: maxServerSelectionWaitQueueSize);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(maxServerSelectionWaitQueueSize);
@@ -144,7 +192,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var subject = new ClusterSettings(replicaSetName: replicaSetName);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
@@ -160,7 +211,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var subject = new ClusterSettings(scheme: scheme);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
@@ -176,7 +230,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var subject = new ClusterSettings(serverSelectionTimeout: serverSelectionTimeout);
 
+#pragma warning disable 618
             subject.ConnectionMode.Should().Be(__defaults.ConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
             subject.LocalThreshold.Should().Be(__defaults.LocalThreshold);
             subject.MaxServerSelectionWaitQueueSize.Should().Be(__defaults.MaxServerSelectionWaitQueueSize);
@@ -186,15 +243,67 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         [Fact]
+        public void connectionModeWasSet_should_not_be_refreshed_with_With()
+        {
+#pragma warning disable 618
+            var connectionMode = ClusterConnectionMode.Automatic;
+#pragma warning restore 618
+            var subject = new ClusterSettings(connectionMode: connectionMode);
+            subject._connectionModeWasSet().Should().BeTrue();
+
+            var result = subject.With(directConnection: true);
+            result._connectionModeWasSet().Should().BeTrue();
+
+#pragma warning disable 618
+            result.ConnectionMode.Should().Be(connectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
+            result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
+            result.LocalThreshold.Should().Be(subject.LocalThreshold);
+            result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
+            result.ReplicaSetName.Should().Be(subject.ReplicaSetName);
+            result.Scheme.Should().Be(subject.Scheme);
+            result.ServerSelectionTimeout.Should().Be(subject.ServerSelectionTimeout);
+        }
+
+        [Fact]
         public void With_connectionMode_should_return_expected_result()
         {
+#pragma warning disable 618
             var oldConnectionMode = ClusterConnectionMode.Automatic;
             var newConnectionMode = ClusterConnectionMode.ReplicaSet;
+#pragma warning restore 618
             var subject = new ClusterSettings(connectionMode: oldConnectionMode);
+            subject._connectionModeWasSet().Should().BeTrue();
 
             var result = subject.With(connectionMode: newConnectionMode);
+            result._connectionModeWasSet().Should().BeTrue();
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(newConnectionMode);
+#pragma warning restore 618
+            subject.DirectConnection.Should().Be(__defaults.DirectConnection);
+            result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
+            result.LocalThreshold.Should().Be(subject.LocalThreshold);
+            result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
+            result.ReplicaSetName.Should().Be(subject.ReplicaSetName);
+            result.Scheme.Should().Be(subject.Scheme);
+            result.ServerSelectionTimeout.Should().Be(subject.ServerSelectionTimeout);
+        }
+
+        [Fact]
+        public void With_directConnection_should_return_expected_result()
+        {
+            bool? oldDirectConnection = null;
+            var newDirectConnection = false;
+            var subject = new ClusterSettings(directConnection: oldDirectConnection);
+
+            var result = subject.With(directConnection: newDirectConnection);
+
+#pragma warning disable 618
+            result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
+            result.DirectConnection.Should().Be(newDirectConnection);
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
@@ -212,7 +321,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var result = subject.With(endPoints: newEndPoints);
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
+            result.DirectConnection.Should().Be(subject.DirectConnection);
             result.EndPoints.Should().EqualUsing(newEndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
@@ -230,7 +342,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var result = subject.With(localThreshold: newLocalThreshold);
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
+            result.DirectConnection.Should().Be(subject.DirectConnection);
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(newLocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
@@ -248,7 +363,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var result = subject.With(maxServerSelectionWaitQueueSize: newMaxServerSelectionWaitQueueSize);
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
+            result.DirectConnection.Should().Be(subject.DirectConnection);
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(newMaxServerSelectionWaitQueueSize);
@@ -266,7 +384,9 @@ namespace MongoDB.Driver.Core.Configuration
 
             var result = subject.With(replicaSetName: newReplicaSetName);
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
@@ -284,7 +404,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var result = subject.With(scheme: newScheme);
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
+            result.DirectConnection.Should().Be(subject.DirectConnection);
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
@@ -302,7 +425,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             var result = subject.With(serverSelectionTimeout: newServerSelectionTimeout);
 
+#pragma warning disable 618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore 618
+            result.DirectConnection.Should().Be(subject.DirectConnection);
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
@@ -310,5 +436,40 @@ namespace MongoDB.Driver.Core.Configuration
             result.Scheme.Should().Be(subject.Scheme);
             result.ServerSelectionTimeout.Should().Be(newServerSelectionTimeout);
         }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void WithConnection_should_return_expected_result([Values(false, true, null)]bool? directConnection)
+        {
+#pragma warning disable 618
+            var subject = new ClusterSettings();
+            var connectionMode = ClusterConnectionMode.ReplicaSet;
+            var defaultConnectionMode = ClusterConnectionMode.Automatic;
+
+            var result = subject.WithConnection(connectionMode, directConnection);
+
+            if (directConnection.HasValue)
+            {
+                result.ConnectionMode.Should().Be(defaultConnectionMode);
+            }
+            else
+            {
+                result.ConnectionMode.Should().Be(connectionMode);
+            }
+            result._connectionModeWasSet().Should().Be(!directConnection.HasValue);
+            result.DirectConnection.Should().Be(directConnection);
+            result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
+            result.LocalThreshold.Should().Be(subject.LocalThreshold);
+            result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
+            result.ReplicaSetName.Should().Be(subject.ReplicaSetName);
+            result.Scheme.Should().Be(subject.Scheme);
+            result.ServerSelectionTimeout.Should().Be(subject.ServerSelectionTimeout);
+#pragma warning restore 618
+        }
+    }
+
+    internal static class ClusterSettingsReflector
+    {
+        public static bool _connectionModeWasSet(this ClusterSettings clusterSettings) => (bool)Reflector.GetFieldValue(clusterSettings, nameof(_connectionModeWasSet));
     }
 }
