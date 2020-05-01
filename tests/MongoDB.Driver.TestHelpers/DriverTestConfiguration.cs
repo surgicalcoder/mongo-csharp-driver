@@ -120,7 +120,7 @@ namespace MongoDB.Driver.Tests
                 useMultipleShardRouters = false;
             }
 
-            var connectionString = useMultipleShardRouters 
+            var connectionString = useMultipleShardRouters
                 ? CoreTestConfiguration.ConnectionStringWithMultipleShardRouters.ToString()
                 : CoreTestConfiguration.ConnectionString.ToString();
             var clientSettings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));

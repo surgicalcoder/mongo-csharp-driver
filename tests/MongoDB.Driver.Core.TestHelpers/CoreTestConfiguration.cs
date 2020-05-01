@@ -43,7 +43,7 @@ namespace MongoDB.Driver
         // static fields
         private static Lazy<ICluster> __cluster = new Lazy<ICluster>(CreateCluster, isThreadSafe: true);
         private static Lazy<ConnectionString> __connectionString = new Lazy<ConnectionString>(GetConnectionString, isThreadSafe: true);
-        private static Lazy<ConnectionString>  __connectionStringWithMultipleShardRouters = new Lazy<ConnectionString>(
+        private static Lazy<ConnectionString> __connectionStringWithMultipleShardRouters = new Lazy<ConnectionString>(
             GetConnectionStringWithMultipleShardRouters, isThreadSafe: true);
         private static Lazy<DatabaseNamespace> __databaseNamespace = new Lazy<DatabaseNamespace>(GetDatabaseNamespace, isThreadSafe: true);
         private static MessageEncoderSettings __messageEncoderSettings = new MessageEncoderSettings();
@@ -59,7 +59,7 @@ namespace MongoDB.Driver
         {
             get { return __connectionString.Value; }
         }
-        
+
         public static ConnectionString ConnectionStringWithMultipleShardRouters
         {
             get => __connectionStringWithMultipleShardRouters.Value;
@@ -234,7 +234,7 @@ namespace MongoDB.Driver
 
             return new ConnectionString(uri);
         }
-        
+
         private static ConnectionString GetConnectionStringWithMultipleShardRouters()
         {
             var uri = Environment.GetEnvironmentVariable("MONGODB_URI_WITH_MULTIPLE_MONGOSES") ?? "mongodb://localhost,localhost:27018";
