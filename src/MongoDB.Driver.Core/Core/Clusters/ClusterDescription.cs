@@ -31,11 +31,12 @@ namespace MongoDB.Driver.Core.Clusters
         #region static
         // internal static methods
 #pragma warning disable 618
-        internal static ClusterDescription CreateInitial(ClusterId clusterId, ClusterConnectionMode connectionMode)
+        internal static ClusterDescription CreateInitial(ClusterId clusterId, ClusterConnectionMode connectionMode, bool? directConnection)
         {
             return new ClusterDescription(
                 clusterId,
                 connectionMode,
+                directConnection,
                 ClusterType.Unknown,
                 Enumerable.Empty<ServerDescription>());
         }
@@ -67,6 +68,7 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning disable 618
         private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterConnectionMode connectionMode, IEnumerable<ServerDescription> servers)
         {
+            // TODO: Update Direct condition
             var connectedServers = servers.Where(s => s.State == ServerState.Connected);
             if (connectionMode == ClusterConnectionMode.Direct)
             {
@@ -85,6 +87,7 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning disable 618
         private readonly ClusterConnectionMode _connectionMode;
 #pragma warning restore 618
+        private readonly bool? _directConnection;
         private readonly Exception _dnsMonitorException;
         private readonly TimeSpan? _logicalSessionTimeout;
         private readonly IReadOnlyList<ServerDescription> _servers;
@@ -98,6 +101,7 @@ namespace MongoDB.Driver.Core.Clusters
         /// <param name="connectionMode">The connection mode.</param>
         /// <param name="type">The type.</param>
         /// <param name="servers">The servers.</param>
+        [Obsolete("Use a constructor that takes a directConnection parameter.")]
         public ClusterDescription(
             ClusterId clusterId,
 #pragma warning disable 618
@@ -114,9 +118,30 @@ namespace MongoDB.Driver.Core.Clusters
         /// </summary>
         /// <param name="clusterId">The cluster identifier.</param>
         /// <param name="connectionMode">The connection mode.</param>
+        /// <param name="directConnection">The directConnection.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="servers">The servers.</param>
+        public ClusterDescription(
+            ClusterId clusterId,
+#pragma warning disable 618
+            ClusterConnectionMode connectionMode,
+#pragma warning restore 618,
+            bool? directConnection,
+            ClusterType type,
+            IEnumerable<ServerDescription> servers)
+            : this(clusterId, connectionMode, directConnection, dnsMonitorException: null, type, servers)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClusterDescription" /> class.
+        /// </summary>
+        /// <param name="clusterId">The cluster identifier.</param>
+        /// <param name="connectionMode">The connection mode.</param>
         /// <param name="dnsMonitorException">The last DNS monitor exception (null if there was none).</param>
         /// <param name="type">The type.</param>
         /// <param name="servers">The servers.</param>
+        [Obsolete("Use a constructor that takes a directConnection parameter.")]
         public ClusterDescription(
             ClusterId clusterId,
 #pragma warning disable 618
@@ -125,9 +150,32 @@ namespace MongoDB.Driver.Core.Clusters
             Exception dnsMonitorException,
             ClusterType type,
             IEnumerable<ServerDescription> servers)
+            : this(clusterId, connectionMode, directConnection: null, dnsMonitorException, type, servers)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClusterDescription" /> class.
+        /// </summary>
+        /// <param name="clusterId">The cluster identifier.</param>
+        /// <param name="connectionMode">The connection mode.</param>
+        /// <param name="directConnection">The directConnection</param>
+        /// <param name="dnsMonitorException">The last DNS monitor exception (null if there was none).</param>
+        /// <param name="type">The type.</param>
+        /// <param name="servers">The servers.</param>
+        public ClusterDescription(
+            ClusterId clusterId,
+#pragma warning disable 618
+            ClusterConnectionMode connectionMode,
+#pragma warning restore 618
+            bool? directConnection,
+            Exception dnsMonitorException,
+            ClusterType type,
+            IEnumerable<ServerDescription> servers)
         {
             _clusterId = Ensure.IsNotNull(clusterId, nameof(clusterId));
             _connectionMode = connectionMode;
+            _directConnection = directConnection;
             _dnsMonitorException = dnsMonitorException; // can be null
             _type = type;
             _servers = (servers ?? new ServerDescription[0]).OrderBy(n => n.EndPoint, new ToStringComparer<EndPoint>()).ToList();
@@ -146,12 +194,16 @@ namespace MongoDB.Driver.Core.Clusters
         /// <summary>
         /// Gets the connection mode.
         /// </summary>
-#pragma warning disable 618
+        [Obsolete("Use DirectConnection instead.")]
         public ClusterConnectionMode ConnectionMode
         {
             get { return _connectionMode; }
         }
-#pragma warning restore 618
+
+        /// <summary>
+        /// Gets the directConnection.
+        /// </summary>
+        public bool? DirectConnection => _directConnection;
 
         /// <summary>
         /// Gets the last DNS monitor exception (null if there was none).
@@ -237,6 +289,7 @@ namespace MongoDB.Driver.Core.Clusters
             return new Hasher()
                 .Hash(_clusterId)
                 .Hash(_connectionMode)
+                .Hash(_directConnection)
                 .Hash(_dnsMonitorException)
                 .HashElements(_servers)
                 .Hash(_type)
@@ -247,16 +300,14 @@ namespace MongoDB.Driver.Core.Clusters
         public override string ToString()
         {
             var servers = string.Join(", ", _servers.Select(n => n.ToString()).ToArray());
-            var value = string.Format(
-                "{{ ClusterId : \"{0}\", ConnectionMode : \"{1}\", Type : \"{2}\", State : \"{3}\", Servers : [{4}] }}",
-                _clusterId,
-                _connectionMode,
-                _type,
-                State,
-                servers);
+            var value = $"{{ ClusterId : \"{_clusterId}\", ConnectionMode : \"{_connectionMode}\", Type : \"{_type}\", State : \"{State}\", Servers : [{servers}] }}";
+            if (_directConnection.HasValue)
+            {
+                value = value.Substring(0, value.Length - 2) + $", DirectConnection : {_directConnection.Value.ToString().ToLower()} }}";
+            }
             if (_dnsMonitorException != null)
             {
-                value = value.Substring(0, value.Length - 2) + string.Format(", DnsMonitorException : \"{0}\" }}", _dnsMonitorException);
+                value = value.Substring(0, value.Length - 2) + $", DnsMonitorException : \"{_dnsMonitorException}\" }}";
             }
             return value;
         }
@@ -273,6 +324,7 @@ namespace MongoDB.Driver.Core.Clusters
                 return new ClusterDescription(
                     _clusterId,
                     _connectionMode,
+                    _directConnection,
                     value,
                     _type,
                     _servers);
@@ -310,6 +362,7 @@ namespace MongoDB.Driver.Core.Clusters
             return new ClusterDescription(
                 _clusterId,
                 _connectionMode,
+                _directConnection,
                 _dnsMonitorException,
                 _type,
                 replacementServers);
@@ -331,6 +384,7 @@ namespace MongoDB.Driver.Core.Clusters
             return new ClusterDescription(
                 _clusterId,
                 _connectionMode,
+                _directConnection,
                 _dnsMonitorException,
                 _type,
                 _servers.Where(s => !EndPointHelper.Equals(s.EndPoint, endPoint)));
@@ -343,7 +397,7 @@ namespace MongoDB.Driver.Core.Clusters
         /// <returns>A ClusterDescription.</returns>
         public ClusterDescription WithType(ClusterType value)
         {
-            return _type == value ? this : new ClusterDescription(_clusterId, _connectionMode, _dnsMonitorException, value, _servers);
+            return _type == value ? this : new ClusterDescription(_clusterId, _connectionMode, _directConnection, _dnsMonitorException, value, _servers);
         }
     }
 }

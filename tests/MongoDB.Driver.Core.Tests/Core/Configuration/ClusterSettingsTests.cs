@@ -243,16 +243,17 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         [Fact]
-        public void connectionModeWasSet_should_not_be_refreshed_with_With()
+        public void With_should_not_refresh_connectionMode()
         {
 #pragma warning disable 618
             var connectionMode = ClusterConnectionMode.Automatic;
 #pragma warning restore 618
+            var replicaSetName = "rs";
             var subject = new ClusterSettings(connectionMode: connectionMode);
-            subject._connectionModeWasSet().Should().BeTrue();
+            subject._connectionMode().HasValue.Should().BeTrue();
 
-            var result = subject.With(directConnection: true);
-            result._connectionModeWasSet().Should().BeTrue();
+            var result = subject.With(replicaSetName: replicaSetName);
+            result._connectionMode().HasValue.Should().BeTrue();
 
 #pragma warning disable 618
             result.ConnectionMode.Should().Be(connectionMode);
@@ -261,7 +262,7 @@ namespace MongoDB.Driver.Core.Configuration
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
             result.MaxServerSelectionWaitQueueSize.Should().Be(subject.MaxServerSelectionWaitQueueSize);
-            result.ReplicaSetName.Should().Be(subject.ReplicaSetName);
+            result.ReplicaSetName.Should().Be(replicaSetName);
             result.Scheme.Should().Be(subject.Scheme);
             result.ServerSelectionTimeout.Should().Be(subject.ServerSelectionTimeout);
         }
@@ -274,10 +275,10 @@ namespace MongoDB.Driver.Core.Configuration
             var newConnectionMode = ClusterConnectionMode.ReplicaSet;
 #pragma warning restore 618
             var subject = new ClusterSettings(connectionMode: oldConnectionMode);
-            subject._connectionModeWasSet().Should().BeTrue();
+            subject._connectionMode().HasValue.Should().BeTrue();
 
             var result = subject.With(connectionMode: newConnectionMode);
-            result._connectionModeWasSet().Should().BeTrue();
+            result._connectionMode().HasValue.Should().BeTrue();
 
 #pragma warning disable 618
             result.ConnectionMode.Should().Be(newConnectionMode);
@@ -456,7 +457,7 @@ namespace MongoDB.Driver.Core.Configuration
             {
                 result.ConnectionMode.Should().Be(connectionMode);
             }
-            result._connectionModeWasSet().Should().Be(!directConnection.HasValue);
+            result._connectionMode().HasValue.Should().Be(!directConnection.HasValue);
             result.DirectConnection.Should().Be(directConnection);
             result.EndPoints.Should().EqualUsing(subject.EndPoints, EndPointHelper.EndPointEqualityComparer);
             result.LocalThreshold.Should().Be(subject.LocalThreshold);
@@ -470,6 +471,8 @@ namespace MongoDB.Driver.Core.Configuration
 
     internal static class ClusterSettingsReflector
     {
-        public static bool _connectionModeWasSet(this ClusterSettings clusterSettings) => (bool)Reflector.GetFieldValue(clusterSettings, nameof(_connectionModeWasSet));
+#pragma warning disable 618
+        public static ClusterConnectionMode? _connectionMode(this ClusterSettings clusterSettings) => (ClusterConnectionMode?)Reflector.GetFieldValue(clusterSettings, nameof(_connectionMode));
+#pragma warning restore 618
     }
 }

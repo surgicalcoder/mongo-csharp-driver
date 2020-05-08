@@ -107,13 +107,13 @@ namespace MongoDB.Driver.Core.Bindings
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);
+#pragma warning disable 618
             var initialClusterDescription = new ClusterDescription(
                 clusterId,
-#pragma warning disable 618
                 ClusterConnectionMode.Automatic,
-#pragma warning restore 618
                 ClusterType.Unknown,
                 new[] { new ServerDescription(new ServerId(clusterId, endPoint), endPoint) });
+#pragma warning restore 618
             var finalClusterDescription = initialClusterDescription.WithType(ClusterType.Standalone);
             _mockCluster.SetupSequence(c => c.Description).Returns(initialClusterDescription).Returns(finalClusterDescription);
 
@@ -152,13 +152,13 @@ namespace MongoDB.Driver.Core.Bindings
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);
+#pragma warning disable 618
             var initialClusterDescription = new ClusterDescription(
                 clusterId,
-#pragma warning disable 618
                 ClusterConnectionMode.Automatic,
-#pragma warning restore 618
                 ClusterType.Unknown,
                 new[] { new ServerDescription(new ServerId(clusterId, endPoint), endPoint) });
+#pragma warning restore 618
             var finalClusterDescription = initialClusterDescription.WithType(ClusterType.Standalone);
             _mockCluster.SetupSequence(c => c.Description).Returns(initialClusterDescription).Returns(finalClusterDescription);
 

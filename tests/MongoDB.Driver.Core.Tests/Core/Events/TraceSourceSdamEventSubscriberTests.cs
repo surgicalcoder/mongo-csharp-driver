@@ -184,21 +184,20 @@ namespace MongoDB.Driver.Core.Events
             const string traceSourceName = "HandleClusterDescriptionChangedEventShould_Log_To_File";
             const string logFileName = traceSourceName + "-log";
             var ipAddress = new IPEndPoint(IPAddress.Parse("1.2.3.4"), 42);
+
+#pragma warning disable 618
             var @event = new ClusterDescriptionChangedEvent(
                 oldDescription: new ClusterDescription(
                     new ClusterId(),
-#pragma warning disable 618
                     ClusterConnectionMode.Automatic,
-#pragma warning restore 618
                     ClusterType.Unknown,
                     new ServerDescription[] { }),
                     newDescription: new ClusterDescription(
                     new ClusterId(),
-#pragma warning disable 618
                     ClusterConnectionMode.Direct,
-#pragma warning restore 618
                     ClusterType.Standalone,
                     new ServerDescription[] { new ServerDescription(new ServerId(new ClusterId(), ipAddress), ipAddress) }));
+#pragma warning restore 618
             var expectedLogMessage =
                 $"{TraceSourceEventHelper.Label(@event.OldDescription.ClusterId)}: {@event.NewDescription}";
             var traceSource = CreateTraceSource(logFileName, logFileName);

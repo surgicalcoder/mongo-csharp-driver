@@ -36,9 +36,8 @@ namespace MongoDB.Driver.Core.Configuration
 
         // fields
 #pragma warning disable 618
-        private readonly ClusterConnectionMode _connectionMode;
+        private ClusterConnectionMode? _connectionMode;
 #pragma warning restore 618
-        private bool _connectionModeWasSet;
         private readonly bool? _directConnection;
         private readonly IReadOnlyList<EndPoint> _endPoints;
         private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
@@ -84,8 +83,7 @@ namespace MongoDB.Driver.Core.Configuration
             Optional<bool?> directConnection = default)
         {
 #pragma warning disable 618
-            _connectionMode = connectionMode.WithDefault(ClusterConnectionMode.Automatic);
-            UpdateConnectionModeWasSet(connectionMode.HasValue);
+            _connectionMode = connectionMode.HasValue ? connectionMode.Value : (ClusterConnectionMode?)null;
 #pragma warning restore 618
             _directConnection = directConnection.WithDefault(_directConnection);
             _endPoints = Ensure.IsNotNull(endPoints.WithDefault(__defaultEndPoints), "endPoints").ToList();
@@ -113,7 +111,7 @@ namespace MongoDB.Driver.Core.Configuration
         [Obsolete("Use DirectConnection instead.")]
         public ClusterConnectionMode ConnectionMode
         {
-            get { return _connectionMode; }
+            get { return _connectionMode.GetValueOrDefault(); }
         }
 #pragma warning restore 618
 
@@ -272,7 +270,6 @@ namespace MongoDB.Driver.Core.Configuration
             Optional<bool?> directConnection = default)
         {
             var clusterSettings = new ClusterSettings(
-                connectionMode: connectionMode,
                 directConnection: directConnection.WithDefault(_directConnection),
                 endPoints: Optional.Enumerable(endPoints.WithDefault(_endPoints)),
                 kmsProviders: Optional.Create(kmsProviders.WithDefault(_kmsProviders)),
@@ -284,7 +281,11 @@ namespace MongoDB.Driver.Core.Configuration
                 postServerSelector: Optional.Create(postServerSelector.WithDefault(_postServerSelector)),
                 schemaMap: Optional.Create(schemaMap.WithDefault(_schemaMap)),
                 scheme: scheme.WithDefault(_scheme));
-            clusterSettings.UpdateConnectionModeWasSet(connectionMode.HasValue || _connectionModeWasSet);
+
+            // Use the private field here because the public one is not nullable and will always have a value
+            clusterSettings._connectionMode = connectionMode.HasValue ? connectionMode.Value : _connectionMode;
+            ThrowIfSettingsAreInvalid();
+
             return clusterSettings;
         }
 
@@ -293,7 +294,7 @@ namespace MongoDB.Driver.Core.Configuration
         /// </summary>
         /// <param name="connectionMode">The connection mode.</param>
         /// <param name="directConnection">The direct connection.</param>
-        /// <returns></returns>
+        /// <returns>A new ClusterSettings instance.</returns>
         [Obsolete("Use With instead.")]
         public ClusterSettings WithConnection(ClusterConnectionMode connectionMode, bool? directConnection)
         {
@@ -308,7 +309,6 @@ namespace MongoDB.Driver.Core.Configuration
                 postServerSelector: Optional.Create(_postServerSelector),
                 schemaMap: Optional.Create(_schemaMap),
                 scheme: _scheme);
-            clusterSettings.UpdateConnectionModeWasSet(!directConnection.HasValue || _connectionModeWasSet);
 
             if (directConnection.HasValue)
             {
@@ -316,8 +316,11 @@ namespace MongoDB.Driver.Core.Configuration
             }
             else
             {
-                return clusterSettings.With(connectionMode: connectionMode);
+                // Use the private field here because the public one is not nullable and will always have a value
+                clusterSettings._connectionMode = connectionMode;
+                ThrowIfSettingsAreInvalid();
             }
+            return clusterSettings;
         }
 
         // internal methods
@@ -351,17 +354,9 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         // private methods
-        private void UpdateConnectionModeWasSet(bool value)
-        {
-            if (value)
-            {
-                _connectionModeWasSet = value;
-            }
-        }
-
         private void ThrowIfSettingsAreInvalid()
         {
-            if (_connectionModeWasSet && _directConnection.HasValue)
+            if (_connectionMode.HasValue && _directConnection.HasValue)
             {
                 throw new MongoConfigurationException("Specifying both connect and directConnection is invalid.");
             }

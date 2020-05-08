@@ -373,7 +373,9 @@ namespace MongoDB.Driver.Core.Bindings
         {
             clusterId = clusterId ?? new ClusterId(1);
             servers = servers ?? new ServerDescription[0];
+#pragma warning disable 618
             return new ClusterDescription(clusterId, connectionMode, type, servers);
+#pragma warning restore 618
         }
 
         private ClusterDescription CreateClusterDescriptionWithDisconnectedServers(int numberOfDisconnectedServers)

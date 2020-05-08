@@ -41,6 +41,7 @@ namespace MongoDB.Driver
 #pragma warning disable 618
         private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterConnectionMode connectionMode, IEnumerable<ServerDescription> servers)
         {
+            //TODO: update Direct condition
             var connectedServers = servers.Where(s => s.State == ServerState.Connected);
             if (connectionMode == ClusterConnectionMode.Direct)
 #pragma warning restore 618
@@ -438,7 +439,9 @@ namespace MongoDB.Driver
             }
             else
             {
+#pragma warning disable 618
                 var selectedServers = SelectServersThatDetermineWhetherSessionsAreSupported(clusterDescription.ConnectionMode, clusterDescription.Servers).ToList();
+#pragma warning restore 618
                 if (selectedServers.Count == 0)
                 {
                     return null;
@@ -637,7 +640,9 @@ namespace MongoDB.Driver
             public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
             {
                 ClusterDescription = cluster;
+#pragma warning disable 618
                 return SelectServersThatDetermineWhetherSessionsAreSupported(cluster.ConnectionMode, servers);
+#pragma warning restore 618
             }
         }
     }

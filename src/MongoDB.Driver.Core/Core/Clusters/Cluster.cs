@@ -91,7 +91,7 @@ namespace MongoDB.Driver.Core.Clusters
 
             _clusterId = new ClusterId();
 #pragma warning disable 618
-            _description = ClusterDescription.CreateInitial(_clusterId, _settings.ConnectionMode);
+            _description = ClusterDescription.CreateInitial(_clusterId, _settings.ConnectionMode, _settings.DirectConnection);
 #pragma warning restore 618
             _descriptionChangedTaskCompletionSource = new TaskCompletionSource<bool>();
             _latencyLimitingServerSelector = new LatencyLimitingServerSelector(settings.LocalThreshold);
@@ -159,7 +159,10 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 var newClusterDescription = new ClusterDescription(
                     _clusterId,
+#pragma warning disable 618
                     _description.ConnectionMode,
+#pragma warning restore 618
+                    _description.DirectConnection,
                     ClusterType.Unknown,
                     Enumerable.Empty<ServerDescription>());
 

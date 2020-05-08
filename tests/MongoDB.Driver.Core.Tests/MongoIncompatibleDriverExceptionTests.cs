@@ -41,7 +41,9 @@ namespace MongoDB.Driver
             var serverId = new ServerId(clusterId, endPoint);
             var server = new ServerDescription(serverId, endPoint, wireVersionRange: new Range<int>(0, 0), type: ServerType.Standalone);
             var servers = new[] { server };
+#pragma warning disable 618
             _clusterDescription = new ClusterDescription(clusterId, connectionMode, clusterType, servers);
+#pragma warning restore 618
         }
 
         [Fact]

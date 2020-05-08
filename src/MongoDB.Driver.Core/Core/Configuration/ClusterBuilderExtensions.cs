@@ -177,11 +177,7 @@ namespace MongoDB.Driver.Core.Configuration
             }
             if (connectionString.ReplicaSet != null)
             {
-                builder = builder.ConfigureCluster(s => s.With(
-#pragma warning disable 618
-                    connectionMode: ClusterConnectionMode.ReplicaSet,
-#pragma warning restore 618
-                    replicaSetName: connectionString.ReplicaSet));
+                builder = builder.ConfigureCluster(s => s.With(replicaSetName: connectionString.ReplicaSet));
             }
             if (connectionString.ServerSelectionTimeout != null)
             {

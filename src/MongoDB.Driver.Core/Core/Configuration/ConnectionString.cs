@@ -207,13 +207,11 @@ namespace MongoDB.Driver.Core.Configuration
         /// <summary>
         /// Gets the connection mode.
         /// </summary>
-#pragma warning disable 618
         [Obsolete("Use DirectConnection instead.")]
         public ClusterConnectionMode Connect
         {
             get { return _connect.GetValueOrDefault(); }
         }
-#pragma warning restore 618
 
         /// <summary>
         /// Gets the connect timeout.

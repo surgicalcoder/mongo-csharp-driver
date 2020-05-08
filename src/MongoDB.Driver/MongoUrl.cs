@@ -222,10 +222,8 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the connection mode.
         /// </summary>
-#pragma warning disable 618
         [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
-#pragma warning restore 618
         {
             get { return _connectionMode; }
         }

@@ -50,7 +50,9 @@ namespace MongoDB.Driver.Core.TestHelpers
                 servers.Add(server);
             }
 
+#pragma warning disable 618
             return new ClusterDescription(clusterId, connectionMode, clusterType, servers);
+#pragma warning restore 618
         }
 
         public static ClusterDescription Parse(string json)

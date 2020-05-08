@@ -254,7 +254,9 @@ namespace MongoDB.Driver.Tests
 #pragma warning restore 618
             var type = ClusterType.Sharded;
             var servers = new[] { serverDescription };
+#pragma warning disable 618
             var clusterDescription = new ClusterDescription(clusterId, connectionMode, type, servers);
+#pragma warning restore 618
 
             var mockCluster = new Mock<ICluster>();
             mockCluster.SetupGet(m => m.Description).Returns(clusterDescription);

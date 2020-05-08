@@ -72,7 +72,7 @@ namespace MongoDB.Driver.Core.Clusters
                 throw new ArgumentException("ClusterConnectionMode.Direct is not supported for a MultiServerCluster.");
             }
 #pragma warning restore 618
-            // DirectConnection is validated on the ClusterSetting level
+            // DirectConnection has been validated on the ClusterSetting level
 
             _dnsMonitorFactory = dnsMonitorFactory ?? new DnsMonitorFactory(eventSubscriber);
             _monitorServersCancellationTokenSource = new CancellationTokenSource();

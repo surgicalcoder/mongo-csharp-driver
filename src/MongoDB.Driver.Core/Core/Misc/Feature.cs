@@ -55,6 +55,7 @@ namespace MongoDB.Driver.Core.Misc
         private static readonly Feature __createIndexesUsingInsertOperations = new Feature("CreateIndexesUsingInsertOperations", new SemanticVersion(1, 0, 0), new SemanticVersion(4, 1, 1, ""));
         private static readonly Feature __currentOpCommand = new Feature("CurrentOpCommand", new SemanticVersion(3, 2, 0));
         private static readonly Feature __documentValidation = new Feature("DocumentValidation", new SemanticVersion(3, 2, 0));
+        private static readonly Feature __directConnection = new Feature("DirectConnection", new SemanticVersion(4, 4, 0));
         private static readonly Feature __eval = new Feature("Eval", new SemanticVersion(0, 0, 0), new SemanticVersion(4, 1, 0, ""));
         private static readonly Feature __explainCommand = new Feature("ExplainCommand", new SemanticVersion(3, 0, 0));
         private static readonly Feature __failPoints = new Feature("FailPoints", new SemanticVersion(2, 4, 0));
@@ -256,6 +257,11 @@ namespace MongoDB.Driver.Core.Misc
         /// Gets the document validation feature.
         /// </summary>
         public static Feature DocumentValidation => __documentValidation;
+
+        /// <summary>
+        /// Gets the directConnection feature.
+        /// </summary>
+        public static Feature DirectConnection => __directConnection;
 
         /// <summary>
         /// Gets the eval feature.

@@ -84,9 +84,7 @@ namespace MongoDB.Driver
             _allowInsecureTls = false;
             _applicationName = null;
             _compressors = new CompressorConfiguration[0];
-#pragma warning disable 618
-            _connectionMode = ConnectionMode.Automatic;
-#pragma warning restore 618
+            _connectionMode = null;
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _credentials = new MongoCredentialStore(new MongoCredential[0]);
             _directConnection = null;
@@ -198,12 +196,10 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the connection mode.
         /// </summary>
-#pragma warning disable 618
         [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
-#pragma warning restore 618
         {
-            get { return _connectionMode.GetValueOrDefault(); }
+            get { return _connectionMode.GetValueOrDefault(ConnectionMode.Automatic); }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
@@ -265,9 +261,9 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the direct connection.
         /// </summary>
-        public bool? DirectConnection
+        public bool DirectConnection
         {
-            get { return _directConnection; }
+            get { return _directConnection.GetValueOrDefault(); }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
@@ -755,7 +751,7 @@ namespace MongoDB.Driver
             serverSettings.ConnectTimeout = clientSettings.ConnectTimeout;
 #pragma warning disable 618
             serverSettings.Credentials = clientSettings.Credentials;
-            serverSettings.DirectConnection = clientSettings.DirectConnection;
+            serverSettings.DirectConnection = clientSettings.DirectConnection; //todo: not safe
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
                 serverSettings.GuidRepresentation = clientSettings.GuidRepresentation;
@@ -823,7 +819,7 @@ namespace MongoDB.Driver
                 }
                 serverSettings.Credential = credential;
             }
-            serverSettings.DirectConnection = url.DirectConnection;
+            serverSettings._directConnection = url.DirectConnection;  // use the private variable, because the public is not nullable
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
@@ -1172,7 +1168,17 @@ namespace MongoDB.Driver
 
             if (_connectionMode.HasValue && _directConnection.HasValue)
             {
-                throw new MongoConfigurationException("Specifying both connect and directConnection is invalid.");
+                throw new InvalidOperationException("Specifying both connect and directConnection is invalid.");
+            }
+
+            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && _directConnection.GetValueOrDefault())
+            {
+                throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
+            }
+
+            if (_servers.Count > 1 && _directConnection.GetValueOrDefault())
+            {
+                throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
             }
         }
     }

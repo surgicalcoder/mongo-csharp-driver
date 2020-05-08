@@ -20,10 +20,12 @@ using System.Security.Authentication;
 using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Compression;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
+using Moq;
 using Xunit;
 
 namespace MongoDB.Driver.Tests
@@ -128,6 +130,7 @@ namespace MongoDB.Driver.Tests
             var settings = new MongoClientSettings();
 #pragma warning disable 618
             Assert.Equal(ConnectionMode.Automatic, settings.ConnectionMode);
+            Assert.Equal(null, settings._connectionMode());
 
             var connectionMode = ConnectionMode.Direct;
             settings.ConnectionMode = connectionMode;
@@ -173,6 +176,7 @@ namespace MongoDB.Driver.Tests
 #pragma warning disable 618
             Assert.Equal(ConnectionMode.Automatic, settings.ConnectionMode);
 #pragma warning restore 618
+            Assert.Equal(null, settings._connectionMode());
             Assert.Equal(MongoDefaults.ConnectTimeout, settings.ConnectTimeout);
 #pragma warning disable 618
             Assert.Equal(0, settings.Credentials.Count());
@@ -213,6 +217,25 @@ namespace MongoDB.Driver.Tests
             Assert.Equal(MongoDefaults.WaitQueueTimeout, settings.WaitQueueTimeout);
             Assert.Equal(WriteConcern.Acknowledged, settings.WriteConcern);
             Assert.Equal(null, settings.SdamLogFilename);
+        }
+
+        [Fact]
+        public void TestDirectConnection()
+        {
+            var settings = new MongoClientSettings();
+            settings.DirectConnection.Should().Be(false);
+            settings._directConnection().Should().Be(null);
+
+            var directConnection = true;
+            settings.DirectConnection = directConnection;
+            settings.DirectConnection.Should().Be(directConnection);
+            settings._directConnection().Should().Be(directConnection);
+
+            settings.Freeze();
+            settings.DirectConnection.Should().Be(directConnection);
+            settings._directConnection().Should().Be(directConnection);
+            var exception = Record.Exception(() => settings.DirectConnection = false);
+            exception.Should().BeOfType<InvalidOperationException>();
         }
 
         [Fact]
@@ -396,6 +419,33 @@ namespace MongoDB.Driver.Tests
             settings.SslSettings.CheckCertificateRevocation = true;
 
             var exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+#pragma warning disable 618
+            settings.ConnectionMode = ConnectionMode.Automatic;
+#pragma warning restore 618
+
+            exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+            settings.Scheme = ConnectionStringScheme.MongoDBPlusSrv;
+
+            exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+            var endpoint = "test5.test.build.10gen.cc:53";
+            settings.Servers = new[] { MongoServerAddress.Parse(endpoint), MongoServerAddress.Parse(endpoint) };
+
+            exception = Record.Exception(() => settings.Freeze());
 
             exception.Should().BeOfType<InvalidOperationException>();
         }
@@ -1090,5 +1140,13 @@ namespace MongoDB.Driver.Tests
 #pragma warning restore 618
             result.WaitQueueTimeout.Should().Be(subject.WaitQueueTimeout);
         }
+    }
+
+    internal static class MongoClientSettingsReflector
+    {
+#pragma warning disable 618
+        public static ConnectionMode? _connectionMode(this MongoClientSettings mongoClientSettings) => (ConnectionMode?)Reflector.GetFieldValue(mongoClientSettings, nameof(_connectionMode));
+#pragma warning restore 618
+        public static bool? _directConnection(this MongoClientSettings mongoClientSettings) => (bool?)Reflector.GetFieldValue(mongoClientSettings, nameof(_directConnection));
     }
 }
