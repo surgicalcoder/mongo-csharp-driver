@@ -62,6 +62,7 @@ namespace MongoDB.Driver.Core.Servers
         private readonly EndPoint _endPoint;
         private readonly IServerMonitor _monitor;
         private readonly ServerId _serverId;
+        private ServerDescription _currentDescription;
         private readonly ServerSettings _settings;
         private readonly InterlockedInt32 _state;
 
@@ -90,6 +91,7 @@ namespace MongoDB.Driver.Core.Servers
             _connectionPool = connectionPoolFactory.CreateConnectionPool(_serverId, endPoint);
             _state = new InterlockedInt32(State.Initial);
             _monitor = serverMonitorFactory.Create(_serverId, _endPoint);
+            _currentDescription = _monitor.Description;
 
             eventSubscriber.TryGetEventHandler(out _openingEventHandler);
             eventSubscriber.TryGetEventHandler(out _openedEventHandler);
@@ -99,7 +101,7 @@ namespace MongoDB.Driver.Core.Servers
         }
 
         // properties
-        public ServerDescription Description => _monitor.Description;
+        public ServerDescription Description => Interlocked.CompareExchange(ref _currentDescription, value: null, comparand: null);
 
         public EndPoint EndPoint => _endPoint;
 
@@ -121,7 +123,7 @@ namespace MongoDB.Driver.Core.Servers
 
                 var stopwatch = Stopwatch.StartNew();
                 _monitor.Dispose();
-                _monitor.DescriptionChanged -= OnDescriptionChanged;
+                _monitor.DescriptionChanged -= OnMonitorDescriptionChanged;
                 _connectionPool.Dispose();
                 stopwatch.Stop();
 
@@ -150,7 +152,7 @@ namespace MongoDB.Driver.Core.Servers
             }
             catch (Exception ex)
             {
-                HandleBeforeHandshakeCompletesException(ex);
+                HandleBeforeHandshakeCompletesException(connection, ex);
 
                 connection.Dispose();
                 throw;
@@ -174,7 +176,7 @@ namespace MongoDB.Driver.Core.Servers
             }
             catch (Exception ex)
             {
-                HandleBeforeHandshakeCompletesException(ex);
+                HandleBeforeHandshakeCompletesException(connection, ex);
 
                 connection.Dispose();
                 throw;
@@ -192,7 +194,7 @@ namespace MongoDB.Driver.Core.Servers
 
                 var stopwatch = Stopwatch.StartNew();
                 _connectionPool.Initialize();
-                _monitor.DescriptionChanged += OnDescriptionChanged;
+                _monitor.DescriptionChanged += OnMonitorDescriptionChanged;
                 _monitor.Initialize();
                 stopwatch.Stop();
 
@@ -203,10 +205,16 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
+        [Obsolete("Use Invalidate with TopologyDescription instead.")]
         public void Invalidate(string reasonInvalidated)
         {
+           Invalidate(reasonInvalidated, responseTopologyDescription: null);
+        }
+
+        public void Invalidate(string reasonInvalidated, TopologyDescription? responseTopologyDescription)
+        {
             ThrowIfNotOpen();
-            Invalidate(reasonInvalidated, clearConnectionPool: true);
+            Invalidate(reasonInvalidated, clearConnectionPool: true, responseTopologyDescription);
         }
 
         public void RequestHeartbeat()
@@ -233,9 +241,20 @@ namespace MongoDB.Driver.Core.Servers
                 try { handler(this, e); }
                 catch { } // ignore exceptions
             }
+
         }
 
-        private void HandleChannelException(IConnection connection, Exception ex)
+        private void OnMonitorDescriptionChanged(object sender, ServerDescriptionChangedEventArgs e)
+        {
+            var currentDescription = Interlocked.CompareExchange(ref _currentDescription, value: null, comparand: null);
+            if (e.NewServerDescription.HeartbeatException != null ||
+                currentDescription.TopologyVersion.IsStalerThanServerResponse(e.NewServerDescription.TopologyVersion))
+            {
+                SetDescription(e.NewServerDescription);
+            }
+        }
+
+        private void HandleChannelException(IConnectionHandle connection, Exception ex)
         {
             if (_state.Value != State.Open)
             {
@@ -258,10 +277,15 @@ namespace MongoDB.Driver.Core.Servers
                 return;
             }
 
-            if (ShouldInvalidateServer(ex))
+            if (connection.Generation < _connectionPool.Generation)
+            {
+                return; // stale generation number
+            }
+
+            if (ShouldInvalidateServer(connection, ex, Description, out TopologyDescription? responseTopologyVersion))
             {
                 var shouldClearConnectionPool = ShouldClearConnectionPoolForChannelException(ex, connection.Description.ServerVersion);
-                Invalidate($"ChannelException:{ex}", shouldClearConnectionPool);
+                Invalidate($"ChannelException:{ex}", shouldClearConnectionPool, responseTopologyVersion);
             }
             else
             {
@@ -269,28 +293,32 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        private void HandleBeforeHandshakeCompletesException(Exception ex)
+        private void HandleBeforeHandshakeCompletesException(IConnectionHandle connection, Exception ex)
         {
             if (ex is MongoAuthenticationException)
             {
                 _connectionPool.Clear();
                 return;
             }
+            if (connection.Generation != _connectionPool.Generation)
+            {
+                return; // stale generation number
+            }
 
             if (ex is MongoConnectionException connectionException &&
                 (connectionException.IsNetworkException || connectionException.ContainsSocketTimeoutException))
             {
-                Invalidate($"ChannelException during handshake: {ex}.", clearConnectionPool: true);
+                Invalidate($"ChannelException during handshake: {ex}.", clearConnectionPool: true, responseTopologyVersion: null);
             }
         }
 
-        private void Invalidate(string reasonInvalidated, bool clearConnectionPool)
+        private void Invalidate(string reasonInvalidated, bool clearConnectionPool, TopologyDescription? responseTopologyVersion)
         {
             if (clearConnectionPool)
             {
                 _connectionPool.Clear();
             }
-            _monitor.Invalidate(reasonInvalidated);
+            _monitor.Invalidate(reasonInvalidated, responseTopologyVersion);
         }
 
         private bool IsNotMaster(ServerErrorCode code, string message)
@@ -314,9 +342,33 @@ namespace MongoDB.Driver.Core.Servers
             return false;
         }
 
-        private bool IsNotMasterOrRecovering(ServerErrorCode code, string message)
+        private bool IsNotMasterErrorException(Exception exception)
+        {
+            return
+                exception is MongoCommandException commandException &&
+                IsNotMaster((ServerErrorCode)commandException.Code, commandException.ErrorMessage);
+        }
+
+        private bool IsStateChangeError(ServerErrorCode code, string message)
         {
             return IsNotMaster(code, message) || IsRecovering(code, message);
+        }
+
+        private bool IsShutdownError(ServerErrorCode errorCode)
+        {
+            switch (errorCode)
+            {
+                case ServerErrorCode.InterruptedAtShutdown: // 1160
+                case ServerErrorCode.ShutdownInProgress: // 91
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private bool IsShutdownErrorException(Exception exception)
+        {
+            return exception is MongoCommandException commandException && IsShutdownError((ServerErrorCode)commandException.Code);
         }
 
         private bool IsRecovering(ServerErrorCode code, string message)
@@ -343,26 +395,58 @@ namespace MongoDB.Driver.Core.Servers
             return false;
         }
 
-        private bool ShouldClearConnectionPoolForChannelException(Exception ex, SemanticVersion serverVersion)
+        private bool IsRecoveringErrorException(Exception exception)
         {
-            if (ex is MongoNotPrimaryException mongoNotPrimaryException && mongoNotPrimaryException.Code == (int)ServerErrorCode.NotMaster)
-            {
-                return !Feature.KeepConnectionPoolWhenNotMasterConnectionException.IsSupported(serverVersion);
-            }
-
-            return true;
+            return
+                exception is MongoCommandException commandException &&
+                IsRecovering((ServerErrorCode)commandException.Code, commandException.ErrorMessage);
         }
 
-        private bool ShouldInvalidateServer(Exception exception)
+        private void SetDescription(ServerDescription newDescription)
+        {
+            var oldDescription = Interlocked.CompareExchange(ref _currentDescription, null, null);
+            SetDescription(oldDescription, newDescription);
+        }
+
+        private void SetDescription(ServerDescription oldDescription, ServerDescription newDescription)
+        {
+            Interlocked.Exchange(ref _currentDescription, newDescription);
+            OnDescriptionChanged(sender: this, new ServerDescriptionChangedEventArgs(oldDescription, newDescription));
+        }
+
+        private bool ShouldClearConnectionPoolForChannelException(Exception ex, SemanticVersion serverVersion)
+        {
+            if (ex is MongoConnectionException mongoCommandException &&
+                mongoCommandException.IsNetworkException &&
+                !mongoCommandException.ContainsSocketTimeoutException)
+            {
+                return true;
+            }
+            if (IsNotMasterErrorException(ex) || IsRecoveringErrorException(ex))
+            {
+                return
+                    IsShutdownErrorException(ex) ||
+                    !Feature.KeepConnectionPoolWhenNotMasterConnectionException.IsSupported(serverVersion); // i.e. serverVersion < 4.1.10
+            }
+            return false;
+        }
+
+        private bool ShouldInvalidateServer(
+            IConnectionHandle connection,
+            Exception exception,
+            ServerDescription description,
+            out TopologyDescription? responseTopologyVersion)
         {
             if (exception is MongoConnectionException mongoConnectionException &&
                 mongoConnectionException.ContainsSocketTimeoutException)
             {
+                responseTopologyVersion = null;
                 return false;
             }
 
             if (__invalidatingExceptions.Contains(exception.GetType()))
             {
+                responseTopologyVersion = null;
                 return true;
             }
 
@@ -372,9 +456,9 @@ namespace MongoDB.Driver.Core.Servers
                 var code = (ServerErrorCode)commandException.Code;
                 var message = commandException.ErrorMessage;
 
-                if (IsNotMasterOrRecovering(code, message))
+                if (IsStateChangeError(code, message))
                 {
-                    return true;
+                    return !IsStaleStateChangeError(commandException.Result, out responseTopologyVersion);
                 }
 
                 if (commandException.GetType() == typeof(MongoWriteConcernException))
@@ -388,15 +472,25 @@ namespace MongoDB.Driver.Core.Servers
                         code = (ServerErrorCode)writeConcernError.GetValue("code", -1).ToInt32();
                         message = writeConcernError.GetValue("errmsg", null)?.AsString;
 
-                        if (IsNotMasterOrRecovering(code, message))
+                        if (IsStateChangeError(code, message))
                         {
-                            return true;
+                            return !IsStaleStateChangeError(commandException.Result, out responseTopologyVersion);
                         }
                     }
                 }
             }
 
+            responseTopologyVersion = null;
             return false;
+
+            bool IsStaleStateChangeError(BsonDocument response, out TopologyDescription? responseTopologyDescriptionVersion)
+            {
+                responseTopologyDescriptionVersion = TopologyDescription.FromMongoCommandResponse(response);
+                return description.TopologyVersion.IsFresherThanOrEqualToServerResponse( responseTopologyDescriptionVersion);
+                // We use FresherThanOrEqualTo because a state change should come with a new topology version
+                // This is equivalent to description.TopologyVersion.CompareFreshnessToServerResponse(responseTopologyDescriptionVersion) >= 0;
+            }
+
         }
 
         private void ThrowIfDisposed()

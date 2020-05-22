@@ -134,6 +134,15 @@ namespace MongoDB.Driver.Core.Connections
     /// </summary>
     public interface IConnectionHandle : IConnection
     {
+        // properties
+        /// <summary>
+        /// Gets the generation of the pool when this connection was created.
+        /// </summary>
+        /// <value>
+        /// The generation of the pool when this connection was created.
+        /// </value>
+        int Generation { get; }
+
         // methods
         /// <summary>
         /// A new handle to the underlying connection.

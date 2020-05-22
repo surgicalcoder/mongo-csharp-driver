@@ -68,6 +68,9 @@ namespace MongoDB.Driver.Core.Servers
             eventSubscriber.TryGetEventHandler(out _sdamInformationEventHandler);
         }
 
+        /// <summary>
+        /// The monitor's view of the server, which could be considered stale relative to the <see cref="Server"/>'s view.
+        /// </summary>
         public ServerDescription Description => Interlocked.CompareExchange(ref _currentDescription, null, null);
 
         public void Dispose()
@@ -91,9 +94,13 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        public void Invalidate(string reasonInvalidated)
+        public void Invalidate(string reasonInvalidated, TopologyDescription? responseTopologyVersion)
         {
-            SetDescription(_baseDescription.With($"InvalidatedBecause:{reasonInvalidated}", lastUpdateTimestamp: DateTime.UtcNow));
+            var newDescription = _baseDescription.With(
+                    $"InvalidatedBecause:{reasonInvalidated}",
+                    lastUpdateTimestamp: DateTime.UtcNow,
+                    topologyVersion: responseTopologyVersion);
+            SetDescription(newDescription);
             RequestHeartbeat();
         }
 
@@ -226,6 +233,7 @@ namespace MongoDB.Driver.Core.Servers
                     replicaSetConfig: isMasterResult.GetReplicaSetConfig(),
                     state: ServerState.Connected,
                     tags: isMasterResult.Tags,
+                    topologyVersion: isMasterResult.TopologyVersion,
                     type: isMasterResult.ServerType,
                     version: buildInfoResult.ServerVersion,
                     wireVersionRange: new Range<int>(isMasterResult.MinWireVersion, isMasterResult.MaxWireVersion));
