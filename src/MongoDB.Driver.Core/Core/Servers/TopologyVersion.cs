@@ -247,7 +247,9 @@ namespace MongoDB.Driver.Core.Servers
     }
 
     /// <summary>
-    /// Extensions for Nullable TopologyVersion
+    /// Extensions for Nullable TopologyVersion.
+    /// Provides logic for comparing a TopologyVersion with a null, a null with TopologyVersion, and
+    /// a null TopologyVersion? with a null TopologyVersion?.
     /// </summary>
     public static class NullableTopologyVersionExtensions
     {
