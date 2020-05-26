@@ -234,7 +234,7 @@ namespace MongoDB.Driver.Core.Servers
         public BsonDocument ToBsonDocument() => new BsonDocument {{"processId", _processId}, {"counter", _counter}};
 
         /// <inheritdoc/>
-        public override string ToString() => $"{{ ProcessId : {_processId}, Counter : '{_counter}' }}";
+        public override string ToString() => $"{{ processId : {_processId}, counter : '{_counter}' }}";
 
         // explicit interface implementations
 #if NET452 || NETSTANDARD2_0

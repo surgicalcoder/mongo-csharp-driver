@@ -229,6 +229,5 @@ namespace MongoDB.Driver.Core.Helpers
                 default: throw new ArgumentException($"Unknown wire version: {wireVersion}");
             }
         }
-
     }
 }
