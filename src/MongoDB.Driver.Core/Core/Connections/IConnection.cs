@@ -58,6 +58,14 @@ namespace MongoDB.Driver.Core.Connections
         EndPoint EndPoint { get; }
 
         /// <summary>
+        /// Gets the generation of the pool when this connection was created.
+        /// </summary>
+        /// <value>
+        /// The generation of the pool when this connection was created.
+        /// </value>
+        int Generation { get; }
+
+        /// <summary>
         /// Gets a value indicating whether this instance is expired.
         /// </summary>
         /// <value>
@@ -135,14 +143,6 @@ namespace MongoDB.Driver.Core.Connections
     public interface IConnectionHandle : IConnection
     {
         // properties
-        /// <summary>
-        /// Gets the generation of the pool when this connection was created.
-        /// </summary>
-        /// <value>
-        /// The generation of the pool when this connection was created.
-        /// </value>
-        int Generation { get; }
-
         // methods
         /// <summary>
         /// A new handle to the underlying connection.

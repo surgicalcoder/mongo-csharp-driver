@@ -512,12 +512,12 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
         {
             return (IConnectionPool)Reflector.GetFieldValue(server, nameof(_connectionPool));
         }
-        public static void HandleBeforeHandshakeCompletesException(this Server server, IConnectionHandle connection, Exception ex)
+        public static void HandleBeforeHandshakeCompletesException(this Server server, IConnection connection, Exception ex)
         {
             Reflector.Invoke(server, nameof(HandleBeforeHandshakeCompletesException), connection, ex);
         }
 
-        public static void HandleChannelException(this Server server, IConnectionHandle connection, Exception ex)
+        public static void HandleChannelException(this Server server, IConnection connection, Exception ex)
         {
             Reflector.Invoke(server, nameof(HandleChannelException), connection, ex);
         }

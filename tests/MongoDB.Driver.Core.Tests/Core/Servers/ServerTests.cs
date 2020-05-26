@@ -742,7 +742,7 @@ namespace MongoDB.Driver.Core.Servers
 
     internal static class ServerReflector
     {
-        public static void HandleChannelException(this Server server, IConnectionHandle connection, Exception ex)
+        public static void HandleChannelException(this Server server, IConnection connection, Exception ex)
         {
             Reflector.Invoke(server, nameof(HandleChannelException), connection, ex);
         }

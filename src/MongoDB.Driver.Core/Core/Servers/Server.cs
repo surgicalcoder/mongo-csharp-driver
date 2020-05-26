@@ -253,7 +253,7 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        private void HandleChannelException(IConnectionHandle connection, Exception ex)
+        private void HandleChannelException(IConnection connection, Exception ex)
         {
             if (_state.Value != State.Open)
             {
@@ -292,7 +292,7 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        private void HandleBeforeHandshakeCompletesException(IConnectionHandle connection, Exception ex)
+        private void HandleBeforeHandshakeCompletesException(IConnection connection, Exception ex)
         {
             if (ex is MongoAuthenticationException)
             {
@@ -425,7 +425,7 @@ namespace MongoDB.Driver.Core.Servers
         }
 
         private bool ShouldInvalidateServer(
-            IConnectionHandle connection,
+            IConnection connection,
             Exception exception,
             ServerDescription description,
             out TopologyVersion? responseTopologyVersion)
