@@ -85,7 +85,8 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             {
                 case "command":
                     var response = applicationError["response"].AsBsonDocument;
-                    simulatedException = new MongoCommandException(connectionId, "Link start!", command: null, result: response);
+                    simulatedException = ExceptionMapper.MapNotPrimaryOrNodeIsRecovering(connectionId, new BsonDocument {{"link", "start"}}, response, "errmsg");
+                    Ensure.IsNotNull(simulatedException, nameof(simulatedException));
                     break;
                 case "network":
                 {
@@ -273,7 +274,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             foreach (var actualServerDescription in actualDescription.Servers)
             {
                 var expectedServer = expectedServers.Single(x => EndPointHelper.EndPointEqualityComparer.Equals(x.EndPoint, actualServerDescription.EndPoint));
-                VerifyServerDescription(actualServerDescription, expectedServer.Description);
+                VerifyServerDescription(actualServerDescription, expectedServer.Description, phaseDescription);
                 VerifyServerPropertiesNotInServerDescription(_serverFactory.GetServer(actualServerDescription.EndPoint), expectedServer.Description, phaseDescription);
             }
 			if (outcome.TryGetValue("maxSetVersion", out var maxSetVersion))
@@ -329,7 +330,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             }
         }
 
-        private void VerifyServerDescription(ServerDescription actualDescription, BsonDocument expectedDescription)
+        private void VerifyServerDescription(ServerDescription actualDescription, BsonDocument expectedDescription, string phaseDescription)
         {
             JsonDrivenHelper.EnsureAllFieldsAreValid(expectedDescription, "electionId", "pool", "setName", "setVersion", "topologyVersion", "type");
 
@@ -411,7 +412,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                     case BsonDocument topologyVersion:
                         TopologyVersion? expectedTopologyType = TopologyVersion.FromBsonDocument(topologyVersion);
                         expectedTopologyType.Should().NotBeNull();
-                        actualDescription.TopologyVersion.Should().Be(expectedTopologyType);
+                        actualDescription.TopologyVersion.Should().Be(expectedTopologyType, phaseDescription);
                         break;
                     case BsonNull _:
                         actualDescription.TopologyVersion.Should().BeNull();
