@@ -274,7 +274,7 @@ namespace MongoDB.Driver.Core.Servers
                 return;
             }
 
-            if (connection.Generation < _connectionPool.Generation)
+            if (connection.Generation != _connectionPool.Generation)
             {
                 return; // stale generation number
             }
@@ -424,18 +424,18 @@ namespace MongoDB.Driver.Core.Servers
             IConnection connection,
             Exception exception,
             ServerDescription description,
-            out TopologyVersion? responseTopologyVersion)
+            out TopologyVersion? invalidatingResponseTopologyVersion)
         {
             if (exception is MongoConnectionException mongoConnectionException &&
                 mongoConnectionException.ContainsSocketTimeoutException)
             {
-                responseTopologyVersion = null;
+                invalidatingResponseTopologyVersion = null;
                 return false;
             }
 
             if (__invalidatingExceptions.Contains(exception.GetType()))
             {
-                responseTopologyVersion = null;
+                invalidatingResponseTopologyVersion = null;
                 return true;
             }
 
@@ -447,7 +447,7 @@ namespace MongoDB.Driver.Core.Servers
 
                 if (IsStateChangeError(code, message))
                 {
-                    return !IsStaleStateChangeError(commandException.Result, out responseTopologyVersion);
+                    return !IsStaleStateChangeError(commandException.Result, out invalidatingResponseTopologyVersion);
                 }
 
                 if (commandException.GetType() == typeof(MongoWriteConcernException))
@@ -463,19 +463,29 @@ namespace MongoDB.Driver.Core.Servers
 
                         if (IsStateChangeError(code, message))
                         {
-                            return !IsStaleStateChangeError(commandException.Result, out responseTopologyVersion);
+                            return !IsStaleStateChangeError(commandException.Result, out invalidatingResponseTopologyVersion);
                         }
                     }
                 }
             }
 
-            responseTopologyVersion = null;
+            invalidatingResponseTopologyVersion = null;
             return false;
 
-            bool IsStaleStateChangeError(BsonDocument response, out TopologyVersion? responseTopologyDescriptionVersion)
+            bool IsStaleStateChangeError(BsonDocument response, out TopologyVersion? nonStaleResponseTopologyVersion)
             {
-                responseTopologyDescriptionVersion = TopologyVersion.FromMongoCommandResponse(response);
-                return description.TopologyVersion.IsFresherThanOrEqualToServerResponse( responseTopologyDescriptionVersion);
+                if (_connectionPool.Generation > connection.Generation)
+                {
+                    // stale generation number
+                    nonStaleResponseTopologyVersion = null;
+                    return true;
+                }
+
+                var responseTopologyVersion = TopologyVersion.FromMongoCommandResponse(response);
+                bool isStale = description.TopologyVersion.IsFresherThanOrEqualToServerResponse(responseTopologyVersion);
+
+                nonStaleResponseTopologyVersion = isStale ? null : responseTopologyVersion;
+                return isStale;
                 // We use FresherThanOrEqualTo because a state change should come with a new topology version
                 // This is equivalent to description.TopologyVersion.CompareFreshnessToServerResponse(responseTopologyDescriptionVersion) >= 0;
             }
