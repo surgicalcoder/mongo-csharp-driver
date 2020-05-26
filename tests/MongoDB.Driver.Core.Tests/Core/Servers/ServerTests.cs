@@ -557,7 +557,8 @@ namespace MongoDB.Driver.Core.Servers
             var serverId = new ServerId(clusterId, new DnsEndPoint("localhost", 27017));
             var connectionId = new ConnectionId(serverId);
             var command = new BsonDocument("command", 1);
-            var commandResult = new BsonDocument("ok", 1);
+            var notMasterResult = new BsonDocument {{ "code", ServerErrorCode.NotMaster}};
+            var nodeIsRecoveringResult = new BsonDocument("code", ServerErrorCode.InterruptedAtShutdown);
 
             switch (exceptionTypeName)
             {
@@ -565,8 +566,8 @@ namespace MongoDB.Driver.Core.Servers
                 case nameof(Exception): exception = new Exception(); break;
                 case nameof(IOException): exception = new IOException(); break;
                 case nameof(MongoConnectionException): exception = new MongoConnectionException(connectionId, "message"); break;
-                case nameof(MongoNodeIsRecoveringException): exception = new MongoNodeIsRecoveringException(connectionId, command, commandResult); break;
-                case nameof(MongoNotPrimaryException): exception = new MongoNotPrimaryException(connectionId, command, commandResult); break;
+                case nameof(MongoNodeIsRecoveringException): exception = new MongoNodeIsRecoveringException(connectionId, command, notMasterResult); break;
+                case nameof(MongoNotPrimaryException): exception = new MongoNotPrimaryException(connectionId, command, nodeIsRecoveringResult); break;
                 case nameof(SocketException): exception = new SocketException(); break;
                 case "MongoConnectionExceptionWithSocketTimeout":
                     var innermostException =  new SocketException((int)SocketError.TimedOut);

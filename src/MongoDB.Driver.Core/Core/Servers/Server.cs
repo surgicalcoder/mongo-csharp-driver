@@ -46,8 +46,6 @@ namespace MongoDB.Driver.Core.Servers
         // static fields
         private static readonly List<Type> __invalidatingExceptions = new List<Type>
         {
-            typeof(MongoNotPrimaryException),
-            typeof(MongoNodeIsRecoveringException),
             typeof(MongoConnectionException),
             typeof(SocketException),
             typeof(EndOfStreamException),
@@ -396,9 +394,7 @@ namespace MongoDB.Driver.Core.Servers
 
         private bool IsRecoveringErrorException(Exception exception)
         {
-            return
-                exception is MongoCommandException commandException &&
-                IsRecovering((ServerErrorCode)commandException.Code, commandException.ErrorMessage);
+            return exception is MongoNodeIsRecoveringException;
         }
 
         private void SetDescription(ServerDescription newDescription)
