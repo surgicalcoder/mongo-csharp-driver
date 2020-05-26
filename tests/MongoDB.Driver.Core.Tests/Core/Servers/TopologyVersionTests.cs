@@ -26,7 +26,7 @@ using Xunit;
 
 namespace MongoDB.Driver.Core.Servers
 {
-    public class TopologyDescriptionTests
+    public class TopologyVersionTests
     {
         [Fact]
         public void Constructor_should_properly_initialize_instance()
@@ -34,7 +34,7 @@ namespace MongoDB.Driver.Core.Servers
             var processId = ObjectId.Empty;
             var counter = 42L;
 
-            var subject = new TopologyDescription(processId, counter);
+            var subject = new TopologyVersion(processId, counter);
 
             subject.ProcessId.Should().Be(processId);
             subject.Counter.Should().Be(counter);
@@ -46,8 +46,8 @@ namespace MongoDB.Driver.Core.Servers
             var processId = ObjectId.Empty;
             var counter = 31L;
 
-            TopologyDescription? nullResponse = null;
-            TopologyDescription? nonNullResponse = new TopologyDescription(processId, counter);
+            TopologyVersion? nullResponse = null;
+            TopologyVersion? nonNullResponse = new TopologyVersion(processId, counter);
 
             nullResponse.CompareFreshnessToServerResponse(nonNullResponse).Should().BeNegative();
             nullResponse.IsStalerThanServerResponse(nonNullResponse).Should().BeTrue();
@@ -69,8 +69,8 @@ namespace MongoDB.Driver.Core.Servers
             var processId2 = ObjectId.GenerateNewId();
             var counter = 42L;
 
-            var subject1 = new TopologyDescription(processId1, counter);
-            var subject2 = new TopologyDescription(processId2, counter);
+            var subject1 = new TopologyVersion(processId1, counter);
+            var subject2 = new TopologyVersion(processId2, counter);
             var local = subject1;
             var serverResponse = subject2;
 
@@ -94,8 +94,8 @@ namespace MongoDB.Driver.Core.Servers
             var processId2 = ObjectId.Empty;
             var counter = 42L;
 
-            var older = new TopologyDescription(processId1, counter);
-            var newer = new TopologyDescription(processId2, counter + 1);
+            var older = new TopologyVersion(processId1, counter);
+            var newer = new TopologyVersion(processId2, counter + 1);
 
             older.CompareFreshnessToServerResponse(newer).Should().BeNegative();
             older.IsStalerThanServerResponse(newer).Should().BeTrue();
@@ -112,8 +112,8 @@ namespace MongoDB.Driver.Core.Servers
             var processId = ObjectId.Empty;
             var counter = 42L;
 
-            var subject1 = new TopologyDescription(processId, counter);
-            var subject2 = new TopologyDescription(processId, counter + 1);
+            var subject1 = new TopologyVersion(processId, counter);
+            var subject2 = new TopologyVersion(processId, counter + 1);
 
             subject1.Equals(subject2).Should().BeFalse();
             subject1.Equals((object)subject2).Should().BeFalse();
@@ -134,8 +134,8 @@ namespace MongoDB.Driver.Core.Servers
             var processId2 = ObjectId.GenerateNewId();
             var counter = 42L;
 
-            var subject1 = new TopologyDescription(processId1, counter);
-            var subject2 = new TopologyDescription(processId2, counter);
+            var subject1 = new TopologyVersion(processId1, counter);
+            var subject2 = new TopologyVersion(processId2, counter);
 
             subject1.Equals(subject2).Should().BeFalse();
             subject1.Equals((object)subject2).Should().BeFalse();
@@ -155,8 +155,8 @@ namespace MongoDB.Driver.Core.Servers
             var processId = ObjectId.Empty;
             var counter = 42L;
 
-            var subject1 = new TopologyDescription(processId, counter);
-            var subject2 = new TopologyDescription(processId, counter);
+            var subject1 = new TopologyVersion(processId, counter);
+            var subject2 = new TopologyVersion(processId, counter);
 
             subject1.Equals(subject2).Should().BeTrue();
             subject2.Equals(subject1).Should().BeTrue();
@@ -181,7 +181,7 @@ namespace MongoDB.Driver.Core.Servers
             var counter = 31L;
             var topologyVersionDocument = new BsonDocument {{"processId", processId}, {"counter", counter}};
 
-            TopologyDescription? subject = TopologyDescription.FromBsonDocument(topologyVersionDocument);
+            TopologyVersion? subject = TopologyVersion.FromBsonDocument(topologyVersionDocument);
 
             subject.Should().NotBeNull();
         }
@@ -191,7 +191,7 @@ namespace MongoDB.Driver.Core.Servers
         {
             var invalidTopologyVersionDocument = new BsonDocument("counter", 31);
 
-            TopologyDescription? subject = TopologyDescription.FromBsonDocument(invalidTopologyVersionDocument);
+            TopologyVersion? subject = TopologyVersion.FromBsonDocument(invalidTopologyVersionDocument);
 
             subject.Should().BeNull();
         }
@@ -202,12 +202,25 @@ namespace MongoDB.Driver.Core.Servers
             var processId = ObjectId.Empty;
             var counter = 31L;
 
-            var local = new TopologyDescription(processId, counter);
+            var local = new TopologyVersion(processId, counter);
             var serverResponse = local;
 
             (local == serverResponse).Should().BeTrue();
             local.IsStalerThanServerResponse(serverResponse).Should().BeTrue();
             local.IsFresherThanServerResponse(serverResponse).Should().BeFalse();
+        }
+
+        [Fact]
+        public void ToBsonDocument_should_return_expected()
+        {
+            var processId = ObjectId.Empty;
+            var counter = 31L;
+
+            var subject = new TopologyVersion(processId, counter);
+            var document = subject.ToBsonDocument();
+
+            document["counter"].Should().Be(counter);
+            document["processId"].Should().Be(processId);
         }
     }
 }

@@ -30,9 +30,9 @@ namespace MongoDB.Driver.Core.Servers
     /// </summary>
 #if NET452 || NETSTANDARD2_0
     [Serializable]
-    public readonly struct TopologyDescription : IEquatable<TopologyDescription>, ISerializable
+    public readonly struct TopologyVersion : IEquatable<TopologyVersion>, ISerializable, IConvertibleToBsonDocument
 #else
-    public readonly struct TopologyDescription : IEquatable<TopologyDescription>
+    public readonly struct TopologyVersion : IEquatable<TopologyVersion>, IConvertibleToBsonDocument
 #endif
     {
         // fields
@@ -42,11 +42,11 @@ namespace MongoDB.Driver.Core.Servers
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="TopologyDescription"/> class.
+        /// Initializes a new instance of the <see cref="TopologyVersion"/> class.
         /// </summary>
         /// <param name="processId">The process identifier.</param>
         /// <param name="counter">The counter.</param>
-        public TopologyDescription(ObjectId processId, long counter)
+        public TopologyVersion(ObjectId processId, long counter)
         {
             _processId = processId;
             _counter = counter;
@@ -54,7 +54,7 @@ namespace MongoDB.Driver.Core.Servers
         }
 
 #if NET452 || NETSTANDARD2_0
-        private TopologyDescription(SerializationInfo info, StreamingContext context)
+        private TopologyVersion(SerializationInfo info, StreamingContext context)
         {
             _processId = (ObjectId) info.GetValue("_processId", typeof(ObjectId));
             _counter = (long) info.GetValue("_counter", typeof(long));
@@ -83,38 +83,38 @@ namespace MongoDB.Driver.Core.Servers
         /// <summary>
         /// Gets whether <paramref name="x"/>.Equals(<paramref name="y"/>).
         /// </summary>
-        /// <param name="x">A TopologyDescription.</param>
-        /// <param name="y">A TopologyDescription.</param>
+        /// <param name="x">A TopologyVersion.</param>
+        /// <param name="y">A TopologyVersion.</param>
         /// <returns>
         /// Whether <paramref name="x"/>.Equals(<paramref name="y"/>).
         /// </returns>
-        public static bool operator ==(TopologyDescription x, TopologyDescription y) => CompareFreshnessOfLocalToServerResponse(x, y) == 0;
+        public static bool operator ==(TopologyVersion x, TopologyVersion y) => CompareFreshnessOfLocalToServerResponse(x, y) == 0;
 
         /// <summary>
         /// Gets whether <paramref name="x"/>  != (<paramref name="y"/>).
         /// </summary>
-        /// <param name="x">A TopologyDescription.</param>
-        /// <param name="y">A TopologyDescription.</param>
+        /// <param name="x">A TopologyVersion.</param>
+        /// <param name="y">A TopologyVersion.</param>
         /// <returns>
         /// Whether <paramref name="x"/> != (<paramref name="y"/>).
         /// </returns>
-        public static bool operator !=(TopologyDescription x, TopologyDescription y) => CompareFreshnessOfLocalToServerResponse(x, y) != 0;
+        public static bool operator !=(TopologyVersion x, TopologyVersion y) => CompareFreshnessOfLocalToServerResponse(x, y) != 0;
 
         /// <summary>
-        /// Compares a local TopologyDescription with aserver's TopologyDescription and indicates whether the local
-        /// TopologyDescription is staler, fresher, or equal to the server's TopologyDescription.
+        /// Compares a local TopologyVersion with aserver's TopologyVersion and indicates whether the local
+        /// TopologyVersion is staler, fresher, or equal to the server's TopologyVersion.
         /// Per the SDAM specification, if the ProcessIds are not equal, this method assumes that
         /// <paramref name="serverResponse"/> is more recent. This means that this method does not exhibit
         /// the reversal properties of inequalities i.e. a "&lt;" b does not imply b "&gt;" a.
         /// </summary>
-        /// <param name="local"> The locally saved TopologyDescription. </param>
-        /// <param name="serverResponse">The TopologyDescription received from a server.</param>
+        /// <param name="local"> The locally saved TopologyVersion. </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server.</param>
         /// <returns>
         /// Less than zero indicates that the local description is older than the response.
         /// Zero indicates that the local description is equal to the response.
         /// Greater than zero indicates that the local description is newer than the response.
         /// </returns>
-        public static int CompareFreshnessOfLocalToServerResponse(TopologyDescription local, TopologyDescription serverResponse)
+        public static int CompareFreshnessOfLocalToServerResponse(TopologyVersion local, TopologyVersion serverResponse)
         {
             // Per the spec, if the ProcessIds are not equal, this method assumes that serverResponse is more recent
             // See https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#topologyversion-comparison
@@ -122,34 +122,34 @@ namespace MongoDB.Driver.Core.Servers
         }
 
         /// <summary>
-        /// Attempts to create a TopologyDescription from the supplied BsonDocument.
+        /// Attempts to create a TopologyVersion from the supplied BsonDocument.
         /// </summary>
         /// <param name="topologyVersion">The document. Should contain an ObjectId named "processId" and a BsonInt64 named "counter".</param>
-        /// <returns>A TopologyDescription if one could be constructed from the supplied document and null otherwise. </returns>
-        public static TopologyDescription? FromBsonDocument(BsonDocument topologyVersion)
+        /// <returns>A TopologyVersion if one could be constructed from the supplied document and null otherwise. </returns>
+        public static TopologyVersion? FromBsonDocument(BsonDocument topologyVersion)
         {
             return
                 topologyVersion.Contains("processId") &&
                 topologyVersion["processId"] is BsonObjectId processId &&
                 topologyVersion.Contains("counter") &&
                 topologyVersion["counter"] is BsonInt64 counter
-                ? new TopologyDescription(processId.Value, counter.Value)
-                : (TopologyDescription?)null;
+                ? new TopologyVersion(processId.Value, counter.Value)
+                : (TopologyVersion?)null;
         }
 
-        internal static TopologyDescription? FromMongoCommandResponse(BsonDocument response)
+        internal static TopologyVersion? FromMongoCommandResponse(BsonDocument response)
         {
             return
                 response != null &&
                 response.TryGetValue("topologyVersion", out var topologyVersionValue) &&
                 topologyVersionValue is BsonDocument topologyVersion
-                ? TopologyDescription.FromBsonDocument(topologyVersion)
+                ? TopologyVersion.FromBsonDocument(topologyVersion)
                 : null;
         }
 
-        internal static TopologyDescription? FromMongoCommandException(MongoCommandException commandException)
+        internal static TopologyVersion? FromMongoCommandException(MongoCommandException commandException)
         {
-            if (FromMongoCommandResponse(commandException.Result) is TopologyDescription responseTopologyVersion)
+            if (FromMongoCommandResponse(commandException.Result) is TopologyVersion responseTopologyVersion)
             {
                 return responseTopologyVersion;
             }
@@ -160,30 +160,30 @@ namespace MongoDB.Driver.Core.Servers
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            return (obj is TopologyDescription) && (CompareFreshnessOfLocalToServerResponse(this, (TopologyDescription)obj) == 0);
+            return (obj is TopologyVersion) && (CompareFreshnessOfLocalToServerResponse(this, (TopologyVersion)obj) == 0);
         }
 
         /// <inheritdoc />
-        public bool Equals(TopologyDescription other) => CompareFreshnessOfLocalToServerResponse(this, other) == 0;
+        public bool Equals(TopologyVersion other) => CompareFreshnessOfLocalToServerResponse(this, other) == 0;
 
         /// <summary>
-        /// Compares this TopologyDescription with another TopologyDescription and indicates whether this
-        /// TopologyDescription is precedes, follows, or appears in the same position in the sort order.
-        /// The sort order will order TopologyDescriptions from oldest to most recent.
+        /// Compares this TopologyVersion with another TopologyVersion and indicates whether this
+        /// TopologyVersion is precedes, follows, or appears in the same position in the sort order.
+        /// The sort order will order TopologyVersions from oldest to most recent.
         /// Per the SDAM specification, if the ProcessIds are not equal, this method assumes that
         /// <paramref name="serverResponse"/> is more recent. This means that this method does not exhibit
         /// the reversal properties of inequalities i.e. a "&lt;" b does not imply b "&gt;" a.
         /// </summary>
-        /// <param name="serverResponse">The TopologyDescription received from a server.</param>
+        /// <param name="serverResponse">The TopologyVersion received from a server.</param>
         /// <returns>
         /// Less than zero indicates that this description is older than the response.
         /// Zero indicates that this description is equal to the response.
         /// Greater than zero indicates that this description is newer than the response.
         /// </returns>
-        public int CompareFreshnessToServerResponse(TopologyDescription serverResponse) => CompareFreshnessOfLocalToServerResponse(this, serverResponse);
+        public int CompareFreshnessToServerResponse(TopologyVersion serverResponse) => CompareFreshnessOfLocalToServerResponse(this, serverResponse);
 
         /// <summary>
-        /// Gets whether or not this TopologyDescription is fresher than <paramref name="serverResponse"/>.
+        /// Gets whether or not this TopologyVersion is fresher than <paramref name="serverResponse"/>.
         /// Comparing topology descriptions freshness does not exhibit the reversal property of
         /// inequalities e.g. a.IsStalerThanServerResponse(b) (a "&lt;" b) does not imply
         /// !b.IsStalerThanServerResponse(a) (b "&gt;" a)
@@ -191,14 +191,14 @@ namespace MongoDB.Driver.Core.Servers
         /// In the case that this == <paramref name="serverResponse"/>,
         /// <paramref name="serverResponse"/> will be consider to be fresher.
         /// </summary>
-        /// <param name="serverResponse">The TopologyDescription received from a server/ </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server/ </param>
         /// <returns>
-        /// Wwhether or not this TopologyDescription is fresher than <paramref name="serverResponse"/>.
+        /// Wwhether or not this TopologyVersion is fresher than <paramref name="serverResponse"/>.
         /// </returns>
-        public bool IsFresherThanServerResponse(TopologyDescription serverResponse) => CompareFreshnessToServerResponse(serverResponse) > 0;
+        public bool IsFresherThanServerResponse(TopologyVersion serverResponse) => CompareFreshnessToServerResponse(serverResponse) > 0;
 
         /// <summary>
-        /// Gets whether or not this TopologyDescription is fresher than <paramref name="serverResponse"/>.
+        /// Gets whether or not this TopologyVersion is fresher than <paramref name="serverResponse"/>.
         /// Comparing topology descriptions freshness does not exhibit the reversal property of
         /// inequalities e.g. a.IsStalerThanServerResponse(b) (a "&lt;" b) does not imply
         /// !b.IsStalerThanServerResponse(a) (b "&gt;" a)
@@ -206,14 +206,14 @@ namespace MongoDB.Driver.Core.Servers
         /// In the case that this == <paramref name="serverResponse"/>,
         /// <paramref name="serverResponse"/> will be consider to be fresher.
         /// </summary>
-        /// <param name="serverResponse">The TopologyDescription received from a server/ </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server/ </param>
         /// <returns>
-        /// Wwhether or not this TopologyDescription is fresher than <paramref name="serverResponse"/>.
+        /// Wwhether or not this TopologyVersion is fresher than <paramref name="serverResponse"/>.
         /// </returns>
-        public bool IsFresherThanOrEqualToServerResponse(TopologyDescription serverResponse) => CompareFreshnessToServerResponse(serverResponse) >= 0;
+        public bool IsFresherThanOrEqualToServerResponse(TopologyVersion serverResponse) => CompareFreshnessToServerResponse(serverResponse) >= 0;
 
         /// <summary>
-        /// Gets whether or not this TopologyDescription is staler than <paramref name="serverResponse"/>.
+        /// Gets whether or not this TopologyVersion is staler than <paramref name="serverResponse"/>.
         /// Comparing topology descriptions freshness does not exhibit the reversal property of
         /// inequalities e.g. a.IsStalerThanServerResponse(b) (a "&lt;" b) does not imply
         /// !b.IsStalerThanServerResponse(a) (b "&gt;" a).
@@ -221,14 +221,17 @@ namespace MongoDB.Driver.Core.Servers
         /// In the case that this == <paramref name="serverResponse"/>,
         /// <paramref name="serverResponse"/> will be consider to be fresher.
         /// </summary>
-        /// <param name="serverResponse">The TopologyDescription received from a server/ </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server/ </param>
         /// <returns>
-        /// Wwhether or not this TopologyDescription is staler than <paramref name="serverResponse"/>.
+        /// Whether or not this TopologyVersion is staler than <paramref name="serverResponse"/>.
         /// </returns>
-        public bool IsStalerThanServerResponse(TopologyDescription serverResponse) => CompareFreshnessToServerResponse(serverResponse) <= 0;
+        public bool IsStalerThanServerResponse(TopologyVersion serverResponse) => CompareFreshnessToServerResponse(serverResponse) <= 0;
 
         /// <inheritdoc/>
         public override int GetHashCode() => _hashCode;
+
+        /// <inheritdoc/>
+        public BsonDocument ToBsonDocument() => new BsonDocument {{"processId", _processId}, {"counter", _counter}};
 
         /// <inheritdoc/>
         public override string ToString() => $"{{ ProcessId : {_processId}, Counter : '{_counter}' }}";
@@ -244,25 +247,25 @@ namespace MongoDB.Driver.Core.Servers
     }
 
     /// <summary>
-    /// Extensions for Nullable TopologyDescription
+    /// Extensions for Nullable TopologyVersion
     /// </summary>
-    public static class NullableTopologyDescriptionExtensions
+    public static class NullableTopologyVersionExtensions
     {
         /// <summary>
-        /// Compares a local TopologyDescription with a server's TopologyDescription and indicates whether the local
-        /// TopologyDescription is staler, fresher, or equal to the server's TopologyDescription.
+        /// Compares a local TopologyVersion with a server's TopologyVersion and indicates whether the local
+        /// TopologyVersion is staler, fresher, or equal to the server's TopologyVersion.
         /// Per the SDAM specification, if the ProcessIds are not equal, this method assumes that
         /// <paramref name="serverResponse"/> is more recent. This means that this method does not exhibit
         /// the reversal properties of inequalities e.g. a &lt; b does not imply b &gt; a.
         /// </summary>
-        /// <param name="local"> The locally saved TopologyDescription. </param>
-        /// <param name="serverResponse">The TopologyDescription received from a server.</param>
+        /// <param name="local"> The locally saved TopologyVersion. </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server.</param>
         /// <returns>
         /// Less than zero indicates that the local description is older than the response.
         /// Zero indicates that the local description is equal to the response.
         /// Greater than zero indicates that the local description is newer than the response.
         /// </returns>
-        public static int CompareFreshnessToServerResponse(this TopologyDescription? local, TopologyDescription? serverResponse)
+        public static int CompareFreshnessToServerResponse(this TopologyVersion? local, TopologyVersion? serverResponse)
         {
             return (local == null || serverResponse == null) ? -1 : local.Value.CompareFreshnessToServerResponse(serverResponse.Value);
         }
@@ -275,12 +278,12 @@ namespace MongoDB.Driver.Core.Servers
         /// In the case that <paramref name="local"/> == <paramref name="serverResponse"/>,
         /// <paramref name="serverResponse"/> will be consider to be fresher.
         /// </summary>
-        /// <param name="local"> The locally saved TopologyDescription. </param>
-        /// <param name="serverResponse">The TopologyDescription received from a server.</param>
+        /// <param name="local"> The locally saved TopologyVersion. </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server.</param>
         /// <returns>
         /// Whether or not <paramref name="local"/> is staler than <paramref name="serverResponse"/>.
         /// </returns>
-        public static bool IsFresherThanServerResponse(this TopologyDescription? local, TopologyDescription? serverResponse)
+        public static bool IsFresherThanServerResponse(this TopologyVersion? local, TopologyVersion? serverResponse)
         {
             return serverResponse != null && local != null && local.Value.IsFresherThanServerResponse(serverResponse.Value);
         }
@@ -293,12 +296,12 @@ namespace MongoDB.Driver.Core.Servers
         /// In the case that <paramref name="local"/> == <paramref name="serverResponse"/>,
         /// <paramref name="serverResponse"/> will be consider to be fresher.
         /// </summary>
-        /// <param name="local"> The locally saved TopologyDescription. </param>
-        /// <param name="serverResponse">The TopologyDescription received from a server.</param>
+        /// <param name="local"> The locally saved TopologyVersion. </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server.</param>
         /// <returns>
         /// Whether or not <paramref name="local"/> is staler than <paramref name="serverResponse"/>.
         /// </returns>
-        public static bool IsFresherThanOrEqualToServerResponse(this TopologyDescription? local, TopologyDescription? serverResponse)
+        public static bool IsFresherThanOrEqualToServerResponse(this TopologyVersion? local, TopologyVersion? serverResponse)
         {
             return serverResponse != null && local != null && local.Value.IsFresherThanOrEqualToServerResponse(serverResponse.Value);
         }
@@ -310,12 +313,12 @@ namespace MongoDB.Driver.Core.Servers
         /// In the case that <paramref name="local"/> == <paramref name="serverResponse"/>,
         /// <paramref name="serverResponse"/> will be consider to be fresher.
         /// </summary>
-        /// <param name="local"> The locally saved TopologyDescription. </param>
-        /// <param name="serverResponse">The TopologyDescription received from a server.</param>
+        /// <param name="local"> The locally saved TopologyVersion. </param>
+        /// <param name="serverResponse">The TopologyVersion received from a server.</param>
         /// <returns>
         /// Whether or not <paramref name="local"/> is staler than <paramref name="serverResponse"/>.
         /// </returns>
-        public static bool IsStalerThanServerResponse(this TopologyDescription? local, TopologyDescription? serverResponse)
+        public static bool IsStalerThanServerResponse(this TopologyVersion? local, TopologyVersion? serverResponse)
         {
             return serverResponse == null || local == null || local.Value.IsStalerThanServerResponse(serverResponse.Value);
         }

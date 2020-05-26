@@ -370,14 +370,14 @@ namespace MongoDB.Driver.Core.Connections
         /// <value>
         /// Null if TopologyVersion was not included in the isMaster response.
         /// </value>
-        public TopologyDescription? TopologyVersion
+        public TopologyVersion? TopologyVersion
         {
             get
             {
                 if (_wrapped.TryGetValue("topologyVersion", out var topologyVersionValue) &&
                     topologyVersionValue is BsonDocument topologyVersion)
                 {
-                    return TopologyDescription.FromBsonDocument(topologyVersion);
+                    return Servers.TopologyVersion.FromBsonDocument(topologyVersion);
                 }
                 return null;
             }

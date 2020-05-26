@@ -294,8 +294,8 @@ namespace MongoDB.Driver.Core.Servers
             var mockServerMonitor = new Mock<IServerMonitor>();
             mockServerMonitor.SetupGet(m => m.Description).Returns(mockMonitorServerDescription);
             mockServerMonitor
-                .Setup(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyDescription?>()))
-                .Callback((string reason, TopologyDescription? responseTopology) => MockMonitorInvalidate(reason, responseTopology));
+                .Setup(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion?>()))
+                .Callback((string reason, TopologyVersion? responseTopology) => MockMonitorInvalidate(reason, responseTopology));
             var mockServerMonitorFactory = new Mock<IServerMonitorFactory>();
             mockServerMonitorFactory.Setup(f => f.Create(It.IsAny<ServerId>(), _endPoint)).Returns(mockServerMonitor.Object);
 
@@ -317,10 +317,10 @@ namespace MongoDB.Driver.Core.Servers
             exception.Should().Be(openConnectionException);
             subject.Description.Type.Should().Be(ServerType.Unknown);
             subject.Description.ReasonChanged.Should().Contain("ChannelException during handshake");
-            mockServerMonitor.Verify(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyDescription?>()), Times.Once);
+            mockServerMonitor.Verify(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion?>()), Times.Once);
             mockConnectionPool.Verify(p => p.Clear(), Times.Once);
 
-            void MockMonitorInvalidate(string reason, TopologyDescription? responseTopology)
+            void MockMonitorInvalidate(string reason, TopologyVersion? responseTopology)
             {
                 var oldDescription = mockServerMonitor.Object.Description;
                 var newDescription = oldDescription.With(reason, type: ServerType.Unknown, topologyVersion: responseTopology);
@@ -372,8 +372,8 @@ namespace MongoDB.Driver.Core.Servers
             var mockServerMonitor = new Mock<IServerMonitor>();
             mockServerMonitor.SetupGet(m => m.Description).Returns(mockMonitorServerInitialDescription);
             mockServerMonitor
-                .Setup(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyDescription?>()))
-                .Callback((string reason, TopologyDescription? responseTopology) => MockMonitorInvalidate(reason, responseTopology));
+                .Setup(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion?>()))
+                .Callback((string reason, TopologyVersion? responseTopology) => MockMonitorInvalidate(reason, responseTopology));
             var mockServerMonitorFactory = new Mock<IServerMonitorFactory>();
             mockServerMonitorFactory.Setup(f => f.Create(It.IsAny<ServerId>(), _endPoint)).Returns(mockServerMonitor.Object);
             var subject = new Server(_clusterId, _clusterClock, _clusterConnectionMode, _settings, _endPoint, mockConnectionPoolFactory.Object, mockServerMonitorFactory.Object, _capturedEvents);
@@ -383,17 +383,17 @@ namespace MongoDB.Driver.Core.Servers
 
             if (shouldUpdateTopology)
             {
-                mockServerMonitor.Verify(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyDescription?>()), Times.Once);
+                mockServerMonitor.Verify(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion?>()), Times.Once);
                 subject.Description.Type.Should().Be(ServerType.Unknown);
                 subject.Description.ReasonChanged.Should().Contain("ChannelException");
             }
             else
             {
-                mockServerMonitor.Verify(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyDescription?>()), Times.Never);
+                mockServerMonitor.Verify(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion?>()), Times.Never);
                 subject.Description.Should().Be(mockMonitorServerInitialDescription);
             }
 
-            void MockMonitorInvalidate(string reason, TopologyDescription? responseTopology)
+            void MockMonitorInvalidate(string reason, TopologyVersion? responseTopology)
             {
                 var oldDescription = mockServerMonitor.Object.Description;
                 var newDescription = oldDescription.With(reason, type: ServerType.Unknown, topologyVersion: responseTopology);
@@ -769,13 +769,13 @@ namespace MongoDB.Driver.Core.Servers
             IConnectionHandle connection,
             Exception exception,
             ServerDescription description,
-            out TopologyDescription? responseTopologyVersion)
+            out TopologyVersion? responseTopologyVersion)
         {
             var methodInfo = typeof(Server).GetMethod(nameof(ShouldInvalidateServer), BindingFlags.NonPublic | BindingFlags.Instance);
             var parameters = new object[] {connection, exception, description, null};
             int outParameterIndex = Array.IndexOf(parameters, null);
             var shouldInvalidate = (bool)methodInfo.Invoke(server, parameters);
-            responseTopologyVersion = (TopologyDescription?)parameters[outParameterIndex];
+            responseTopologyVersion = (TopologyVersion?)parameters[outParameterIndex];
             return shouldInvalidate;
         }
     }

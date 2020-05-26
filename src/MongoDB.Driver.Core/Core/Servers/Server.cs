@@ -211,7 +211,7 @@ namespace MongoDB.Driver.Core.Servers
            Invalidate(reasonInvalidated, responseTopologyDescription: null);
         }
 
-        public void Invalidate(string reasonInvalidated, TopologyDescription? responseTopologyDescription)
+        public void Invalidate(string reasonInvalidated, TopologyVersion? responseTopologyDescription)
         {
             ThrowIfNotOpen();
             Invalidate(reasonInvalidated, clearConnectionPool: true, responseTopologyDescription);
@@ -241,7 +241,6 @@ namespace MongoDB.Driver.Core.Servers
                 try { handler(this, e); }
                 catch { } // ignore exceptions
             }
-
         }
 
         private void OnMonitorDescriptionChanged(object sender, ServerDescriptionChangedEventArgs e)
@@ -282,7 +281,7 @@ namespace MongoDB.Driver.Core.Servers
                 return; // stale generation number
             }
 
-            if (ShouldInvalidateServer(connection, ex, Description, out TopologyDescription? responseTopologyVersion))
+            if (ShouldInvalidateServer(connection, ex, Description, out TopologyVersion? responseTopologyVersion))
             {
                 var shouldClearConnectionPool = ShouldClearConnectionPoolForChannelException(ex, connection.Description.ServerVersion);
                 Invalidate($"ChannelException:{ex}", shouldClearConnectionPool, responseTopologyVersion);
@@ -312,7 +311,7 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        private void Invalidate(string reasonInvalidated, bool clearConnectionPool, TopologyDescription? responseTopologyVersion)
+        private void Invalidate(string reasonInvalidated, bool clearConnectionPool, TopologyVersion? responseTopologyVersion)
         {
             if (clearConnectionPool)
             {
@@ -404,13 +403,7 @@ namespace MongoDB.Driver.Core.Servers
 
         private void SetDescription(ServerDescription newDescription)
         {
-            var oldDescription = Interlocked.CompareExchange(ref _currentDescription, null, null);
-            SetDescription(oldDescription, newDescription);
-        }
-
-        private void SetDescription(ServerDescription oldDescription, ServerDescription newDescription)
-        {
-            Interlocked.Exchange(ref _currentDescription, newDescription);
+            var oldDescription = Interlocked.CompareExchange(ref _currentDescription, newDescription, _currentDescription);
             OnDescriptionChanged(sender: this, new ServerDescriptionChangedEventArgs(oldDescription, newDescription));
         }
 
@@ -435,7 +428,7 @@ namespace MongoDB.Driver.Core.Servers
             IConnectionHandle connection,
             Exception exception,
             ServerDescription description,
-            out TopologyDescription? responseTopologyVersion)
+            out TopologyVersion? responseTopologyVersion)
         {
             if (exception is MongoConnectionException mongoConnectionException &&
                 mongoConnectionException.ContainsSocketTimeoutException)
@@ -483,9 +476,9 @@ namespace MongoDB.Driver.Core.Servers
             responseTopologyVersion = null;
             return false;
 
-            bool IsStaleStateChangeError(BsonDocument response, out TopologyDescription? responseTopologyDescriptionVersion)
+            bool IsStaleStateChangeError(BsonDocument response, out TopologyVersion? responseTopologyDescriptionVersion)
             {
-                responseTopologyDescriptionVersion = TopologyDescription.FromMongoCommandResponse(response);
+                responseTopologyDescriptionVersion = TopologyVersion.FromMongoCommandResponse(response);
                 return description.TopologyVersion.IsFresherThanOrEqualToServerResponse( responseTopologyDescriptionVersion);
                 // We use FresherThanOrEqualTo because a state change should come with a new topology version
                 // This is equivalent to description.TopologyVersion.CompareFreshnessToServerResponse(responseTopologyDescriptionVersion) >= 0;
