@@ -85,7 +85,8 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             {
                 case "command":
                     var response = applicationError["response"].AsBsonDocument;
-                    simulatedException = ExceptionMapper.MapNotPrimaryOrNodeIsRecovering(connectionId, new BsonDocument {{"link", "start"}}, response, "errmsg");
+                    var command = new BsonDocument("Link", "start!");
+                    simulatedException = ExceptionMapper.MapNotPrimaryOrNodeIsRecovering(connectionId, command, response, "errmsg");
                     Ensure.IsNotNull(simulatedException, nameof(simulatedException));
                     break;
                 case "network":
@@ -122,9 +123,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                     server.HandleBeforeHandshakeCompletesException(mockConnection.Object, simulatedException);
                     break;
                 case "afterHandshakeCompletes":
-
                     server.HandleChannelException(mockConnection.Object, simulatedException);
-                    // error on application command
                     break;
                 default:
                     throw new ArgumentException($"Unsupported value of {when} for when");
