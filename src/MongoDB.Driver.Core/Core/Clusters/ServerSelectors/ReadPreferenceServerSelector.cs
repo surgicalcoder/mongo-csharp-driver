@@ -80,11 +80,11 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
             }
 
 #pragma warning disable 618
-            if (cluster.ConnectionMode == ClusterConnectionMode.Direct)
-#pragma warning restore 618
+            if (cluster.IsDirectConnection())
             {
                 return servers;
             }
+#pragma warning restore 618
 
             switch (cluster.Type)
             {

@@ -328,7 +328,7 @@ namespace MongoDB.Driver.Specifications.sdam_monitoring
                 endPoints: Optional.Enumerable(connectionString.Hosts),
                 replicaSetName: connectionString.ReplicaSet);
 #pragma warning disable 618
-            settings = settings.WithConnection(
+            settings = settings.WithConnectionMode(
                 connectionMode: connectionString.Connect,
                 directConnection: connectionString.DirectConnection);
 #pragma warning restore 618

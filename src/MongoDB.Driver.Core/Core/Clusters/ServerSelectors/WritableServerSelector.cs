@@ -51,11 +51,11 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
         public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<Servers.ServerDescription> servers)
         {
 #pragma warning disable 618
-            if (cluster.ConnectionMode == ClusterConnectionMode.Direct || cluster.DirectConnection.GetValueOrDefault())
-#pragma warning restore 618
+            if (cluster.IsDirectConnection())
             {
                 return servers;
             }
+#pragma warning restore 618
 
             return servers.Where(x =>
                 x.Type == ServerType.ReplicaSetPrimary ||

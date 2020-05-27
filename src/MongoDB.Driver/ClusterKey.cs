@@ -31,7 +31,7 @@ namespace MongoDB.Driver
         private readonly Action<ClusterBuilder> _clusterConfigurator;
         private readonly IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable 618
-        private readonly ConnectionMode _connectionMode;
+        private readonly ConnectionMode? _connectionMode;
 #pragma warning restore 618
         private readonly bool? _directConnection;
         private readonly TimeSpan _connectTimeout;
@@ -67,7 +67,7 @@ namespace MongoDB.Driver
             Action<ClusterBuilder> clusterConfigurator,
             IReadOnlyList<CompressorConfiguration> compressors,
 #pragma warning disable 618
-            ConnectionMode connectionMode,
+            ConnectionMode? connectionMode,
 #pragma warning restore 618
             TimeSpan connectTimeout,
             IReadOnlyList<MongoCredential> credentials,
@@ -95,6 +95,13 @@ namespace MongoDB.Driver
             int waitQueueSize,
             TimeSpan waitQueueTimeout)
         {
+#pragma warning disable 618
+            if (directConnection.HasValue && connectionMode != default(ConnectionMode))
+            {
+                throw new ArgumentException("ConnectionMode and DirectConnection cannot both be specified.");
+            }
+#pragma warning restore 618
+
             _allowInsecureTls = allowInsecureTls;
             _applicationName = applicationName;
             _clusterConfigurator = clusterConfigurator;
@@ -135,7 +142,7 @@ namespace MongoDB.Driver
         public Action<ClusterBuilder> ClusterConfigurator { get { return _clusterConfigurator; } }
         public IReadOnlyList<CompressorConfiguration> Compressors { get { return _compressors; } }
 #pragma warning disable 618
-        public ConnectionMode ConnectionMode { get { return _connectionMode; } }
+        public ConnectionMode? ConnectionMode { get { return _connectionMode; } }
 #pragma warning restore 618
         public TimeSpan ConnectTimeout { get { return _connectTimeout; } }
         public IReadOnlyList<MongoCredential> Credentials { get { return _credentials; } }

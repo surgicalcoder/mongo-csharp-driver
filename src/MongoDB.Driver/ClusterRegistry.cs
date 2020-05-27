@@ -82,20 +82,30 @@ namespace MongoDB.Driver
         {
             var endPoints = clusterKey.Servers.Select(s => EndPointHelper.Parse(s.ToString()));
 #pragma warning disable 618
-            return settings
-                .With(
-                    endPoints: Optional.Enumerable(endPoints),
-                    kmsProviders: Optional.Create(clusterKey.KmsProviders),
-                    localThreshold: clusterKey.LocalThreshold,
-                    replicaSetName: clusterKey.ReplicaSetName,
-                    maxServerSelectionWaitQueueSize: clusterKey.WaitQueueSize,
-                    serverSelectionTimeout: clusterKey.ServerSelectionTimeout,
-                    schemaMap: Optional.Create(clusterKey.SchemaMap),
-                    scheme: clusterKey.Scheme)
-                .WithConnection(
-                    connectionMode: clusterKey.ConnectionMode.ToCore(),
-                    directConnection: clusterKey.DirectConnection);
+            var coreConnectionMode = default(Optional<ClusterConnectionMode>);
+            var directConnection = default(Optional<bool?>);
+            if (clusterKey.DirectConnection.HasValue)
+            {
+                directConnection = settings.DirectConnection.Value;
+            }
+            else
+            {
+                var connectionMode = clusterKey.ConnectionMode.GetValueOrDefault(ConnectionMode.Automatic);
+                coreConnectionMode = connectionMode.ToCore();
+            }
 #pragma warning restore 618
+
+            return settings.With(
+                connectionMode: coreConnectionMode,
+                directConnection: directConnection,
+                endPoints: Optional.Enumerable(endPoints),
+                kmsProviders: Optional.Create(clusterKey.KmsProviders),
+                localThreshold: clusterKey.LocalThreshold,
+                replicaSetName: clusterKey.ReplicaSetName,
+                maxServerSelectionWaitQueueSize: clusterKey.WaitQueueSize,
+                serverSelectionTimeout: clusterKey.ServerSelectionTimeout,
+                schemaMap: Optional.Create(clusterKey.SchemaMap),
+                scheme: clusterKey.Scheme);
         }
 
         private ConnectionPoolSettings ConfigureConnectionPool(ConnectionPoolSettings settings, ClusterKey clusterKey)

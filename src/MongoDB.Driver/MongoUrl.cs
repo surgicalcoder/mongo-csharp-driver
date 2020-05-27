@@ -43,7 +43,7 @@ namespace MongoDB.Driver
         private readonly string _authenticationSource;
         private readonly IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable 618
-        private readonly ConnectionMode _connectionMode;
+        private readonly ConnectionMode? _connectionMode;
 #pragma warning restore 618
         private readonly TimeSpan _connectTimeout;
         private readonly string _databaseName;
@@ -97,12 +97,18 @@ namespace MongoDB.Driver
             _authenticationMechanismProperties = builder.AuthenticationMechanismProperties;
             _authenticationSource = builder.AuthenticationSource;
             _compressors = builder.Compressors;
+            if (builder.DirectConnection.HasValue)
+            {
+                _directConnection = builder.DirectConnection;
+            }
+            else
+            {
 #pragma warning disable 618
-            _connectionMode = builder.ConnectionMode;
+                _connectionMode = builder.ConnectionMode;
 #pragma warning restore 618
+            }
             _connectTimeout = builder.ConnectTimeout;
             _databaseName = builder.DatabaseName;
-            _directConnection = builder.DirectConnection;
             _fsync = builder.FSync;
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
@@ -141,6 +147,8 @@ namespace MongoDB.Driver
             _waitQueueTimeout = builder.WaitQueueTimeout;
             _wTimeout = builder.WTimeout;
             _url = builder.ToString(); // keep canonical form
+
+            ThrowIfSettingsAreInvalid();
         }
 
         internal MongoUrl(string url, bool isResolved)
@@ -225,7 +233,7 @@ namespace MongoDB.Driver
         [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
         {
-            get { return _connectionMode; }
+            get { return _connectionMode.GetValueOrDefault(ConnectionMode.Automatic); }
         }
 
         /// <summary>
@@ -748,6 +756,30 @@ namespace MongoDB.Driver
         private bool AnyWriteConcernSettingsAreSet()
         {
             return _fsync != null || _journal != null || _w != null || _wTimeout != null;
+        }
+
+        private void ThrowIfSettingsAreInvalid()
+        {
+            if (_connectionMode.HasValue && _directConnection.HasValue)
+            {
+                throw new InvalidOperationException("ConnectionMode and DirectConnection cannot both be specified.");
+            }
+
+            if (_directConnection.HasValue)
+            {
+                if (_directConnection.Value)
+                {
+                    if (_scheme == ConnectionStringScheme.MongoDBPlusSrv)
+                    {
+                        throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
+                    }
+
+                    if (_servers.Count() > 1)
+                    {
+                        throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
+                    }
+                }
+            }
         }
     }
 }

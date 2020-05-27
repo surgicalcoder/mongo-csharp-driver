@@ -44,7 +44,7 @@ namespace MongoDB.Driver
         private string _authenticationSource;
         private IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable 618
-        private ConnectionMode _connectionMode;
+        private ConnectionMode? _connectionMode;
 #pragma warning restore 618
         private TimeSpan _connectTimeout;
         private string _databaseName;
@@ -92,7 +92,7 @@ namespace MongoDB.Driver
             _authenticationSource = null;
             _compressors = new CompressorConfiguration[0];
 #pragma warning disable 618
-            _connectionMode = ConnectionMode.Automatic;
+            _connectionMode = null;
 #pragma warning restore 618
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _databaseName = null;
@@ -232,7 +232,7 @@ namespace MongoDB.Driver
         [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
         {
-            get { return _connectionMode; }
+            get { return _connectionMode.GetValueOrDefault(ConnectionMode.Automatic); }
             set { _connectionMode = value; }
         }
 
@@ -944,11 +944,18 @@ namespace MongoDB.Driver
                 }
             }
 
-#pragma warning disable 618
-            if (_connectionMode != ConnectionMode.Automatic)
-#pragma warning restore 618
+            if (_directConnection.HasValue)
             {
-                query.AppendFormat("connect={0};", MongoUtils.ToCamelCase(_connectionMode.ToString()));
+                query.AppendFormat("directConnection={0};", _directConnection.Value);
+            }
+            else
+            {
+#pragma warning disable 618
+                if (_connectionMode != ConnectionMode.Automatic)
+#pragma warning restore 618
+                {
+                    query.AppendFormat("connect={0};", MongoUtils.ToCamelCase(_connectionMode.ToString()));
+                }
             }
             if (!string.IsNullOrEmpty(_replicaSetName))
             {

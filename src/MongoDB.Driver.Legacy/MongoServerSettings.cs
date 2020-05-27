@@ -261,9 +261,9 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the direct connection.
         /// </summary>
-        public bool DirectConnection
+        public bool? DirectConnection
         {
-            get { return _directConnection.GetValueOrDefault(); }
+            get { return _directConnection; }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
@@ -745,13 +745,19 @@ namespace MongoDB.Driver
             serverSettings.ApplicationName = clientSettings.ApplicationName;
             serverSettings.ClusterConfigurator = clientSettings.ClusterConfigurator;
             serverSettings.Compressors = clientSettings.Compressors;
+            if (clientSettings.DirectConnection.HasValue)
+            {
+                serverSettings.DirectConnection = clientSettings.DirectConnection;
+            }
+            else
+            {
 #pragma warning disable 618
-            serverSettings.ConnectionMode = clientSettings.ConnectionMode;
+                serverSettings.ConnectionMode = clientSettings.ConnectionMode;
 #pragma warning restore 618
+            }
             serverSettings.ConnectTimeout = clientSettings.ConnectTimeout;
 #pragma warning disable 618
             serverSettings.Credentials = clientSettings.Credentials;
-            serverSettings.DirectConnection = clientSettings.DirectConnection; //todo: not safe
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
                 serverSettings.GuidRepresentation = clientSettings.GuidRepresentation;
@@ -800,9 +806,16 @@ namespace MongoDB.Driver
             serverSettings.AllowInsecureTls = url.AllowInsecureTls;
             serverSettings.ApplicationName = url.ApplicationName;
             serverSettings.Compressors = url.Compressors;
+            if (url.DirectConnection.HasValue)
+            {
+                serverSettings.DirectConnection = url.DirectConnection;
+            }
+            else
+            {
 #pragma warning disable 618
-            serverSettings.ConnectionMode = url.ConnectionMode;
+                serverSettings.ConnectionMode = url.ConnectionMode;
 #pragma warning restore 618
+            }
             serverSettings.ConnectTimeout = url.ConnectTimeout;
             if (credential != null)
             {
@@ -819,7 +832,6 @@ namespace MongoDB.Driver
                 }
                 serverSettings.Credential = credential;
             }
-            serverSettings._directConnection = url.DirectConnection;  // use the private variable, because the public is not nullable
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
@@ -1129,7 +1141,7 @@ namespace MongoDB.Driver
                 _applicationName,
                 _clusterConfigurator,
                 _compressors,
-                _connectionMode.GetValueOrDefault(),
+                _connectionMode,
                 _connectTimeout,
                 _credentials.ToList(),
                 _directConnection,
@@ -1171,14 +1183,20 @@ namespace MongoDB.Driver
                 throw new InvalidOperationException("Specifying both connect and directConnection is invalid.");
             }
 
-            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && _directConnection.GetValueOrDefault())
+            if (_directConnection.HasValue)
             {
-                throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
-            }
+                if (_directConnection ?? false)
+                {
+                    if (_scheme == ConnectionStringScheme.MongoDBPlusSrv)
+                    {
+                        throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
+                    }
 
-            if (_servers.Count > 1 && _directConnection.GetValueOrDefault())
-            {
-                throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
+                    if (_servers.Count > 1)
+                    {
+                        throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
+                    }
+                }
             }
         }
     }

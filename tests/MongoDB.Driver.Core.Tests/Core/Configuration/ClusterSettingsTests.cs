@@ -447,7 +447,7 @@ namespace MongoDB.Driver.Core.Configuration
             var connectionMode = ClusterConnectionMode.ReplicaSet;
             var defaultConnectionMode = ClusterConnectionMode.Automatic;
 
-            var result = subject.WithConnection(connectionMode, directConnection);
+            var result = subject.WithConnectionMode(connectionMode, directConnection);
 
             if (directConnection.HasValue)
             {

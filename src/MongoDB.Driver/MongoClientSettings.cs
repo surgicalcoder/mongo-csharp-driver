@@ -203,7 +203,10 @@ namespace MongoDB.Driver
         [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
         {
-            get { return _connectionMode.GetValueOrDefault(ConnectionMode.Automatic); }
+            get
+            {
+                return _connectionMode.GetValueOrDefault(ConnectionMode.Automatic);
+            }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
@@ -268,7 +271,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the direct connection.
         /// </summary>
-        public bool DirectConnection
+        public bool? DirectConnection
         {
             get { return _directConnection.GetValueOrDefault(); }
             set
@@ -745,15 +748,20 @@ namespace MongoDB.Driver
         {
             if (!url.IsResolved)
             {
-                var directConnection = url.DirectConnection;
 #pragma warning disable 618
-                var connectionMode = url.ConnectionMode;
-                var resolveHosts =
-                    connectionMode == ConnectionMode.Direct ||
-                    connectionMode == ConnectionMode.Standalone ||
-#pragma warning restore 618
-                    directConnection.GetValueOrDefault();
+                bool resolveHosts;
+                if (url.DirectConnection.HasValue)
+                {
+                    resolveHosts = url.DirectConnection.Value;
+                }
+                else
+                {
+                    var connectionMode = url.ConnectionMode;
+                    resolveHosts = connectionMode == ConnectionMode.Direct || connectionMode == ConnectionMode.Standalone;
+                }
+
                 url = url.Resolve(resolveHosts);
+#pragma warning restore 618
             }
 
             var credential = url.GetCredential();
@@ -763,9 +771,16 @@ namespace MongoDB.Driver
             clientSettings.ApplicationName = url.ApplicationName;
             clientSettings.AutoEncryptionOptions = null; // must be configured via code
             clientSettings.Compressors = url.Compressors;
+            if (url.DirectConnection.HasValue)
+            {
+                clientSettings.DirectConnection = url.DirectConnection;
+            }
+            else
+            {
 #pragma warning disable 618
-            clientSettings.ConnectionMode = url.ConnectionMode;
+                clientSettings.ConnectionMode = url.ConnectionMode;
 #pragma warning restore 618
+            }
             clientSettings.ConnectTimeout = url.ConnectTimeout;
             if (credential != null)
             {
@@ -782,7 +797,6 @@ namespace MongoDB.Driver
                 }
                 clientSettings.Credential = credential;
             }
-            clientSettings._directConnection = url.DirectConnection; // use the private variable, because the public is not nullable
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
@@ -1035,10 +1049,16 @@ namespace MongoDB.Driver
             {
                 sb.AppendFormat("Compressors=[{0}];", string.Join(",", _compressors));
             }
-            sb.AppendFormat("ConnectionMode={0};", _connectionMode);
+            if (_directConnection.HasValue)
+            {
+                sb.AppendFormat("DirectConnection={0};", _directConnection);
+            }
+            else
+            {
+                sb.AppendFormat("ConnectionMode={0};", _connectionMode);
+            }
             sb.AppendFormat("ConnectTimeout={0};", _connectTimeout);
             sb.AppendFormat("Credentials={{{0}}};", _credentials);
-            sb.AppendFormat("DirectConnection={{{0}}};", _directConnection);
             sb.AppendFormat("GuidRepresentation={0};", _guidRepresentation);
             sb.AppendFormat("HeartbeatInterval={0};", _heartbeatInterval);
             sb.AppendFormat("HeartbeatTimeout={0};", _heartbeatTimeout);
@@ -1092,7 +1112,7 @@ namespace MongoDB.Driver
                 _applicationName,
                 _clusterConfigurator,
                 _compressors,
-                _connectionMode.GetValueOrDefault(),
+                _connectionMode,
                 _connectTimeout,
                 _credentials.ToList(),
                 _directConnection,
@@ -1122,26 +1142,32 @@ namespace MongoDB.Driver
 
         private void ThrowIfSettingsAreInvalid()
         {
+            if (_connectionMode.HasValue && _directConnection.HasValue)
+            {
+                throw new InvalidOperationException("ConnectionMode and DirectConnection cannot both be specified.");
+            }
+
+            if (_directConnection.HasValue)
+            {
+                if (_directConnection.Value)
+                {
+                    if (_scheme == ConnectionStringScheme.MongoDBPlusSrv)
+                    {
+                        throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
+                    }
+
+                    if (_servers.Count > 1)
+                    {
+                        throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
+                    }
+                }
+            }
+
             if (_allowInsecureTls && _sslSettings != null && _sslSettings.CheckCertificateRevocation)
             {
                 throw new InvalidOperationException(
                         $"{nameof(AllowInsecureTls)} and {nameof(SslSettings)}" +
                         $".{nameof(_sslSettings.CheckCertificateRevocation)} cannot both be true.");
-            }
-
-            if (_connectionMode.HasValue && _directConnection.HasValue)
-            {
-                throw new InvalidOperationException("Specifying both connect and directConnection is invalid.");
-            }
-
-            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && _directConnection.GetValueOrDefault())
-            {
-                throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
-            }
-
-            if (_servers.Count > 1 && _directConnection.GetValueOrDefault())
-            {
-                throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
             }
         }
     }

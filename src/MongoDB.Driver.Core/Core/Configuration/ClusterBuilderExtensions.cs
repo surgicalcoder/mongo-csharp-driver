@@ -60,14 +60,19 @@ namespace MongoDB.Driver.Core.Configuration
 
             if (!connectionString.IsResolved)
             {
+                bool resolveHosts;
+                if (connectionString.DirectConnection.HasValue)
+                {
+                    resolveHosts = connectionString.DirectConnection.Value;
+                }
+                else
+                {
 #pragma warning disable 618
                 var connectionMode = connectionString.Connect;
-                var directConnection = connectionString.DirectConnection;
-                var resolveHosts = 
-                    connectionMode == ClusterConnectionMode.Direct ||
-                    connectionMode == ClusterConnectionMode.Standalone ||
-                    directConnection.GetValueOrDefault();
+                    resolveHosts = connectionMode == ClusterConnectionMode.Direct || connectionMode == ClusterConnectionMode.Standalone;
 #pragma warning restore 618
+                }
+
                 connectionString = connectionString.Resolve(resolveHosts);
             }
 
@@ -168,7 +173,7 @@ namespace MongoDB.Driver.Core.Configuration
 
             // Cluster
 #pragma warning disable 618
-            builder = builder.ConfigureCluster(s => s.WithConnection(connectionMode: connectionString.Connect, directConnection: connectionString.DirectConnection));
+            builder = builder.ConfigureCluster(s => s.With(connectionMode: connectionString.Connect, directConnection: connectionString.DirectConnection));
 #pragma warning restore 618
 
             if (connectionString.Hosts.Count > 0)
