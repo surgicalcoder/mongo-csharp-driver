@@ -142,7 +142,6 @@ namespace MongoDB.Driver.Core.Connections
     /// </summary>
     public interface IConnectionHandle : IConnection
     {
-        // properties
         // methods
         /// <summary>
         /// A new handle to the underlying connection.

@@ -79,7 +79,7 @@ namespace MongoDB.Driver.Core.Helpers
                             {
                                 _servers[mockMonitor.Object.Description.EndPoint].HasBeenRemoved = true;
                             });
-                    Action<string, TopologyVersion?> mockMonitorInvalidate = (reason, responseTopologyVersion) =>
+                    Action<string, TopologyVersion> mockMonitorInvalidate = (reason, responseTopologyVersion) =>
                     {
                         var baseDescription = description;
                         var oldDescription = mockMonitor.Object.Description;
@@ -94,7 +94,7 @@ namespace MongoDB.Driver.Core.Helpers
                         mockMonitor.Raise(m => m.DescriptionChanged += null, serverDescriptionChangedEventArgs);
                     };
                     mockMonitor
-                        .Setup(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion?>()))
+                        .Setup(m => m.Invalidate(It.IsAny<string>(), It.IsAny<TopologyVersion>()))
                         .Callback(mockMonitorInvalidate);
                     var mockConnection = new Mock<IConnectionHandle>();
                     var mockConnectionPool = new Mock<IConnectionPool>();

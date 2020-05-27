@@ -47,7 +47,7 @@ namespace MongoDB.Driver.Core.Servers
         private readonly ServerId _serverId;
         private readonly ServerState _state;
         private readonly TagSet _tags;
-        private readonly TopologyVersion? _topologyVersion;
+        private readonly TopologyVersion _topologyVersion;
         private readonly ServerType _type;
         private readonly SemanticVersion _version;
         private readonly Range<int> _wireVersionRange;
@@ -100,7 +100,7 @@ namespace MongoDB.Driver.Core.Servers
             Optional<ReplicaSetConfig> replicaSetConfig = default(Optional<ReplicaSetConfig>),
             Optional<ServerState> state = default(Optional<ServerState>),
             Optional<TagSet> tags = default(Optional<TagSet>),
-            Optional<TopologyVersion?> topologyVersion = default(Optional<TopologyVersion?>),
+            Optional<TopologyVersion> topologyVersion = default(Optional<TopologyVersion>),
             Optional<ServerType> type = default(Optional<ServerType>),
             Optional<SemanticVersion> version = default(Optional<SemanticVersion>),
             Optional<Range<int>> wireVersionRange = default(Optional<Range<int>>))
@@ -390,7 +390,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <value>
         /// The server topology version.
         /// </value>
-        public TopologyVersion? TopologyVersion
+        public TopologyVersion TopologyVersion
         {
             get { return _topologyVersion; }
         }
@@ -554,7 +554,7 @@ namespace MongoDB.Driver.Core.Servers
             Optional<ReplicaSetConfig> replicaSetConfig = default(Optional<ReplicaSetConfig>),
             Optional<ServerState> state = default(Optional<ServerState>),
             Optional<TagSet> tags = default(Optional<TagSet>),
-            Optional<TopologyVersion?> topologyVersion = default(Optional<TopologyVersion?>),
+            Optional<TopologyVersion> topologyVersion = default(Optional<TopologyVersion>),
             Optional<ServerType> type = default(Optional<ServerType>),
             Optional<SemanticVersion> version = default(Optional<SemanticVersion>),
             Optional<Range<int>> wireVersionRange = default(Optional<Range<int>>))

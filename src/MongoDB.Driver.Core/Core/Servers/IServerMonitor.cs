@@ -40,7 +40,7 @@ namespace MongoDB.Driver.Core.Servers
         /// </summary>
         /// <param name="reasonInvalidated">The reason the server was invalidated.</param>
         /// <param name="responseTopologyVersion">The topology version of the response that invalidated the server.</param>
-        void Invalidate(string reasonInvalidated, TopologyVersion? responseTopologyVersion);
+        void Invalidate(string reasonInvalidated, TopologyVersion responseTopologyVersion);
 
         /// <summary>
         /// Requests a heartbeat as soon as possible.

@@ -94,10 +94,10 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        public void Invalidate(string reasonInvalidated, TopologyVersion? responseTopologyVersion)
+        public void Invalidate(string reasonInvalidated, TopologyVersion responseTopologyVersion)
         {
             var newDescription = _baseDescription.With(
-                    $"InvalidatedBecause:{reasonInvalidated}",
+                    reasonChanged: $"InvalidatedBecause:{reasonInvalidated}",
                     lastUpdateTimestamp: DateTime.UtcNow,
                     topologyVersion: responseTopologyVersion);
             SetDescription(newDescription);

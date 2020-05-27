@@ -409,7 +409,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                 switch(expectedDescription["topologyVersion"])
                 {
                     case BsonDocument topologyVersion:
-                        TopologyVersion? expectedTopologyType = TopologyVersion.FromBsonDocument(topologyVersion);
+                        TopologyVersion expectedTopologyType = TopologyVersion.FromBsonDocument(topologyVersion);
                         expectedTopologyType.Should().NotBeNull();
                         actualDescription.TopologyVersion.Should().Be(expectedTopologyType, phaseDescription);
                         break;

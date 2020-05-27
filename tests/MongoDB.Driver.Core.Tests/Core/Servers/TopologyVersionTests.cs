@@ -46,18 +46,18 @@ namespace MongoDB.Driver.Core.Servers
             var processId = ObjectId.Empty;
             var counter = 31L;
 
-            TopologyVersion? nullResponse = null;
-            TopologyVersion? nonNullResponse = new TopologyVersion(processId, counter);
+            TopologyVersion nullResponse = null;
+            TopologyVersion nonNullResponse = new TopologyVersion(processId, counter);
 
-            nullResponse.CompareFreshnessToServerResponse(nonNullResponse).Should().BeNegative();
+            nullResponse.CompareTopologyVersion(nonNullResponse).Should().BeNegative();
             nullResponse.IsStalerThanServerResponse(nonNullResponse).Should().BeTrue();
             nullResponse.IsFresherThanServerResponse(nonNullResponse).Should().BeFalse();
 
-            nonNullResponse.CompareFreshnessToServerResponse(nullResponse).Should().BeNegative();
+            nonNullResponse.CompareTopologyVersion(nullResponse).Should().BeNegative();
             nonNullResponse.IsStalerThanServerResponse(nullResponse).Should().BeTrue();
             nonNullResponse.IsFresherThanServerResponse(nullResponse).Should().BeFalse();
 
-            nullResponse.CompareFreshnessToServerResponse(nullResponse).Should().BeNegative();
+            nullResponse.CompareTopologyVersion(nullResponse).Should().BeNegative();
             nullResponse.IsStalerThanServerResponse(nullResponse).Should().BeTrue();
             nullResponse.IsFresherThanServerResponse(nullResponse).Should().BeFalse();
         }
@@ -74,17 +74,17 @@ namespace MongoDB.Driver.Core.Servers
             var local = subject1;
             var serverResponse = subject2;
 
-            local.CompareFreshnessToServerResponse(serverResponse).Should().BeNegative();
-            local.IsStalerThanServerResponse(serverResponse).Should().BeTrue();
-            local.IsFresherThanServerResponse(serverResponse).Should().BeFalse();
+            local.CompareTopologyVersion(serverResponse).Should().BeNegative();
+            local.IsStalerThan(serverResponse).Should().BeTrue();
+            local.IsFresherThan(serverResponse).Should().BeFalse();
 
             // changing the order should change the results
             local = subject2;
             serverResponse = subject1;
 
-            local.CompareFreshnessToServerResponse(serverResponse).Should().BeNegative();
-            local.IsStalerThanServerResponse(serverResponse).Should().BeTrue();
-            local.IsFresherThanServerResponse(serverResponse).Should().BeFalse();
+            local.CompareTopologyVersion(serverResponse).Should().BeNegative();
+            local.IsStalerThan(serverResponse).Should().BeTrue();
+            local.IsFresherThan(serverResponse).Should().BeFalse();
         }
 
         [Fact]
@@ -97,13 +97,13 @@ namespace MongoDB.Driver.Core.Servers
             var older = new TopologyVersion(processId1, counter);
             var newer = new TopologyVersion(processId2, counter + 1);
 
-            older.CompareFreshnessToServerResponse(newer).Should().BeNegative();
-            older.IsStalerThanServerResponse(newer).Should().BeTrue();
-            older.IsFresherThanServerResponse(newer).Should().BeFalse();
+            older.CompareTopologyVersion(newer).Should().BeNegative();
+            older.IsStalerThan(newer).Should().BeTrue();
+            older.IsFresherThan(newer).Should().BeFalse();
 
-            newer.CompareFreshnessToServerResponse(older).Should().BePositive();
-            newer.IsStalerThanServerResponse(older).Should().BeFalse();
-            newer.IsFresherThanServerResponse(older).Should().BeTrue();
+            newer.CompareTopologyVersion(older).Should().BePositive();
+            newer.IsStalerThan(older).Should().BeFalse();
+            newer.IsFresherThan(older).Should().BeTrue();
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace MongoDB.Driver.Core.Servers
             var counter = 31L;
             var topologyVersionDocument = new BsonDocument {{"processId", processId}, {"counter", counter}};
 
-            TopologyVersion? subject = TopologyVersion.FromBsonDocument(topologyVersionDocument);
+            TopologyVersion subject = TopologyVersion.FromBsonDocument(topologyVersionDocument);
 
             subject.Should().NotBeNull();
         }
@@ -191,7 +191,7 @@ namespace MongoDB.Driver.Core.Servers
         {
             var invalidTopologyVersionDocument = new BsonDocument("counter", 31);
 
-            TopologyVersion? subject = TopologyVersion.FromBsonDocument(invalidTopologyVersionDocument);
+            TopologyVersion subject = TopologyVersion.FromBsonDocument(invalidTopologyVersionDocument);
 
             subject.Should().BeNull();
         }
@@ -206,8 +206,8 @@ namespace MongoDB.Driver.Core.Servers
             var serverResponse = local;
 
             (local == serverResponse).Should().BeTrue();
-            local.IsStalerThanServerResponse(serverResponse).Should().BeTrue();
-            local.IsFresherThanServerResponse(serverResponse).Should().BeFalse();
+            local.IsStalerThan(serverResponse).Should().BeTrue();
+            local.IsFresherThan(serverResponse).Should().BeFalse();
         }
 
         [Fact]

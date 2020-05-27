@@ -209,7 +209,7 @@ namespace MongoDB.Driver.Core.Servers
            Invalidate(reasonInvalidated, responseTopologyDescription: null);
         }
 
-        public void Invalidate(string reasonInvalidated, TopologyVersion? responseTopologyDescription)
+        public void Invalidate(string reasonInvalidated, TopologyVersion responseTopologyDescription)
         {
             ThrowIfNotOpen();
             Invalidate(reasonInvalidated, clearConnectionPool: true, responseTopologyDescription);
@@ -279,7 +279,7 @@ namespace MongoDB.Driver.Core.Servers
                 return; // stale generation number
             }
 
-            if (ShouldInvalidateServer(connection, ex, Description, out TopologyVersion? responseTopologyVersion))
+            if (ShouldInvalidateServer(connection, ex, Description, out TopologyVersion responseTopologyVersion))
             {
                 var shouldClearConnectionPool = ShouldClearConnectionPoolForChannelException(ex, connection.Description.ServerVersion);
                 Invalidate($"ChannelException:{ex}", shouldClearConnectionPool, responseTopologyVersion);
@@ -309,7 +309,7 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        private void Invalidate(string reasonInvalidated, bool clearConnectionPool, TopologyVersion? responseTopologyVersion)
+        private void Invalidate(string reasonInvalidated, bool clearConnectionPool, TopologyVersion responseTopologyVersion)
         {
             if (clearConnectionPool)
             {
@@ -424,7 +424,7 @@ namespace MongoDB.Driver.Core.Servers
             IConnection connection,
             Exception exception,
             ServerDescription description,
-            out TopologyVersion? invalidatingResponseTopologyVersion)
+            out TopologyVersion invalidatingResponseTopologyVersion)
         {
             if (exception is MongoConnectionException mongoConnectionException &&
                 mongoConnectionException.ContainsSocketTimeoutException)
@@ -472,7 +472,7 @@ namespace MongoDB.Driver.Core.Servers
             invalidatingResponseTopologyVersion = null;
             return false;
 
-            bool IsStaleStateChangeError(BsonDocument response, out TopologyVersion? nonStaleResponseTopologyVersion)
+            bool IsStaleStateChangeError(BsonDocument response, out TopologyVersion nonStaleResponseTopologyVersion)
             {
                 if (_connectionPool.Generation > connection.Generation)
                 {

@@ -370,7 +370,7 @@ namespace MongoDB.Driver.Core.Connections
         /// <value>
         /// Null if TopologyVersion was not included in the isMaster response.
         /// </value>
-        public TopologyVersion? TopologyVersion
+        public TopologyVersion TopologyVersion
         {
             get
             {
