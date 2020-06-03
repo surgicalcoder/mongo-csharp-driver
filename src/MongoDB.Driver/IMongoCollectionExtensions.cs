@@ -2325,7 +2325,7 @@ namespace MongoDB.Driver
         }
 
         // private static methods
-        private static IMongoQueryable<TDocument> AsQueryableHelper<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, AggregateOptions aggregateOptions)
+        private static IMongoQueryable<TDocument> AsQueryableHelper<TDocument>(IMongoCollection<TDocument> collection, IClientSessionHandle session, AggregateOptions aggregateOptions)
         {
             aggregateOptions = aggregateOptions ?? new AggregateOptions();
             var provider = new MongoQueryProviderImpl<TDocument>(collection, session, aggregateOptions);
