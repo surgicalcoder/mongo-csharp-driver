@@ -289,27 +289,30 @@ namespace MongoDB.Driver.Core.Servers
                 return;
             }
 
-            if (connection.Generation != _connectionPool.Generation)
+            lock (_monitor.Lock)
             {
-                return; // stale generation number
-            }
+                if (connection.Generation != _connectionPool.Generation)
+                {
+                    return; // stale generation number
+                }
 
-            if (ex is MongoConnectionException mongoConnectionException &&
-                mongoConnectionException.IsNetworkException &&
-                !mongoConnectionException.ContainsSocketTimeoutException)
-            {
-                _monitor.CurrentCheckCancel();
-            }
+                if (ex is MongoConnectionException mongoConnectionException &&
+                    mongoConnectionException.IsNetworkException &&
+                    !mongoConnectionException.ContainsSocketTimeoutException)
+                {
+                    _monitor.CurrentCheckCancel();
+                }
 
-            var description = Description; // use Description property to access _description value safely
-            if (ShouldInvalidateServer(connection, ex, description, out TopologyVersion responseTopologyVersion))
-            {
-                var shouldClearConnectionPool = ShouldClearConnectionPoolForChannelException(ex, connection.Description.ServerVersion);
-                Invalidate($"ChannelException:{ex}", shouldClearConnectionPool, responseTopologyVersion);
-            }
-            else
-            {
-                RequestHeartbeat();
+                var description = Description; // use Description property to access _description value safely
+                if (ShouldInvalidateServer(connection, ex, description, out TopologyVersion responseTopologyVersion))
+                {
+                    var shouldClearConnectionPool = ShouldClearConnectionPoolForChannelException(ex, connection.Description.ServerVersion);
+                    Invalidate($"ChannelException:{ex}", shouldClearConnectionPool, responseTopologyVersion);
+                }
+                else
+                {
+                    RequestHeartbeat();
+                }
             }
         }
 
@@ -320,15 +323,19 @@ namespace MongoDB.Driver.Core.Servers
                 _connectionPool.Clear();
                 return;
             }
-            if (connection.Generation != _connectionPool.Generation)
-            {
-                return; // stale generation number
-            }
 
-            if (ex is MongoConnectionException connectionException &&
-                (connectionException.IsNetworkException || connectionException.ContainsSocketTimeoutException))
+            lock (_monitor.Lock)
             {
-                Invalidate($"ChannelException during handshake: {ex}.", clearConnectionPool: true, responseTopologyVersion: null);
+                if (connection.Generation != _connectionPool.Generation)
+                {
+                    return; // stale generation number
+                }
+
+                if (ex is MongoConnectionException connectionException &&
+                    (connectionException.IsNetworkException || connectionException.ContainsSocketTimeoutException))
+                {
+                    Invalidate($"ChannelException during handshake: {ex}.", clearConnectionPool: true, responseTopologyVersion: null);
+                }
             }
         }
 

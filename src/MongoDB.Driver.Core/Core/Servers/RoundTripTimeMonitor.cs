@@ -25,7 +25,9 @@ namespace MongoDB.Driver.Core.Servers
 {
     internal interface IRoundTripTimeMonitor : IDisposable
     {
-        ExponentiallyWeightedMovingAverage ExponentiallyWeightedMovingAverage { get; }
+        TimeSpan Average { get; }
+        void AddSample(TimeSpan roundTripTime);
+        void Reset();
         Task Run();
     }
 
@@ -39,6 +41,7 @@ namespace MongoDB.Driver.Core.Servers
         private IConnection _roundTripTimeConnection;
         private readonly ServerId _serverId;
         private readonly TimeSpan _heartbeatFrequency;
+        private readonly object _lock = new object();
 
         public RoundTripTimeMonitor(
             IConnectionFactory connectionFactory,
@@ -54,7 +57,32 @@ namespace MongoDB.Driver.Core.Servers
             _serverId = Ensure.IsNotNull(serverId, nameof(serverId));
         }
 
-        public ExponentiallyWeightedMovingAverage ExponentiallyWeightedMovingAverage => _averageRoundTripTimeCalculator;
+        public TimeSpan Average
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _averageRoundTripTimeCalculator.Average;
+                }
+            }
+        }
+
+        // public methods
+        public void Dispose()
+        {
+            if (_roundTripTimeConnection != null)
+            {
+                try
+                {
+                    _roundTripTimeConnection.Dispose();
+                }
+                catch
+                {
+                    // ignore it
+                }
+            }
+        }
 
         public async Task Run()
         {
@@ -74,7 +102,7 @@ namespace MongoDB.Driver.Core.Servers
                         var stopwatch = Stopwatch.StartNew();
                         var isMasterResult = await IsMasterHelper.GetResultAsync(_roundTripTimeConnection, isMasterProtocol, _cancellationToken).ConfigureAwait(false);
                         stopwatch.Stop();
-                        _averageRoundTripTimeCalculator.AddSample(stopwatch.Elapsed);
+                        AddSample(stopwatch.Elapsed);
                     }
                 }
                 catch (Exception)
@@ -84,25 +112,9 @@ namespace MongoDB.Driver.Core.Servers
                         _roundTripTimeConnection.Dispose();
                         _roundTripTimeConnection = null;
                     }
-                    _averageRoundTripTimeCalculator.Reset();
                 }
 
                 await Task.Delay(_heartbeatFrequency).ConfigureAwait(false);
-            }
-        }
-
-        public void Dispose()
-        {
-            if (_roundTripTimeConnection != null)
-            {
-                try
-                {
-                    _roundTripTimeConnection.Dispose();
-                }
-                catch
-                {
-                    // ignore it
-                }
             }
         }
 
@@ -117,7 +129,23 @@ namespace MongoDB.Driver.Core.Servers
             var stopwatch = Stopwatch.StartNew();
             await _roundTripTimeConnection.OpenAsync(_cancellationToken).ConfigureAwait(false);
             stopwatch.Stop();
-            _averageRoundTripTimeCalculator.AddSample(stopwatch.Elapsed);
+            AddSample(stopwatch.Elapsed);
+        }
+
+        public void AddSample(TimeSpan roundTripTime)
+        {
+            lock (_lock)
+            {
+                _averageRoundTripTimeCalculator.AddSample(roundTripTime);
+            }
+        }
+
+        public void Reset()
+        {
+            lock (_lock)
+            {
+                _averageRoundTripTimeCalculator.Reset();
+            }
         }
     }
 }

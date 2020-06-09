@@ -87,16 +87,15 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         {
             var eventCondition = MapEventNameToCondition(_event);
             Func<IEnumerable<object>, bool> eventsConditionWithFilterByCount = (events) => events.Count(eventCondition) >= _count;
-            var notifyTask = _eventCapturer.NotifyWhen(eventsConditionWithFilterByCount);
 
-            var timeout = TimeSpan.FromSeconds(30);
-            var testFailedTimeout = Task.Delay(timeout, CancellationToken.None);
-            var index = Task.WaitAny(notifyTask, testFailedTimeout);
-            if (index != 0)
-            {
-                var triggeredEventsCount = _eventCapturer.Events.Count(eventCondition);
-                throw new Exception($"Waiting for {_count} {_event} exceeded the timeout {timeout}. The number of triggered events is {triggeredEventsCount}.");
-            }
+            _eventCapturer.WaitWhenOrThrowIfTimeout(
+                eventsConditionWithFilterByCount,
+                TimeSpan.FromSeconds(10),
+                (timeout) =>
+                {
+                    var triggeredEventsCount = _eventCapturer.Events.Count(eventCondition);
+                    return $"Waiting for {_count} {_event} exceeded the timeout {timeout}. The number of triggered events is {triggeredEventsCount}.";
+                });
         }
     }
 }

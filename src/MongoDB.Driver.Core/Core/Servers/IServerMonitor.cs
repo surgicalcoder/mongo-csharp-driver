@@ -29,6 +29,11 @@ namespace MongoDB.Driver.Core.Servers
         ServerDescription Description { get; }
 
         /// <summary>
+        /// Lock reference to prevent race condition between the monitor and higher levels.
+        /// </summary>
+        object Lock { get; }
+
+        /// <summary>
         /// Cancel the current heartbeat.
         /// </summary>
         void CurrentCheckCancel();

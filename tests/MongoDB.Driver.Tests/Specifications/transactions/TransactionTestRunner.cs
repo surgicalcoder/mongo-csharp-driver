@@ -231,6 +231,7 @@ namespace MongoDB.Driver.Tests.Specifications.transactions
             return DriverTestConfiguration.CreateDisposableClient(
                 (MongoClientSettings settings) =>
                 {
+                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5);  // can be overwritten in the next step
                     ConfigureClientSettings(settings, test);
                     settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
                 },

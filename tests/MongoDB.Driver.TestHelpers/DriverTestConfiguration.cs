@@ -124,6 +124,7 @@ namespace MongoDB.Driver.Tests
                 ? CoreTestConfiguration.ConnectionStringWithMultipleShardRouters.ToString()
                 : CoreTestConfiguration.ConnectionString.ToString();
             var clientSettings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
+            clientSettings.HeartbeatInterval = TimeSpan.FromMilliseconds(5);
             clientSettingsConfigurator(clientSettings);
             var client = new MongoClient(clientSettings);
             return new DisposableMongoClient(client);

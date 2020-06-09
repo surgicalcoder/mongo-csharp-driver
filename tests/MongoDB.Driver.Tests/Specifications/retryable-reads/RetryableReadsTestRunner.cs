@@ -29,6 +29,7 @@ using MongoDB.Driver.Core.TestHelpers.JsonDrivenTests;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.TestHelpers;
 using MongoDB.Driver.Tests.JsonDrivenTests;
+using Moq;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Specifications.retryable_reads
@@ -186,11 +187,13 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
 
         private DisposableMongoClient CreateDisposableClient(BsonDocument test, EventCapturer eventCapturer)
         {
-            return DriverTestConfiguration.CreateDisposableClient((MongoClientSettings settings) =>
-            {
-                ConfigureClientSettings(settings, test);
-                settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
-            });
+            return DriverTestConfiguration.CreateDisposableClient(
+                (MongoClientSettings settings) =>
+                {
+                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // may be overwritten in the next step in future
+                    ConfigureClientSettings(settings, test);
+                    settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
+                });
         }
 
         private void ConfigureClientSettings(MongoClientSettings settings, BsonDocument test)

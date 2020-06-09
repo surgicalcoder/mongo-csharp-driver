@@ -91,7 +91,7 @@ namespace MongoDB.Driver.Core.Misc
         private static readonly Feature __serverReturnsRetryableWriteErrorLabel = new Feature("ServerReturnsRetryableWriteErrorLabel", new SemanticVersion(4, 3, 0));
         private static readonly Feature __shardedTransactions = new Feature("ShardedTransactions", new SemanticVersion(4, 1, 6));
         private static readonly Feature __speculativeAuthentication = new Feature("SpeculativeAuthentication", new SemanticVersion(4, 4, 0, "rc0"));
-        private static readonly Feature __streamingIsMaster = new Feature("StreamingIsMaster", new SemanticVersion(4, 4, 0));
+        private static readonly Feature __streamingIsMaster = new Feature("StreamingIsMaster", new SemanticVersion(4, 4, 0, ""));
         private static readonly Feature __tailableCursor = new Feature("TailableCursor", new SemanticVersion(3, 2, 0));
         private static readonly Feature __transactions = new Feature("Transactions", new SemanticVersion(4, 0, 0));
         private static readonly Feature __userManagementCommands = new Feature("UserManagementCommands", new SemanticVersion(2, 6, 0));

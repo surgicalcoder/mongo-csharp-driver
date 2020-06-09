@@ -35,9 +35,11 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
 {
     public class ServerDiscoveryAndMonitoringProseTests
     {
-        [Fact]
+        [SkippableFact(Skip = "skip")]
         public void Streaming_protocol_test()
         {
+            RequireServer.Check().Supports(Feature.StreamingIsMaster);
+
             var eventCapturer = new EventCapturer().Capture<ServerHeartbeatStartedEvent>();
 
             var heartbeatInterval = 500;
@@ -57,7 +59,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
             }
         }
 
-        [SkippableFact]
+        [SkippableFact(Skip = "skip")]
         public void RoundTimeTrip_test()
         {
             RequireServer.Check().Supports(Feature.StreamingIsMaster);
@@ -102,7 +104,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
                     var roundTripTimeMonitor = server._monitor()._roundTripTimeMonitor();
                     var expectedRoundTripTime = TimeSpan.FromMilliseconds(250);
                     var timeout = TimeSpan.FromSeconds(30); // should not be reached without a driver bug
-                    SpinWait.SpinUntil(() => roundTripTimeMonitor.ExponentiallyWeightedMovingAverage.Average >= expectedRoundTripTime, timeout).Should().BeTrue();
+                    SpinWait.SpinUntil(() => roundTripTimeMonitor.Average >= expectedRoundTripTime, timeout).Should().BeTrue();
                 }
             }
         }

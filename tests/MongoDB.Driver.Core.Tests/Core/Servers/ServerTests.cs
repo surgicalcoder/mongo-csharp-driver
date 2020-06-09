@@ -293,6 +293,7 @@ namespace MongoDB.Driver.Core.Servers
             var mockMonitorServerDescription = new ServerDescription(serverId, _endPoint);
             var mockServerMonitor = new Mock<IServerMonitor>();
             mockServerMonitor.SetupGet(m => m.Description).Returns(mockMonitorServerDescription);
+            mockServerMonitor.SetupGet(m => m.Lock).Returns(new object());
             var mockServerMonitorFactory = new Mock<IServerMonitorFactory>();
             mockServerMonitorFactory.Setup(f => f.Create(It.IsAny<ServerId>(), _endPoint)).Returns(mockServerMonitor.Object);
 
@@ -355,6 +356,7 @@ namespace MongoDB.Driver.Core.Servers
             var mockMonitorServerInitialDescription = new ServerDescription(serverId, _endPoint).With(reasonChanged: "Initial D", type: ServerType.Unknown);
             var mockServerMonitor = new Mock<IServerMonitor>();
             mockServerMonitor.SetupGet(m => m.Description).Returns(mockMonitorServerInitialDescription);
+            mockServerMonitor.SetupGet(m => m.Lock).Returns(new object());
             var mockServerMonitorFactory = new Mock<IServerMonitorFactory>();
             mockServerMonitorFactory.Setup(f => f.Create(It.IsAny<ServerId>(), _endPoint)).Returns(mockServerMonitor.Object);
             var subject = new Server(_clusterId, _clusterClock, _clusterConnectionMode, _settings, _endPoint, mockConnectionPoolFactory.Object, mockServerMonitorFactory.Object, _capturedEvents);

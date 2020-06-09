@@ -265,10 +265,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
         {
             using (var client = CreateDisposableClient(test, eventCapturer))
             {
-                using (ConfigureFailPoint(test, client))
-                {
-                    ExecuteOperations(client, null, test, eventCapturer);
-                }
+                ExecuteOperations(client, null, test, eventCapturer);
             }
         }
 
@@ -372,7 +369,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
                 var server = cluster.SelectServer(WritableServerSelector.Instance, CancellationToken.None);
                 var session = NoCoreSession.NewHandle();
                 var command = failPoint.AsBsonDocument;
-                return FailPoint.Configure(cluster, session, command);
+                return FailPoint.Configure(server, session, command);
             }
 
             return null;
@@ -476,19 +473,22 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
             CreateCollection(client, DatabaseName, CollectionName, test, shared);
             InsertData(client, DatabaseName, CollectionName, shared);
 
-            EventCapturer eventCapturer = null;
-            if (ShouldEventsBeChecked)
+            using (ConfigureFailPoint(test, client)) // should be configured before the test client
             {
-                eventCapturer = InitializeEventCapturer(new EventCapturer());
-            }
+                EventCapturer eventCapturer = null;
+                if (ShouldEventsBeChecked)
+                {
+                    eventCapturer = InitializeEventCapturer(new EventCapturer());
+                }
 
-            RunTest(shared, test, eventCapturer);
-            if (ShouldEventsBeChecked)
-            {
-                AssertEvents(eventCapturer, test);
-            }
+                RunTest(shared, test, eventCapturer);
+                if (ShouldEventsBeChecked)
+                {
+                    AssertEvents(eventCapturer, test);
+                }
 
-            AssertOutcome(test);
+                AssertOutcome(test);
+            }
         }
     }
 }

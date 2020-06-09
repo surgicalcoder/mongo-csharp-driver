@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,9 +26,13 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.TestHelpers;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Helpers;
+using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.WireProtocol.Messages;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 using Moq;
@@ -37,6 +42,62 @@ namespace MongoDB.Driver.Core.WireProtocol
 {
     public class CommandWriteProtocolTests
     {
+        [Fact]
+        public void Execute_should_use_cached_IWireProtocol_if_available()
+        {
+            var session = NoCoreSession.Instance;
+            var responseHandling = CommandResponseHandling.Return;
+
+            var messageEncoderSettings = new MessageEncoderSettings();
+            var subject = new CommandWireProtocol<BsonDocument>(
+                session,
+                ReadPreference.Primary,
+                new DatabaseNamespace("test"),
+                new BsonDocument("cmd", 1),
+                null, // commandPayloads
+                NoOpElementNameValidator.Instance,
+                null, // additionalOptions
+                null, // postWriteAction
+                responseHandling,
+                BsonDocumentSerializer.Instance,
+                messageEncoderSettings);
+
+            var mockConnection = new Mock<IConnection>();
+            var commandResponse = MessageHelper.BuildCommandResponse(CreateRawBsonDocument(new BsonDocument("ok", 1)));
+            mockConnection
+                .Setup(c => c.ReceiveMessage(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), messageEncoderSettings, CancellationToken.None))
+                .Returns(commandResponse);
+            var connectionId = new ConnectionId(new ServerId(new ClusterId(), new DnsEndPoint("localhost", 27017)));
+            mockConnection.SetupGet(c => c.ConnectionId).Returns(connectionId);
+            mockConnection
+                .SetupGet(c => c.Description)
+                .Returns(
+                    new ConnectionDescription(
+                        connectionId,
+                        new IsMasterResult(new BsonDocument("ok", 1)),
+                        new BuildInfoResult(new BsonDocument("version", "4.4"))));
+
+            var result = subject.Execute(mockConnection.Object, CancellationToken.None);
+
+            var cachedWireProtocol = subject._cachedWireProtocol();
+            cachedWireProtocol.Should().NotBeNull();
+            subject._cachedConnectionId().Should().NotBeNull();
+            subject._cachedConnectionId().Should().BeSameAs(connectionId);
+            result.Should().Be("{ ok : 1 }");
+
+            commandResponse = MessageHelper.BuildCommandResponse(CreateRawBsonDocument(new BsonDocument("ok", 1)));
+            mockConnection
+                .Setup(c => c.ReceiveMessage(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), messageEncoderSettings, CancellationToken.None))
+                .Returns(commandResponse);
+            subject._responseHandling(CommandResponseHandling.Ignore); // will trigger the exception if the CommandUsingCommandMessageWireProtocol ctor will be called
+
+            result = subject.Execute(mockConnection.Object, CancellationToken.None);
+
+            subject._cachedWireProtocol().Should().BeSameAs(cachedWireProtocol);
+            subject._cachedConnectionId().Should().BeSameAs(connectionId);
+            result.Should().Be("{ ok : 1 }");
+        }
+
         [Fact]
         public void Execute_should_wait_for_response_when_CommandResponseHandling_is_Return()
         {
@@ -145,6 +206,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             mockConnection.Verify(c => c.ReceiveMessageAsync(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), messageEncoderSettings, CancellationToken.None), Times.Once);
         }
 
+        // private methods
         private RawBsonDocument CreateRawBsonDocument(BsonDocument doc)
         {
             using (var memoryStream = new MemoryStream())
@@ -157,6 +219,24 @@ namespace MongoDB.Driver.Core.WireProtocol
 
                 return new RawBsonDocument(memoryStream.ToArray());
             }
+        }
+    }
+
+    internal static class CommandWireProtocolReflector
+    {
+        public static ConnectionId _cachedConnectionId(this CommandWireProtocol<BsonDocument> commandWireProtocol)
+        {
+            return (ConnectionId)Reflector.GetFieldValue(commandWireProtocol, nameof(_cachedConnectionId));
+        }
+
+        public static IWireProtocol<BsonDocument> _cachedWireProtocol(this CommandWireProtocol<BsonDocument> commandWireProtocol)
+        {
+            return (IWireProtocol<BsonDocument>)Reflector.GetFieldValue(commandWireProtocol, nameof(_cachedWireProtocol));
+        }
+
+        public static void _responseHandling(this CommandWireProtocol<BsonDocument> commandWireProtocol, CommandResponseHandling commandResponseHandling)
+        {
+            Reflector.SetFieldValue(commandWireProtocol, nameof(_responseHandling), commandResponseHandling);
         }
     }
 }

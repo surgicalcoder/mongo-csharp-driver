@@ -21,6 +21,7 @@ using System.Text;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders;
@@ -101,6 +102,19 @@ namespace MongoDB.Driver.Core.Helpers
                 tailableCursor: false,
                 awaitData: false);
 #pragma warning restore 618
+        }
+
+        public static CommandResponseMessage BuildCommandResponse(
+            RawBsonDocument command,
+            int requestId = 0,
+            int responseTo = 0)
+        {
+            return new CommandResponseMessage(
+                new CommandMessage(
+                requestId: requestId,
+                responseTo: responseTo,
+                sections: new[] { new Type0CommandMessageSection<RawBsonDocument>(command, RawBsonDocumentSerializer.Instance) },
+                moreToCome: false));
         }
 
         public static DeleteMessage BuildDelete(
