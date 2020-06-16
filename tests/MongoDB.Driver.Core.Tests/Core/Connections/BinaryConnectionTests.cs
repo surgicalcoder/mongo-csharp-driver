@@ -446,11 +446,9 @@ namespace MongoDB.Driver.Core.Connections
 
         [Theory]
         [ParameterAttributeData]
-        public void ReceiveMessage_should_throw_network_exception_to_all_awaiters(
+        public void ReceiveMessage_should_throw_network_exception_to_awaiter(
             [Values(false, true)]
-            bool async1,
-            [Values(false, true)]
-            bool async2)
+            bool async)
         {
             var mockStream = new Mock<Stream>();
             using (mockStream.Object)
@@ -467,44 +465,27 @@ namespace MongoDB.Driver.Core.Connections
                 _subject.Open(CancellationToken.None);
                 _capturedEvents.Clear();
 
-                Task task1;
-                if (async1)
+                Task task;
+                if (async)
                 {
-                    task1 = _subject.ReceiveMessageAsync(1, encoderSelector, _messageEncoderSettings, It.IsAny<CancellationToken>());
+                    task = _subject.ReceiveMessageAsync(1, encoderSelector, _messageEncoderSettings, It.IsAny<CancellationToken>());
                 }
                 else
                 {
-                    task1 = Task.Run(() => _subject.ReceiveMessage(1, encoderSelector, _messageEncoderSettings, CancellationToken.None));
+                    task = Task.Run(() => _subject.ReceiveMessage(1, encoderSelector, _messageEncoderSettings, CancellationToken.None));
                 }
 
-                Task task2;
-                if (async2)
-                {
-                    task2 = _subject.ReceiveMessageAsync(2, encoderSelector, _messageEncoderSettings, CancellationToken.None);
-                }
-                else
-                {
-                    task2 = Task.Run(() => _subject.ReceiveMessage(2, encoderSelector, _messageEncoderSettings, CancellationToken.None));
-                }
-
-                SpinWait.SpinUntil(() => _capturedEvents.Count >= 2, TimeSpan.FromSeconds(5)).Should().BeTrue();
+                SpinWait.SpinUntil(() => _capturedEvents.Count >= 1, TimeSpan.FromSeconds(5)).Should().BeTrue();
 
                 readTcs.SetException(new SocketException());
 
-                Func<Task> act1 = () => task1;
-                act1.ShouldThrow<MongoConnectionException>()
+                Func<Task> act = () => task;
+                act.ShouldThrow<MongoConnectionException>()
                     .WithInnerException<SocketException>()
                     .And.ConnectionId.Should().Be(_subject.ConnectionId);
 
-                Func<Task> act2 = () => task2;
-                act2.ShouldThrow<MongoConnectionException>()
-                    .WithInnerException<SocketException>()
-                    .And.ConnectionId.Should().Be(_subject.ConnectionId);
-
-                _capturedEvents.Next().Should().BeOfType<ConnectionReceivingMessageEvent>();
                 _capturedEvents.Next().Should().BeOfType<ConnectionReceivingMessageEvent>();
                 _capturedEvents.Next().Should().BeOfType<ConnectionFailedEvent>();
-                _capturedEvents.Next().Should().BeOfType<ConnectionReceivingMessageFailedEvent>();
                 _capturedEvents.Next().Should().BeOfType<ConnectionReceivingMessageFailedEvent>();
                 _capturedEvents.Any().Should().BeFalse();
             }

@@ -222,7 +222,16 @@ namespace MongoDB.Driver.Core.WireProtocol
         private void IgnoreResponse(IConnection connection, QueryMessage message, CancellationToken cancellationToken)
         {
             var encoderSelector = new ReplyMessageEncoderSelector<IgnoredReply>(IgnoredReplySerializer.Instance);
-            connection.ReceiveMessageAsync(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken).IgnoreExceptions();
+            try
+            {
+                connection.ReceiveMessageAsync(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch
+            {
+                // ignored
+            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
