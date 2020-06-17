@@ -28,7 +28,7 @@ namespace MongoDB.Driver.Core.Servers
         TimeSpan Average { get; }
         void AddSample(TimeSpan roundTripTime);
         void Reset();
-        Task Run();
+        Task RunAsync();
     }
 
     internal class RoundTripTimeMonitor : IRoundTripTimeMonitor
@@ -37,11 +37,13 @@ namespace MongoDB.Driver.Core.Servers
 
         private readonly CancellationToken _cancellationToken;
         private readonly IConnectionFactory _connectionFactory;
+        private bool _disposed;
         private readonly EndPoint _endPoint;
         private IConnection _roundTripTimeConnection;
         private readonly ServerId _serverId;
         private readonly TimeSpan _heartbeatFrequency;
         private readonly object _lock = new object();
+        private readonly object _disposeLock = new object();
 
         public RoundTripTimeMonitor(
             IConnectionFactory connectionFactory,
@@ -71,22 +73,30 @@ namespace MongoDB.Driver.Core.Servers
         // public methods
         public void Dispose()
         {
-            if (_roundTripTimeConnection != null)
+            _disposed = true;
+
+            IConnection toDispose;
+            lock (_disposeLock)
             {
-                try
-                {
-                    _roundTripTimeConnection.Dispose();
-                }
-                catch
-                {
-                    // ignore it
-                }
+                toDispose = _roundTripTimeConnection;
+                _roundTripTimeConnection = null;
+            }
+
+            try
+            {
+                toDispose?.Dispose();
+            }
+            catch
+            {
+                // ignore
             }
         }
 
-        public async Task Run()
+        public async Task RunAsync()
         {
-            while (!_cancellationToken.IsCancellationRequested)
+            await Task.Yield(); // return control immediately
+
+            while (!_cancellationToken.IsCancellationRequested && !_disposed)
             {
                 try
                 {
@@ -107,11 +117,13 @@ namespace MongoDB.Driver.Core.Servers
                 }
                 catch (Exception)
                 {
-                    if (_roundTripTimeConnection != null)
+                    IConnection toDispose;
+                    lock (_disposeLock)
                     {
-                        _roundTripTimeConnection.Dispose();
+                        toDispose = _roundTripTimeConnection;
                         _roundTripTimeConnection = null;
                     }
+                    toDispose?.Dispose();
                 }
 
                 await Task.Delay(_heartbeatFrequency).ConfigureAwait(false);
@@ -123,7 +135,10 @@ namespace MongoDB.Driver.Core.Servers
         {
             _cancellationToken.ThrowIfCancellationRequested();
 
-            _roundTripTimeConnection = _connectionFactory.CreateConnection(_serverId, _endPoint);
+            lock (_disposeLock)
+            {
+                _roundTripTimeConnection = _connectionFactory.CreateConnection(_serverId, _endPoint);
+            }
             // if we are cancelling, it's because the server has
             // been shut down and we really don't need to wait.
             var stopwatch = Stopwatch.StartNew();

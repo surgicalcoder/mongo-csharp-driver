@@ -14,9 +14,9 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers;
@@ -35,38 +35,53 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
 {
     public class ServerDiscoveryAndMonitoringProseTests
     {
-        [SkippableFact(Skip = "skip")]
+        [SkippableFact]
         public void Streaming_protocol_test()
         {
-            RequireServer.Check().Supports(Feature.StreamingIsMaster);
+            var times = new List<DateTime>();
+            var eventCapturer = new EventCapturer()
+                .Capture<ServerHeartbeatSucceededEvent>(
+                    (@event) =>
+                    {
+                        times.Add(DateTime.UtcNow);
+                        return true;
+                    }
+                );
 
-            var eventCapturer = new EventCapturer().Capture<ServerHeartbeatStartedEvent>();
-
-            var heartbeatInterval = 500;
+            var heartbeatInterval = TimeSpan.FromMilliseconds(500);
+            eventCapturer.Clear();
             using (var client = CreateClient(eventCapturer, heartbeatInterval))
             {
-                eventCapturer.Clear();
-                for (int attempt = 1; attempt <= 5; attempt++)
-                {
-                    var timeout = TimeSpan.FromMilliseconds(550); // a bit bigger than heartbeatInterval
-                    var notifyTask = eventCapturer.NotifyWhen(events => events.Any(e => events.Count() == attempt));
-                    var index = Task.WaitAny(notifyTask, Task.Delay(timeout));
-                    if (index != 0)
+                eventCapturer.WaitWhenOrThrowIfTimeout(
+                    events => events.Count() > 3, // wait for at least 3 events
+                    TimeSpan.FromSeconds(10),
+                    (timeout) =>
                     {
-                        throw new Exception($"The expected heartbeat interval is {heartbeatInterval} ms, but the attempt #{attempt} took more than {timeout.Milliseconds} ms.");
-                    }
-                }
+                        return $"Waiting for the expected events exceeded the timeout {timeout}. The number of triggered events is {eventCapturer.Events.ToList().Count}.";
+                    });
+            }
+
+            // we have at least 3 items here
+            // Skip the first event because we don't know reliable time to assert it
+            for (int i = 1; i < times.Count; i++)
+            {
+                var attemptDuration = times[i] - times[i - 1];
+                attemptDuration
+                    .Should()
+                    .BeLessThan(TimeSpan.FromSeconds(1));
+                // Assert the client processes isMaster replies more frequently than 10 secs (approximately every 500ms)
+                // the expected value should be between approximatelly 500ms and 10 seconds
             }
         }
 
-        [SkippableFact(Skip = "skip")]
+        [SkippableFact]
         public void RoundTimeTrip_test()
         {
             RequireServer.Check().Supports(Feature.StreamingIsMaster);
 
             var eventCapturer = new EventCapturer().Capture<ServerDescriptionChangedEvent>();
 
-            var heartbeatInterval = 500;
+            var heartbeatInterval = TimeSpan.FromMilliseconds(500);
             using (var client = CreateClient(eventCapturer, heartbeatInterval, applicationName: "streamingRttTest"))
             {
                 // Run a find command to wait for the server to be discovered.
@@ -80,6 +95,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
 
                 foreach (ServerDescriptionChangedEvent @event in eventCapturer.Events.ToList())
                 {
+                    @event.NewDescription.HeartbeatException.Should().BeNull();
                     @event.NewDescription.AverageRoundTripTime.Should().NotBe(default);
                 }
 
@@ -110,15 +126,16 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         }
 
         // private methods
-        private DisposableMongoClient CreateClient(EventCapturer eventCapturer, int heartbeatInterval, string applicationName = null)
+        private DisposableMongoClient CreateClient(EventCapturer eventCapturer, TimeSpan heartbeatInterval, string applicationName = null)
         {
-            var mongoclientSettings = new MongoClientSettings
-            {
-                ApplicationName = applicationName,
-                ClusterConfigurator = builder => builder.Subscribe(eventCapturer),
-                HeartbeatInterval = TimeSpan.FromMilliseconds(heartbeatInterval)
-            };
-            return DriverTestConfiguration.CreateDisposableClient(mongoclientSettings);
+            var clonedClient = DriverTestConfiguration.Client.Settings.Clone();
+            return DriverTestConfiguration.CreateDisposableClient(
+                (clientSettings) =>
+                {
+                    clientSettings.ApplicationName = applicationName;
+                    clientSettings.HeartbeatInterval = heartbeatInterval;
+                    clientSettings.ClusterConfigurator = builder => builder.Subscribe(eventCapturer);
+                });
         }
     }
 
@@ -128,7 +145,10 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         {
             return (IServerMonitor)Reflector.GetFieldValue(server, nameof(_monitor));
         }
+    }
 
+    internal static class ServerMonitorRelfector
+    { 
         public static IRoundTripTimeMonitor _roundTripTimeMonitor(this IServerMonitor serverMonitor)
         {
             return (IRoundTripTimeMonitor)Reflector.GetFieldValue(serverMonitor, nameof(_roundTripTimeMonitor));

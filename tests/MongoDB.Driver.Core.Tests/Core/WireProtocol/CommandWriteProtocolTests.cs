@@ -14,11 +14,8 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -32,6 +29,7 @@ using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Helpers;
+using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.WireProtocol.Messages;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
@@ -42,8 +40,9 @@ namespace MongoDB.Driver.Core.WireProtocol
 {
     public class CommandWriteProtocolTests
     {
-        [Fact]
-        public void Execute_should_use_cached_IWireProtocol_if_available()
+        [Theory]
+        [ParameterAttributeData]
+        public void Execute_should_use_cached_IWireProtocol_if_available([Values(false, true)] bool withSameConnection)
         {
             var session = NoCoreSession.Instance;
             var responseHandling = CommandResponseHandling.Return;
@@ -64,38 +63,60 @@ namespace MongoDB.Driver.Core.WireProtocol
 
             var mockConnection = new Mock<IConnection>();
             var commandResponse = MessageHelper.BuildCommandResponse(CreateRawBsonDocument(new BsonDocument("ok", 1)));
-            mockConnection
-                .Setup(c => c.ReceiveMessage(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), messageEncoderSettings, CancellationToken.None))
-                .Returns(commandResponse);
-            var connectionId = new ConnectionId(new ServerId(new ClusterId(), new DnsEndPoint("localhost", 27017)));
-            mockConnection.SetupGet(c => c.ConnectionId).Returns(connectionId);
-            mockConnection
-                .SetupGet(c => c.Description)
-                .Returns(
-                    new ConnectionDescription(
-                        connectionId,
-                        new IsMasterResult(new BsonDocument("ok", 1)),
-                        new BuildInfoResult(new BsonDocument("version", "4.4"))));
+            var connectionId = SetupConnection(mockConnection);
 
             var result = subject.Execute(mockConnection.Object, CancellationToken.None);
 
             var cachedWireProtocol = subject._cachedWireProtocol();
             cachedWireProtocol.Should().NotBeNull();
-            subject._cachedConnectionId().Should().NotBeNull();
+            var cachedConnectionId = subject._cachedConnectionId();
+            cachedConnectionId.Should().NotBeNull();
             subject._cachedConnectionId().Should().BeSameAs(connectionId);
             result.Should().Be("{ ok : 1 }");
 
             commandResponse = MessageHelper.BuildCommandResponse(CreateRawBsonDocument(new BsonDocument("ok", 1)));
-            mockConnection
-                .Setup(c => c.ReceiveMessage(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), messageEncoderSettings, CancellationToken.None))
-                .Returns(commandResponse);
+            _ = SetupConnection(mockConnection, connectionId);
             subject._responseHandling(CommandResponseHandling.Ignore); // will trigger the exception if the CommandUsingCommandMessageWireProtocol ctor will be called
 
-            result = subject.Execute(mockConnection.Object, CancellationToken.None);
+            result = null;
+            var exception = Record.Exception(() => { result = subject.Execute(mockConnection.Object, CancellationToken.None); });
 
-            subject._cachedWireProtocol().Should().BeSameAs(cachedWireProtocol);
-            subject._cachedConnectionId().Should().BeSameAs(connectionId);
-            result.Should().Be("{ ok : 1 }");
+            if (withSameConnection)
+            {
+                exception.Should().BeNull();
+                subject._cachedWireProtocol().Should().BeSameAs(cachedWireProtocol);
+                subject._cachedConnectionId().Should().BeSameAs(connectionId);
+                result.Should().Be("{ ok : 1 }");
+            }
+            else
+            {
+                var e = exception.Should().BeOfType<ArgumentException>().Subject;
+                e.Message.Should().Be("CommandResponseHandling must be Return, NoneExpected or ExhaustAllowed.\r\nParameter name: responseHandling");
+                subject._cachedConnectionId().Should().NotBeSameAs(cachedWireProtocol);
+                subject._cachedConnectionId().Should().NotBeSameAs(connectionId);
+                result.Should().BeNull();
+            }
+
+            ConnectionId SetupConnection(Mock<IConnection> connection, ConnectionId id = null)
+            {
+                if (id == null || !withSameConnection)
+                {
+                    id = new ConnectionId(new ServerId(new ClusterId(IdGenerator<ClusterId>.GetNextId()), new DnsEndPoint("localhost", 27017)));
+                }
+
+                connection
+                    .Setup(c => c.ReceiveMessage(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), messageEncoderSettings, CancellationToken.None))
+                    .Returns(commandResponse);
+                connection.SetupGet(c => c.ConnectionId).Returns(id);
+                connection
+                    .SetupGet(c => c.Description)
+                    .Returns(
+                        new ConnectionDescription(
+                            id,
+                            new IsMasterResult(new BsonDocument("ok", 1)),
+                            new BuildInfoResult(new BsonDocument("version", "4.4"))));
+                return id;
+            }
         }
 
         [Fact]

@@ -133,7 +133,7 @@ namespace MongoDB.Driver.Core.Servers
             if (_state.TryChange(State.Initial, State.Open))
             {
                 MonitorServerAsync().ConfigureAwait(false);
-                _roundTripTimeMonitor.Run().ConfigureAwait(false);
+                _roundTripTimeMonitor.RunAsync().ConfigureAwait(false);
             }
         }
 
