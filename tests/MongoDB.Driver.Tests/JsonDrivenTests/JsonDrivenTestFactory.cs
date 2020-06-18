@@ -99,7 +99,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                         case "assertSameLsidOnLastTwoCommands": return new JsonDrivenAssertSameLsidOnLastTwoCommandsTest(_testRunner, _eventCapturer, _objectMap);
                         case "assertSessionTransactionState": return new JsonDrivenAssertSessionTransactionStateTest(_testRunner, _objectMap);
                         case "wait": return new JsonDrivenWait(_testRunner, _objectMap);
-                        case "waitForEvent": return new JsonDrivenWaitForEvent(_testRunner, _objectMap, _eventCapturer); ;
+                        case "waitForEvent": return new JsonDrivenWaitForEvent(_testRunner, _objectMap, _eventCapturer);
                         case "assertEventCount": return new JsonDrivenAssertEventsCount(_testRunner, _objectMap, _eventCapturer);
                         case "startThread": return new JsonDrivenStartThread(_testsContext, _testRunner, _objectMap);
                         case "runAdminCommand": return new JsonDrivenRunAdminCommand(_client, _objectMap);

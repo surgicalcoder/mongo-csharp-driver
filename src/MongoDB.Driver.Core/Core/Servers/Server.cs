@@ -300,7 +300,7 @@ namespace MongoDB.Driver.Core.Servers
                     mongoConnectionException.IsNetworkException &&
                     !mongoConnectionException.ContainsSocketTimeoutException)
                 {
-                    _monitor.CurrentCheckCancel();
+                    _monitor.CancelCurrentCheck();
                 }
 
                 var description = Description; // use Description property to access _description value safely

@@ -507,7 +507,7 @@ namespace MongoDB.Driver.Core.Servers
                 object.Equals(_electionId, other._electionId) &&
                 EndPointHelper.Equals(_replicaSetConfig?.Primary, other._replicaSetConfig?.Primary) && // primary
                 _logicalSessionTimeout == other._logicalSessionTimeout &&
-                _heartbeatException == other._heartbeatException;
+                object.Equals(_heartbeatException, other._heartbeatException);
         }
 
         /// <inheritdoc/>

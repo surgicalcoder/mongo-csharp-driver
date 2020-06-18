@@ -36,7 +36,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <summary>
         /// Cancel the current heartbeat.
         /// </summary>
-        void CurrentCheckCancel();
+        void CancelCurrentCheck();
 
         /// <summary>
         /// Occurs when the server description changes.

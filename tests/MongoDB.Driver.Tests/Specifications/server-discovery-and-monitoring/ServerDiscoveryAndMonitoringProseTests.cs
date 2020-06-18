@@ -61,11 +61,12 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
                     });
             }
 
+            var resultTimes = times;
             // we have at least 3 items here
             // Skip the first event because we don't know reliable time to assert it
-            for (int i = 1; i < times.Count; i++)
+            for (int i = 1; i < resultTimes.Count; i++)
             {
-                var attemptDuration = times[i] - times[i - 1];
+                var attemptDuration = resultTimes[i] - resultTimes[i - 1];
                 attemptDuration
                     .Should()
                     .BeLessThan(TimeSpan.FromSeconds(1));

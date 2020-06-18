@@ -96,7 +96,7 @@ namespace MongoDB.Driver.Core.Servers
         public object Lock => _lock;
 
         // public methods
-        public void CurrentCheckCancel()
+        public void CancelCurrentCheck()
         {
             IConnection toDispose = null;
             lock (_lock)
@@ -108,10 +108,7 @@ namespace MongoDB.Driver.Core.Servers
                     _connection = null;
                 }
             }
-            if (toDispose != null)
-            {
-                toDispose.Dispose();
-            }
+            toDispose?.Dispose();
         }
 
         public void Dispose()
@@ -132,8 +129,8 @@ namespace MongoDB.Driver.Core.Servers
         {
             if (_state.TryChange(State.Initial, State.Open))
             {
-                MonitorServerAsync().ConfigureAwait(false);
-                _roundTripTimeMonitor.RunAsync().ConfigureAwait(false);
+                _ = MonitorServerAsync().ConfigureAwait(false);
+                _ = _roundTripTimeMonitor.RunAsync().ConfigureAwait(false);
             }
         }
 
