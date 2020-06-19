@@ -265,7 +265,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
         {
             using (var client = CreateDisposableClient(test, eventCapturer))
             {
-                ExecuteOperations(client, null, test, eventCapturer);
+                ExecuteOperations(client, objectMap: null, test, eventCapturer);
             }
         }
 

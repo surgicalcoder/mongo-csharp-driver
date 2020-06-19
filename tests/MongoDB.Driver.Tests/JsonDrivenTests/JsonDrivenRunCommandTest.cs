@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
+using MongoDB.Driver.TestHelpers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
@@ -64,34 +65,16 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            if (_session == null)
-            {
-                _result = _database
-                    .WithReadConcern(_readConcern)
-                    .RunCommand<BsonDocument>(_command, _readPreference, cancellationToken);
-            }
-            else
-            {
-                _result = _database
-                    .WithReadConcern(_readConcern)
-                    .RunCommand<BsonDocument>(_session, _command, _readPreference, cancellationToken);
-            }
+            var database = _database.WithReadConcern(_readConcern);
+
+            _result = RunCommandHelper.RunCommandAndRetryIfRequired(database, _command, _session, _readPreference, cancellationToken);
         }
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            if (_session == null)
-            {
-                _result = await _database
-                    .WithReadConcern(_readConcern)
-                    .RunCommandAsync<BsonDocument>(_command, _readPreference, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                _result = await _database
-                    .WithReadConcern(_readConcern)
-                    .RunCommandAsync<BsonDocument>(_session, _command, _readPreference, cancellationToken).ConfigureAwait(false);
-            }
+            var database = _database.WithReadConcern(_readConcern);
+
+            _result = await RunCommandHelper.RunCommandAndRetryIfRequiredAsync(database, _command, _session, _readPreference, cancellationToken).ConfigureAwait(false);
         }
 
         protected override void SetArgument(string name, BsonValue value)

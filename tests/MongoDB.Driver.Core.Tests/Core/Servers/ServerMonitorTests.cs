@@ -121,7 +121,7 @@ namespace MongoDB.Driver.Core.Servers
         }
 
         [Fact]
-        public void DescriptionChanged_should_not_be_raised_during_initial_handshake()
+        public void DescriptionChanged_should_be_raised_during_initial_handshake()
         {
             var changes = new List<ServerDescriptionChangedEventArgs>();
             _subject.DescriptionChanged += (o, e) => changes.Add(e);
@@ -131,7 +131,7 @@ namespace MongoDB.Driver.Core.Servers
             SpinWait.SpinUntil(
                 () =>
                     _subject.Description.State == ServerState.Connected &&
-                    changes.Count > 0, // there is a small possible race condition between triggering an event and changing the Description
+                    changes.Count > 0, // there is a small possible delay between triggering an event and the actual description changing
                     TimeSpan.FromSeconds(5))
                 .Should()
                 .BeTrue();
@@ -183,11 +183,11 @@ namespace MongoDB.Driver.Core.Servers
         {
             SetupHeartbeatConnection(isStreamable, autoFillStreamingResponses: true);
 
-            _connection.IsReadTimeoutChanged.Should().Be(null);
+            _connection.WasReadTimeoutChanged.Should().Be(null);
             var resultProtocol = _subject.InitializeIsMasterProtocol(_connection);
             if (isStreamable)
             {
-                _connection.IsReadTimeoutChanged.Should().BeTrue();
+                _connection.WasReadTimeoutChanged.Should().BeTrue();
                 resultProtocol._command().Should().Contain("isMaster");
                 resultProtocol._command().Should().Contain("topologyVersion");
                 resultProtocol._command().Should().Contain("maxAwaitTimeMS");
@@ -195,7 +195,7 @@ namespace MongoDB.Driver.Core.Servers
             }
             else
             {
-                _connection.IsReadTimeoutChanged.Should().Be(null);
+                _connection.WasReadTimeoutChanged.Should().Be(null);
                 resultProtocol._command().Should().Contain("isMaster");
                 resultProtocol._command().Should().NotContain("topologyVersion");
                 resultProtocol._command().Should().NotContain("maxAwaitTimeMS");
@@ -246,12 +246,12 @@ namespace MongoDB.Driver.Core.Servers
                     break;
             }
 
-            // 10 seconds delay. Won't expected to be processed
-            _connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), TimeSpan.FromSeconds(5));
+            // 10 seconds delay. Not expected to be processe
+            _connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), TimeSpan.FromSeconds(10));
 
             _subject.Initialize();
 
-            _capturedEvents.WaitWhenOrThrowIfTimeout(
+            _capturedEvents.WaitForOrThrowIfTimeout(
                 events =>
                     events.Count(e => e is ServerDescriptionChangedEvent) > 1,  // the connection has been initialized and the first heatbeat event has been fired
                 TimeSpan.FromSeconds(5));

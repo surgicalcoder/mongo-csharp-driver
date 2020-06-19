@@ -90,16 +90,18 @@ namespace MongoDB.Driver.Tests
                 var cursor = collection.FindSync(FilterDefinition<BsonDocument>.Empty, new FindOptions<BsonDocument> { BatchSize = 2 });
                 cursor.MoveNext();
 
+                var replSetStepDownCommand = BsonDocument.Parse("{ replSetStepDown : 5, force : true }");
                 BsonDocument replSetStepDownResult;
                 if (async)
                 {
-                    replSetStepDownResult = adminDatabase.RunCommandAsync<BsonDocument>("{ replSetStepDown : 5, force : true }").GetAwaiter().GetResult();
+                    replSetStepDownResult = RunCommandHelper.RunReplicaSetStepDownAsync(adminDatabase, replSetStepDownCommand).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    replSetStepDownResult = adminDatabase.RunCommand<BsonDocument>("{ replSetStepDown : 5, force : true }");
+                    replSetStepDownResult = RunCommandHelper.RunReplicaSetStepDown(adminDatabase, replSetStepDownCommand);
                 }
 
+                replSetStepDownResult.Should().NotBeNull();
                 replSetStepDownResult.GetValue("ok", false).ToBoolean().Should().BeTrue();
 
                 cursor.MoveNext();
@@ -140,6 +142,7 @@ namespace MongoDB.Driver.Tests
             }
         }
 
+        // private methods
         private FailPoint ConfigureFailPoint(IMongoClient client, int errorCode)
         {
             var session = NoCoreSession.NewHandle();

@@ -56,7 +56,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 .Events
                 .Count(eventCondition);
 
-            actualEventsCount.Should().Be(_count, $"{_event} must be triggered only {_count}");
+            actualEventsCount.Should().Be(_count, $"{_event} must be triggered exactly {_count} times");
         }
 
         protected override void SetArgument(string name, BsonValue value)

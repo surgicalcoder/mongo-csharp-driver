@@ -106,7 +106,7 @@ namespace MongoDB.Driver.Core
             return notifier.Initialize();
         }
 
-        public void WaitWhenOrThrowIfTimeout(Func<IEnumerable<object>, bool> condition, TimeSpan timeout, string eventName = null)
+        public void WaitForOrThrowIfTimeout(Func<IEnumerable<object>, bool> condition, TimeSpan timeout, string eventName = null)
         {
             var notifyTask = NotifyWhen(condition);
             var index = Task.WaitAny(notifyTask, Task.Delay(timeout));
@@ -116,9 +116,9 @@ namespace MongoDB.Driver.Core
             }
         }
 
-        public void WaitWhenOrThrowIfTimeout(Func<IEnumerable<object>, bool> condition, TimeSpan timeout, Func<TimeSpan, string> eventNameFunc)
+        public void WaitForOrThrowIfTimeout(Func<IEnumerable<object>, bool> condition, TimeSpan timeout, Func<TimeSpan, string> eventNameFunc)
         {
-            WaitWhenOrThrowIfTimeout(condition, timeout, Ensure.IsNotNull(eventNameFunc(timeout), nameof(eventNameFunc)));
+            WaitForOrThrowIfTimeout(condition, timeout, Ensure.IsNotNull(eventNameFunc(timeout), nameof(eventNameFunc)));
         }
 
         public bool TryGetEventHandler<TEvent>(out Action<TEvent> handler)

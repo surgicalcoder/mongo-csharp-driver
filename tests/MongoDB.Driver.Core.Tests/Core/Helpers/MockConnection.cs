@@ -34,12 +34,12 @@ namespace MongoDB.Driver.Core.Helpers
         // fields
         private ConnectionId _connectionId;
         private readonly ConnectionSettings _connectionSettings;
-        private bool? _isReadTimeoutChanged;
         private bool? _isExpired;
         private DateTime _lastUsedAtUtc;
         private DateTime _openedAtUtc;
         private readonly Queue<ActionQueueItem> _replyMessages;
         private readonly List<RequestMessage> _sentMessages;
+        private bool? _wasReadTimeoutChanged;
 
         private readonly Action<ConnectionClosingEvent> _closingEventHandler;
         private readonly Action<ConnectionClosedEvent> _closedEventHandler;
@@ -122,14 +122,14 @@ namespace MongoDB.Driver.Core.Helpers
             set => _isExpired = value;
         }
 
-        public bool? IsReadTimeoutChanged => _isReadTimeoutChanged;
-
         public ConnectionSettings Settings => _connectionSettings;
+
+        public bool? WasReadTimeoutChanged => _wasReadTimeoutChanged;
 
         // methods
         public void AddAdditionalReadTimeout(TimeSpan timeout)
         {
-            _isReadTimeoutChanged = true;
+            _wasReadTimeoutChanged = true;
         }
 
         public void Dispose()
@@ -188,19 +188,19 @@ namespace MongoDB.Driver.Core.Helpers
 
         public ResponseMessage ReceiveMessage(int responseTo, IMessageEncoderSelector encoderSelector, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
-            var replied = _replyMessages.Dequeue();
-            replied.ThrowIfException();
-            var message = (ResponseMessage)replied.Message;
-            replied.DelayIfRequired();
+            var reply = _replyMessages.Dequeue();
+            reply.ThrowIfException();
+            var message = (ResponseMessage)reply.Message;
+            reply.DelayIfRequired();
             return message;
         }
 
         public async Task<ResponseMessage> ReceiveMessageAsync(int responseTo, IMessageEncoderSelector encoderSelector, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
-            var replied = _replyMessages.Dequeue();
-            replied.ThrowIfException();
-            var message = (ResponseMessage)replied.Message;
-            await replied.DelayIfRequiredAsync().ConfigureAwait(false);
+            var reply = _replyMessages.Dequeue();
+            reply.ThrowIfException();
+            var message = (ResponseMessage)reply.Message;
+            await reply.DelayIfRequiredAsync().ConfigureAwait(false);
             return message;
         }
 

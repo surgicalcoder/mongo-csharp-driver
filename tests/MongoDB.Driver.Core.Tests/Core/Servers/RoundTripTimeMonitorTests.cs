@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,52 +36,6 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
     {
         private static EndPoint __endPoint = new DnsEndPoint("localhost", 27017);
         private static ServerId __serverId = new ServerId(new ClusterId(), __endPoint);
-
-        [Fact]
-        public void Average_should_grow()
-        {
-            var frequency = TimeSpan.FromMilliseconds(10);
-            var mockConnection = new Mock<IConnection>();
-
-            var subject = CreateSubject(
-                frequency,
-                mockConnection,
-                CancellationToken.None,
-                out var mockConnectionFactory);
-
-            TimeSpan previousAverage = TimeSpan.Zero;
-            mockConnection
-                .SetupSequence(c => c.ReceiveMessageAsync(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), It.IsAny<MessageEncoderSettings>(), It.IsAny<CancellationToken>()))
-                .Returns(
-                    () =>
-                    {
-                        return Task.FromResult(CreateResponseMessage());
-                    })
-                .Returns(
-                    () =>
-                    {
-                        subject.Average.Should().BeGreaterThan(previousAverage);
-                        previousAverage = subject.Average;
-                        return Task.FromResult(CreateResponseMessage());
-                    })
-                .Returns(
-                    () =>
-                    {
-                        subject.Average.Should().BeGreaterThan(previousAverage);
-                        previousAverage = subject.Average;
-                        return Task.FromResult(CreateResponseMessage());
-                    })
-                .Returns(
-                    () =>
-                    {
-                        subject.Average.Should().BeGreaterThan(previousAverage);
-                        previousAverage = subject.Average;
-                        subject._disposed(true); // stop the loop
-                        return Task.FromResult(CreateResponseMessage());
-                    });
-
-            subject.RunAsync().ConfigureAwait(false);
-        }
 
         [Fact]
         public void Constructor_should_throw_connection_endpoint_is_null()
@@ -107,13 +62,11 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
         }
 
         [Fact]
-        public void Dispose_should_close_connection_only_once()
+        public void Dispose_should_close_connection()
         {
-            var subject = CreateSubject(
-                TimeSpan.FromMilliseconds(10),
-                CancellationToken.None,
-                out var mockConnectionFactory,
-                out var mockConnection);
+            var mockConnection = new Mock<IConnection>();
+
+            var subject = CreateSubject(TimeSpan.FromMilliseconds(10), mockConnection);
 
             subject.RunAsync().ConfigureAwait(false);
             SpinWait.SpinUntil(() => subject._roundTripTimeConnection() != null, TimeSpan.FromSeconds(2)).Should().BeTrue();
@@ -126,85 +79,96 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
         }
 
         [Fact]
-        public void Failed_isMaster_should_close_connection_only()
+        public void Round_trip_time_monitor_should_work_as_expected()
         {
             var frequency = TimeSpan.FromMilliseconds(10);
             var mockConnection = new Mock<IConnection>();
+            var mockConnectionFactory = new Mock<IConnectionFactory>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
 
-            var subject = CreateSubject(
-                frequency,
-                mockConnection,
-                CancellationToken.None,
-                out var mockConnectionFactory);
+            ConcurrentQueue<(TimeSpan average, IConnection rtt)> steps = new ConcurrentQueue<(TimeSpan, IConnection)>();
 
-            mockConnection
-                .SetupSequence(c => c.ReceiveMessageAsync(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), It.IsAny<MessageEncoderSettings>(), It.IsAny<CancellationToken>()))
-                .Throws(new Exception("TestMessage"))  // step 1
-                .Returns(                              // step 2
-                    () =>
-                    {
-                        return Task.FromResult(CreateResponseMessage());
-                    })
-                .Returns(                              // step 3
-                    () =>
-                    {
-                        subject._disposed(true); // stop the loop
-                        return Task.FromResult(CreateResponseMessage());
-                    });
+            using (var cancellationTokenSource = new CancellationTokenSource(delay: TimeSpan.FromSeconds(1000))) // just in case
+            {
+                var subject = CreateSubject(
+                    frequency,
+                    mockConnection,
+                    mockConnectionFactory,
+                    cancellationTokenSource.Token);
 
-            subject.RunAsync().ConfigureAwait(false);
+                mockConnectionFactory
+                    .Setup(f => f.CreateConnection(__serverId, __endPoint))
+                    .Returns(
+                        () =>
+                        {
+                            steps.Enqueue((subject.Average, subject._roundTripTimeConnection()));
+                            return mockConnection.Object;
+                        });
 
-            SpinWait.SpinUntil(
-                () => subject._roundTripTimeConnection() != null,
-                TimeSpan.FromSeconds(2))
-                .Should()
-                .BeTrue(); // waiting for initial connection initialization
+                mockConnection
+                    .SetupSequence(c => c.ReceiveMessageAsync(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), It.IsAny<MessageEncoderSettings>(), It.IsAny<CancellationToken>()))
+                    .Returns(
+                        () =>
+                        {
+                            steps.Enqueue((subject.Average, subject._roundTripTimeConnection()));
+                            return Task.FromResult(CreateResponseMessage());
+                        })
+                    .Throws(new Exception("TestMessage"))
+                    .Returns(
+                        () =>
+                        {
+                            cancellationTokenSource.Cancel();
+                            steps.Enqueue((subject.Average, subject._roundTripTimeConnection()));
+                            return Task.FromResult(CreateResponseMessage());
+                        });
 
-            SpinWait.SpinUntil(
-                () => subject._roundTripTimeConnection() == null,
-                TimeSpan.FromSeconds(2))
-                .Should()
-                .BeTrue(); // Step 1. Waiting for connection disposing after exception
-            mockConnection.Verify(c => c.Dispose(), Times.Once);
-            subject._disposed().Should().BeFalse();
+                subject
+                    .RunAsync()
+                    .GetAwaiter()
+                    .GetResult();
 
-            SpinWait.SpinUntil(
-                () => subject._roundTripTimeConnection() != null,
-                TimeSpan.FromSeconds(2))
-                .Should()
-                .BeTrue(); // Step 2. Restored
+                // initialize connection
+                steps.TryDequeue(out (TimeSpan Average, IConnection RttConnection) step).Should().BeTrue();
+                step.Average.Should().Be(default);
+                step.RttConnection.Should().BeNull();
 
-            // step 3. Just close the loop.
+                // isMaster call
+                steps.TryDequeue(out step).Should().BeTrue();
+                step.Average.Should().NotBe(default);
+                step.RttConnection.Should().NotBeNull();
+
+                // initialize connection after exception
+                steps.TryDequeue(out step).Should().BeTrue();
+                step.Average.Should().NotBe(default);
+                step.RttConnection.Should().BeNull();
+
+                // isMaster call
+                steps.TryDequeue(out step).Should().BeTrue();
+                step.Average.Should().NotBe(default);
+                step.RttConnection.Should().NotBeNull();
+
+                steps.TryDequeue(out _).Should().BeFalse();
+
+                mockConnection.Verify(c => c.Dispose(), Times.Once());
+                mockConnectionFactory.Verify(c => c.CreateConnection(__serverId, __endPoint), Times.Exactly(2));
+            }
         }
 
         // private methods
         private RoundTripTimeMonitor CreateSubject(
             TimeSpan frequency,
             Mock<IConnection> mockConnection,
-            CancellationToken cancellationToken,
-            out Mock<IConnectionFactory> mockConnectionFactory)
+            Mock<IConnectionFactory> mockConnectionFactory,
+            CancellationToken cancellationToken = default)
         {
-            var isMasterDocument = new BsonDocument
-            {
-                { "ok", 1 },
-            };
-
-            ConnectionId connectId;
+            var connectionDescription = CreateConnectionDescription();
             mockConnection
                 .SetupGet(c => c.Description)
-                .Returns(new ConnectionDescription(
-                    connectId = new ConnectionId(__serverId, 0),
-                    new IsMasterResult(isMasterDocument),
-                    new BuildInfoResult(BsonDocument.Parse("{ ok : 1, version : '4.4.0' }"))));
+                .Returns(connectionDescription);
 
             mockConnection
                .SetupGet(c => c.ConnectionId)
-               .Returns(connectId);
-
-            mockConnectionFactory = new Mock<IConnectionFactory>();
-            mockConnectionFactory
-                .Setup(f => f.CreateConnection(__serverId, __endPoint))
-                .Returns(mockConnection.Object);
+               .Returns(connectionDescription.ConnectionId);
 
             return new RoundTripTimeMonitor(
                 mockConnectionFactory.Object,
@@ -214,14 +178,30 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
                 cancellationToken);
         }
 
-        private RoundTripTimeMonitor CreateSubject(TimeSpan frequency, CancellationToken cancellationToken, out Mock<IConnectionFactory> mockConnectionFactory, out Mock<IConnection> mockConnection)
+        private ConnectionDescription CreateConnectionDescription()
         {
-            mockConnection = new Mock<IConnection>();
+            var isMasterDocument = new BsonDocument
+            {
+                { "ok", 1 },
+            };
+            return new ConnectionDescription(
+                    new ConnectionId(__serverId, 0),
+                    new IsMasterResult(isMasterDocument),
+                    new BuildInfoResult(BsonDocument.Parse("{ ok : 1, version : '4.4.0' }")));
+        }
+
+        private RoundTripTimeMonitor CreateSubject(TimeSpan frequency, Mock<IConnection> mockConnection, CancellationToken cancellationToken = default)
+        {
             mockConnection
                 .Setup(c => c.ReceiveMessageAsync(It.IsAny<int>(), It.IsAny<IMessageEncoderSelector>(), It.IsAny<MessageEncoderSettings>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => CreateResponseMessage());
 
-            return CreateSubject(frequency, mockConnection, cancellationToken, out mockConnectionFactory);
+            var mockConnectionFactory = new Mock<IConnectionFactory>();
+            mockConnectionFactory
+                .Setup(f => f.CreateConnection(__serverId, __endPoint))
+                .Returns(mockConnection.Object);
+
+            return CreateSubject(frequency, mockConnection, mockConnectionFactory, cancellationToken);
         }
 
         private ResponseMessage CreateResponseMessage()
@@ -239,11 +219,6 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
         public static bool _disposed(this RoundTripTimeMonitor roundTripTimeMonitor)
         {
             return (bool)Reflector.GetFieldValue(roundTripTimeMonitor, nameof(_disposed));
-        }
-
-        public static void _disposed(this RoundTripTimeMonitor roundTripTimeMonitor, bool value)
-        {
-            Reflector.SetFieldValue(roundTripTimeMonitor, nameof(_disposed), value);
         }
 
         public static IConnection _roundTripTimeConnection(this RoundTripTimeMonitor roundTripTimeMonitor)

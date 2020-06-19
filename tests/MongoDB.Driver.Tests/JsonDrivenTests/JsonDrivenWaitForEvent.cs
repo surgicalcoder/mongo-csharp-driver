@@ -88,7 +88,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             var eventCondition = MapEventNameToCondition(_event);
             Func<IEnumerable<object>, bool> eventsConditionWithFilterByCount = (events) => events.Count(eventCondition) >= _count;
 
-            _eventCapturer.WaitWhenOrThrowIfTimeout(
+            _eventCapturer.WaitForOrThrowIfTimeout(
                 eventsConditionWithFilterByCount,
                 TimeSpan.FromSeconds(10),
                 (timeout) =>

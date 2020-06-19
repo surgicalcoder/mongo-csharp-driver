@@ -14,7 +14,7 @@
 */
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using FluentAssertions;
@@ -36,14 +36,14 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
     public class ServerDiscoveryAndMonitoringProseTests
     {
         [SkippableFact]
-        public void Streaming_protocol_test()
+        public void Heartbeat_should_work_as_expected()
         {
-            var times = new List<DateTime>();
+            var heartbeatSuceededTimestamps = new ConcurrentQueue<DateTime>();
             var eventCapturer = new EventCapturer()
                 .Capture<ServerHeartbeatSucceededEvent>(
                     (@event) =>
                     {
-                        times.Add(DateTime.UtcNow);
+                        heartbeatSuceededTimestamps.Enqueue(DateTime.UtcNow);
                         return true;
                     }
                 );
@@ -52,7 +52,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
             eventCapturer.Clear();
             using (var client = CreateClient(eventCapturer, heartbeatInterval))
             {
-                eventCapturer.WaitWhenOrThrowIfTimeout(
+                eventCapturer.WaitForOrThrowIfTimeout(
                     events => events.Count() > 3, // wait for at least 3 events
                     TimeSpan.FromSeconds(10),
                     (timeout) =>
@@ -61,17 +61,17 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
                     });
             }
 
-            var resultTimes = times;
+            var heartbeatSuceededTimestampsList = heartbeatSuceededTimestamps.ToList();
             // we have at least 3 items here
-            // Skip the first event because we don't know reliable time to assert it
-            for (int i = 1; i < resultTimes.Count; i++)
+            // Skip the first event because we have nothing to compare it to
+            for (int i = 1; i < heartbeatSuceededTimestampsList.Count; i++)
             {
-                var attemptDuration = resultTimes[i] - resultTimes[i - 1];
+                var attemptDuration = heartbeatSuceededTimestampsList[i] - heartbeatSuceededTimestampsList[i - 1];
                 attemptDuration
                     .Should()
                     .BeLessThan(TimeSpan.FromSeconds(1));
                 // Assert the client processes isMaster replies more frequently than 10 secs (approximately every 500ms)
-                // the expected value should be between approximatelly 500ms and 10 seconds
+                // the expected value should be between approximately 500ms and 10 seconds
             }
         }
 
