@@ -45,7 +45,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             }
             else
             {
-                throw new Exception("The primary has not been changed or timeout has been exceeded.");
+                throw new Exception($"The primary has not been changed from {_testContext.RecordedPrimary} or timeout {_timeout} has been exceeded.");
             }
         }
 
@@ -58,7 +58,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             }
             else
             {
-                throw new Exception("The primary has not been changed or timeout has been exceeded.");
+                throw new Exception($"The primary has not been changed from {_testContext.RecordedPrimary} or timeout {_timeout} has been exceeded.");
             }
             return Task.FromResult(true);
         }

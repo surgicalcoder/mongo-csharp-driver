@@ -272,15 +272,20 @@ namespace MongoDB.Driver.Core.Servers
                         heartbeatIsMasterResult = await GetHeartbeatInfoAsync(isMasterProtocol, _connection, cancellationToken).ConfigureAwait(false);
                     }
                 }
-                catch (Exception ex) when (IsCancellationException(ex, _currentCheckCancelled, cancellationToken))
-                {
-                    // makes sense only if _currentCheckCancelled is equal to true, but there is no harm to do it each time
-                    _currentCheckCancelled = false;
-
-                    return;
-                }
                 catch (Exception ex)
                 {
+                    isMasterProtocol = null;
+
+                    lock (_lock)
+                    {
+                        if (IsCancellationException(ex, _currentCheckCancelled, cancellationToken))
+                        {
+                            // makes sense only if _currentCheckCancelled is equal to true, but there is no harm to do it each time
+                            _currentCheckCancelled = false;
+                            return;
+                        }
+                    }
+
                     heartbeatException = ex;
                     _roundTripTimeMonitor.Reset();
 

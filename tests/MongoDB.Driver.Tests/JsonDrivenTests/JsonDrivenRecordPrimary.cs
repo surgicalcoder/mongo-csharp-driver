@@ -28,7 +28,13 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         public static string Key => nameof(RecordedPrimary);
         #endregion
 
-        public EndPoint RecordedPrimary { get; set; }
+        private EndPoint _recordedPrimary;
+
+        public EndPoint RecordedPrimary
+        {
+            get => _recordedPrimary;
+            set => _recordedPrimary = Ensure.IsNotNull(value, nameof(RecordedPrimary));
+        }
     }
 
     public sealed class JsonDrivenRecordPrimary : JsonDrivenTestRunnerTest
@@ -52,11 +58,6 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         {
             _testContext.RecordedPrimary = GetPrimary();
             return Task.FromResult(true);
-        }
-
-        public override void Assert()
-        {
-            // do nothing
         }
 
         // private methods
