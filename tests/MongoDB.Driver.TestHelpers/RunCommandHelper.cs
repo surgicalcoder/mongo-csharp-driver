@@ -129,7 +129,7 @@ namespace MongoDB.Driver.TestHelpers
         // private methods
         private static bool IsReplSetStepDownRetryException(MongoCommandException ex)
         {
-            return ex.Message.StartsWith("Command replSetStepDown failed: Unable to acquire lock");
+            return ex.Message.StartsWith("Command replSetStepDown failed: Unable to acquire") && ex.Message.Contains("lock");
         }
 
         private static BsonDocument RunCommand(IClientSessionHandle clientSession, IMongoDatabase database, BsonDocument command, ReadPreference readPreference, CancellationToken cancellationToken)
