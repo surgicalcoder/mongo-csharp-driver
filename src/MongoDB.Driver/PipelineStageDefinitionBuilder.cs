@@ -1436,29 +1436,16 @@ namespace MongoDB.Driver
                 return true;
             }
 
-            var connectFromInterfaces = typeof(TConnectFrom).GetTypeInfo().GetInterfaces().Where(i => i.GetTypeInfo().IsGenericType);
-            var connectToInterfaces = typeof(TConnectTo).GetTypeInfo().GetInterfaces().Where(i => i.GetTypeInfo().IsGenericType);
-            if (connectFromInterfaces.Any(i => connectToInterfaces.Contains(i)))
-            {
-                return true;
-            }
-            if (connectFromInterfaces.Contains(typeof(TConnectTo)))
-            {
-                return true;
-            }
-            if (connectToInterfaces.Contains(typeof(TConnectFrom)))
-            {
-                return true;
-            }
-
             var ienumerableTConnectTo = typeof(IEnumerable<>).MakeGenericType(typeof(TConnectTo));
-            if (connectFromInterfaces.Contains(ienumerableTConnectTo))
+            if (typeof(TConnectFrom).GetTypeInfo().GetInterfaces().Contains(ienumerableTConnectTo) ||
+                typeof(TConnectFrom) == ienumerableTConnectTo)
             {
                 return true;
             }
 
             var ienumerableTConnectFrom = typeof(IEnumerable<>).MakeGenericType(typeof(TConnectFrom));
-            if (connectToInterfaces.Contains(ienumerableTConnectFrom))
+            if (typeof(TConnectTo).GetTypeInfo().GetInterfaces().Contains(ienumerableTConnectFrom) ||
+                typeof(TConnectTo) == ienumerableTConnectFrom)
             {
                 return true;
             }

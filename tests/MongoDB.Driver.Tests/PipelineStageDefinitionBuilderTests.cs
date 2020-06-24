@@ -125,73 +125,28 @@ namespace MongoDB.Driver.Tests
         }
 
         [SkippableFact]
-        public void GraphLookup_with_incompatible_parameters_should_throw()
-        {
-            RequireServer.Check().Supports(Feature.AggregateGraphLookupStage);
-
-            var client = new MongoClient(CoreTestConfiguration.ConnectionString.ToString());
-            var employeesCollection = client.GetDatabase("test").GetCollection<BsonDocument>("employees");
-
-            var connectFromField = (FieldDefinition<BsonDocument, string[]>)"name";
-            var connectToField = (FieldDefinition<BsonDocument, List<object>>)"reportsTo";
-            var startWith = (AggregateExpressionDefinition<BsonDocument, string[]>)"$name";
-            var @as = (FieldDefinition<BsonDocument, IEnumerable<BsonDocument>>)"reportingHierarchy";
-
-            Action act = () => PipelineStageDefinitionBuilder.GraphLookup(employeesCollection, connectFromField, connectToField, startWith, @as);
-
-            act.ShouldThrow<ArgumentException>();
-        }
-
-        [SkippableFact]
-        public void GraphLookup_with_many_to_many_parameters_should_return_expected_result()
-        {
-            RequireServer.Check().Supports(Feature.AggregateGraphLookupStage);
-
-            var client = new MongoClient(CoreTestConfiguration.ConnectionString.ToString());
-            var employeesCollection = client.GetDatabase("test").GetCollection<BsonDocument>("employees");
-
-            var connectFromField = (FieldDefinition<BsonDocument, IEnumerable<string>>)"titles";
-            var connectToField = (FieldDefinition<BsonDocument, List<string>>)"reportsTo";
-            var startWith = (AggregateExpressionDefinition<BsonDocument, string[]>)"$titles";
-            var @as = (FieldDefinition<BsonDocument, IEnumerable<BsonDocument>>)"reportingHierarchy";
-
-            var result = PipelineStageDefinitionBuilder.GraphLookup(employeesCollection, connectFromField, connectToField, startWith, @as);
-
-            RenderStage(result).Document.Should().Be(
-                @"{
-                    $graphLookup : {
-                        from : 'employees',
-                        connectFromField : 'titles',
-                        connectToField : 'reportsTo',
-                        startWith : '$titles',
-                        as : 'reportingHierarchy'
-                    }
-                }");
-        }
-
-        [SkippableFact]
         public void GraphLookup_with_many_to_one_parameters_should_return_expected_result()
         {
             RequireServer.Check().Supports(Feature.AggregateGraphLookupStage);
 
             var client = new MongoClient(CoreTestConfiguration.ConnectionString.ToString());
-            var employeesCollection = client.GetDatabase("test").GetCollection<BsonDocument>("employees");
+            var collection = client.GetDatabase("test").GetCollection<C>("collectionC");
 
-            var connectFromField = (FieldDefinition<BsonDocument, List<string>>)"reportsTo";
-            var connectToField = (FieldDefinition<BsonDocument, string>)"name";
-            var startWith = (AggregateExpressionDefinition<BsonDocument, List<string>>)"$reportsTo";
-            var @as = (FieldDefinition<BsonDocument, IEnumerable<BsonDocument>>)"reportingHierarchy";
-
-            var result = PipelineStageDefinitionBuilder.GraphLookup(employeesCollection, connectFromField, connectToField, startWith, @as);
+            var result = PipelineStageDefinitionBuilder.GraphLookup(
+                from: collection,
+                connectFromField: x => x.From,
+                connectToField: x => x.To,
+                startWith: (C x) => x.From,
+                @as: (CMap x) => x.Map);
 
             RenderStage(result).Document.Should().Be(
                 @"{
                     $graphLookup : {
-                        from : 'employees',
-                        connectFromField : 'reportsTo',
-                        connectToField : 'name',
-                        startWith : '$reportsTo',
-                        as : 'reportingHierarchy'
+                        from : 'collectionC',
+                        connectFromField : 'From',
+                        connectToField : 'To',
+                        startWith : '$From',
+                        as : 'Map'
                     }
                 }");
         }
@@ -202,23 +157,50 @@ namespace MongoDB.Driver.Tests
             RequireServer.Check().Supports(Feature.AggregateGraphLookupStage);
 
             var client = new MongoClient(CoreTestConfiguration.ConnectionString.ToString());
-            var employeesCollection = client.GetDatabase("test").GetCollection<BsonDocument>("employees");
+            var collection = client.GetDatabase("test").GetCollection<B>("collectionB");
 
-            var connectFromField = (FieldDefinition<BsonDocument, string>)"name";
-            var connectToField = (FieldDefinition<BsonDocument, List<string>>)"reportsTo";
-            var startWith = (AggregateExpressionDefinition<BsonDocument, string>)"$name";
-            var @as = (FieldDefinition<BsonDocument, IEnumerable<BsonDocument>>)"reportingHierarchy";
-
-            var result = PipelineStageDefinitionBuilder.GraphLookup(employeesCollection, connectFromField, connectToField, startWith, @as);
+            var result = PipelineStageDefinitionBuilder.GraphLookup(
+                from: collection,
+                connectFromField: x => x.From,
+                connectToField: x => x.To,
+                startWith: (B x) => x.From,
+                @as: (BMap x) => x.Map);
 
             RenderStage(result).Document.Should().Be(
                 @"{
                     $graphLookup : {
-                        from : 'employees',
-                        connectFromField : 'name',
-                        connectToField : 'reportsTo',
-                        startWith : '$name',
-                        as : 'reportingHierarchy'
+                        from : 'collectionB',
+                        connectFromField : 'From',
+                        connectToField : 'To',
+                        startWith : '$From',
+                        as : 'Map'
+                    }
+                }");
+        }
+        
+        [SkippableFact]
+        public void GraphLookup_with_one_to_one_parameters_should_return_expected_result()
+        {
+            RequireServer.Check().Supports(Feature.AggregateGraphLookupStage);
+
+            var client = new MongoClient(CoreTestConfiguration.ConnectionString.ToString());
+            var collection = client.GetDatabase("test").GetCollection<A>("collectionA");
+
+            var result = PipelineStageDefinitionBuilder.GraphLookup(
+                from: collection,
+                connectFromField: x => x.From,
+                connectToField: x => x.To,
+                startWith: (A x) => x.From,
+                @as: (AMap x) => x.Map);
+
+            RenderStage(result).Document.Should().Be(
+                @"{
+                    $graphLookup : {
+                        from : 'collectionA',
+                        connectFromField : 'From',
+                        connectToField : 'To',
+                        startWith : '$From',
+                        as : 'Map'
                     }
                 }");
         }
@@ -535,6 +517,50 @@ namespace MongoDB.Driver.Tests
             var registry = BsonSerializer.SerializerRegistry;
             var serializer = registry.GetSerializer<TInput>();
             return stage.Render(serializer, registry);
+        }
+
+        // nested types
+        private class A
+        {
+            public X From { get; set; }
+            public X To { get; set; }
+        }
+
+        private class AMap
+        {
+            public X From { get; set; }
+            public X To { get; set; }
+            public List<A> Map { get; set; }
+        }
+
+        private class B
+        {
+            public X From { get; set; }
+            public IEnumerable<X> To { get; set; }
+        }
+
+        private class BMap
+        {
+            public X From { get; set; }
+            public IEnumerable<X> To { get; set; }
+            public List<B> Map { get; set; }
+        }
+
+        private class C
+        {
+            public IEnumerable<X> From { get; set; }
+            public X To { get; set; }
+        }
+
+        private class CMap
+        {
+            public IEnumerable<X> From { get; set; }
+            public X To { get; set; }
+            public List<C> Map { get; set; }
+        }
+
+        private class X
+        {
         }
     }
 }
