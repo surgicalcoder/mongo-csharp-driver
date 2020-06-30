@@ -52,8 +52,8 @@ namespace MongoDB.Driver.Core.Connections
             return new BsonDocument
             {
                 { "isMaster", 1 },
-                { "topologyVersion", topologyVersion?.ToBsonDocument(), topologyVersion != null },
-                { "maxAwaitTimeMS", maxAwaitTime?.TotalMilliseconds, maxAwaitTime.HasValue  }
+                { "topologyVersion", () => topologyVersion.ToBsonDocument(), topologyVersion != null },
+                { "maxAwaitTimeMS", () => (long)maxAwaitTime.Value.TotalMilliseconds, maxAwaitTime.HasValue }
             };
         }
 
@@ -90,6 +90,12 @@ namespace MongoDB.Driver.Core.Connections
                 // raised if the authentication mechanism were specified and the server responded the same way.
                 throw new MongoAuthenticationException(connection.ConnectionId, "User not found.", ex);
             }
+            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex))
+            {
+                throw new OperationCanceledException("The isMaster check has been cancelled.", ex);
+            }
+
+            bool IsExceptionFromConnection(ObjectDisposedException ex) => ex.ObjectName == connection.GetType().Name;
         }
 
         internal static async Task<IsMasterResult> GetResultAsync(
@@ -109,6 +115,12 @@ namespace MongoDB.Driver.Core.Connections
                 // raised if the authentication mechanism were specified and the server responded the same way.
                 throw new MongoAuthenticationException(connection.ConnectionId, "User not found.", ex);
             }
+            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex))
+            {
+                throw new OperationCanceledException("The isMaster check has been cancelled.", ex);
+            }
+
+            bool IsExceptionFromConnection(ObjectDisposedException ex) => ex.ObjectName == connection.GetType().Name;
         }
     }
 }

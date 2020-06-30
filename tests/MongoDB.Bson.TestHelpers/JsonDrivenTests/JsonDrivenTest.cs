@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 {
-    public abstract class JsonDrivenTest
+    public abstract class JsonDrivenTest : IDisposable
     {
         // protected fields
         protected Exception _actualException;
@@ -99,6 +99,11 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
                 }
                 AssertException();
             }
+        }
+
+        public virtual void Dispose()
+        {
+            // do nothing
         }
 
         public void ThrowActualExceptionIfNotNull()

@@ -25,11 +25,13 @@ namespace MongoDB.Driver.Core.Servers
     {
         private readonly IConnectionFactory _connectionFactory;
         private readonly IEventSubscriber _eventSubscriber;
-        private readonly ServerSettings _settings;
+        private readonly ServerSettings _serverSettings;
+        private readonly TcpStreamSettings _tcpStreamSettings;
 
-        public ServerMonitorFactory(ServerSettings settings, IConnectionFactory connectionFactory, IEventSubscriber eventSubscriber)
+        public ServerMonitorFactory(TcpStreamSettings tcpStreamSettings, ServerSettings serverSettings, IConnectionFactory connectionFactory, IEventSubscriber eventSubscriber)
         {
-            _settings = Ensure.IsNotNull(settings, nameof(settings));
+            _serverSettings = Ensure.IsNotNull(serverSettings, nameof(serverSettings));
+            _tcpStreamSettings = Ensure.IsNotNull(tcpStreamSettings, nameof(TcpStreamSettings));
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
             _eventSubscriber = Ensure.IsNotNull(eventSubscriber, nameof(eventSubscriber));
         }
@@ -37,7 +39,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <inheritdoc/>
         public IServerMonitor Create(ServerId serverId, EndPoint endPoint)
         {
-            return new ServerMonitor(serverId, endPoint, _connectionFactory, _settings.HeartbeatInterval, _settings.HeartbeatTimeout, _eventSubscriber);
+            return new ServerMonitor(serverId, endPoint, _connectionFactory, _serverSettings.HeartbeatInterval, _serverSettings.HeartbeatTimeout, _tcpStreamSettings, _eventSubscriber);
         }
     }
 }

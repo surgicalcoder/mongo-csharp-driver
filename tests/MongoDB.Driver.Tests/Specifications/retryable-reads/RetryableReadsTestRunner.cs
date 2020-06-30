@@ -190,7 +190,6 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             return DriverTestConfiguration.CreateDisposableClient(
                 (MongoClientSettings settings) =>
                 {
-                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // may be overwritten in the next step in future
                     ConfigureClientSettings(settings, test);
                     settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
                 });

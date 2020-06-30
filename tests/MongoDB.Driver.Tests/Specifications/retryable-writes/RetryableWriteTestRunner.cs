@@ -118,7 +118,6 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_writes
             return DriverTestConfiguration.CreateDisposableClient(
                 settings =>
                 {
-                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // may be overwritten in the next step in future
                     ParseClientOptions(settings, clientOptions);
                 },
                 useMultipleShardRouters);

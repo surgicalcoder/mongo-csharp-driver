@@ -86,9 +86,9 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
             var mockConnectionFactory = new Mock<IConnectionFactory>();
             var taskCompletionSource = new TaskCompletionSource<bool>();
 
-            ConcurrentQueue<(TimeSpan average, IConnection rtt)> steps = new ConcurrentQueue<(TimeSpan, IConnection)>();
+            ConcurrentQueue<(TimeSpan, IConnection)> steps = new ConcurrentQueue<(TimeSpan, IConnection)>();
 
-            using (var cancellationTokenSource = new CancellationTokenSource(delay: TimeSpan.FromSeconds(1000))) // just in case
+            using (var cancellationTokenSource = new CancellationTokenSource(delay: TimeSpan.FromSeconds(10))) // just in case
             {
                 var subject = CreateSubject(
                     frequency,

@@ -37,31 +37,25 @@ using Xunit;
 
 namespace MongoDB.Driver.Core.Servers
 {
-    public class ServerMonitorTests
+    public class ServerMonitorTests : IDisposable
     {
-        private EndPoint _endPoint;
+        #region static
+        private static readonly EndPoint __endPoint = new DnsEndPoint("localhost", 27017);
+        private static readonly ServerId __serverId = new ServerId(new ClusterId(), __endPoint);
+        private static readonly TcpStreamSettings __tcpStreamSettings = new TcpStreamSettings();
+        #endregion
+
         private CancellationTokenSource _cancellationTokenSource;
-        private MockConnection _connection;
-        private Mock<IConnectionFactory> _mockConnectionFactory;
-        private Mock<IRoundTripTimeMonitor> _mockRoundTripTimeMonitor;
-        private EventCapturer _capturedEvents;
-        private ServerId _serverId;
-        private ServerMonitor _subject;
 
         public ServerMonitorTests()
         {
-            _endPoint = new DnsEndPoint("localhost", 27017);
-            _serverId = new ServerId(new ClusterId(), _endPoint);
-            _capturedEvents = new EventCapturer();
             _cancellationTokenSource = new CancellationTokenSource();
-
-            _subject = CreateSubject(eventCapturer: _capturedEvents);
         }
 
         [Fact]
         public void Constructor_should_throw_when_serverId_is_null()
         {
-            Action act = () => new ServerMonitor(null, _endPoint, _mockConnectionFactory.Object, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, _capturedEvents);
+            Action act = () => new ServerMonitor(null, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer());
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -69,7 +63,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_endPoint_is_null()
         {
-            Action act = () => new ServerMonitor(_serverId, null, _mockConnectionFactory.Object, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, _capturedEvents);
+            Action act = () => new ServerMonitor(__serverId, null, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer());
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -77,7 +71,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_connectionFactory_is_null()
         {
-            Action act = () => new ServerMonitor(_serverId, _endPoint, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, _capturedEvents);
+            Action act = () => new ServerMonitor(__serverId, __endPoint, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer());
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -85,7 +79,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_eventSubscriber_is_null()
         {
-            Action act = () => new ServerMonitor(_serverId, _endPoint, _mockConnectionFactory.Object, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, null);
+            Action act = () => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, null);
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -93,7 +87,15 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_roundTripTimeMonitor_is_null()
         {
-            var exception = Record.Exception(() => new ServerMonitor(_serverId, _endPoint, _mockConnectionFactory.Object, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, _capturedEvents, roundTripTimeMonitor: null, Mock.Of<CancellationTokenSource>()));
+            var exception = Record.Exception(() => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer(), roundTripTimeMonitor: null, Mock.Of<CancellationTokenSource>()));
+
+            exception.Should().BeOfType<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void Constructor_should_throw_when_tcpStreamSettings_is_null()
+        {
+            var exception = Record.Exception(() => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, null, new EventCapturer()));
 
             exception.Should().BeOfType<ArgumentNullException>();
         }
@@ -101,9 +103,11 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Description_should_return_default_when_uninitialized()
         {
-            var description = _subject.Description;
+            var subject = CreateSubject(out _, out _, out _);
 
-            description.EndPoint.Should().Be(_endPoint);
+            var description = subject.Description;
+
+            description.EndPoint.Should().Be(__endPoint);
             description.Type.Should().Be(ServerType.Unknown);
             description.State.Should().Be(ServerState.Disconnected);
         }
@@ -111,11 +115,12 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Description_should_return_default_when_disposed()
         {
-            _subject.Dispose();
+            var subject = CreateSubject(out _, out _, out _);
 
-            var description = _subject.Description;
+            subject.Dispose();
 
-            description.EndPoint.Should().Be(_endPoint);
+            var description = subject.Description;
+            description.EndPoint.Should().Be(__endPoint);
             description.Type.Should().Be(ServerType.Unknown);
             description.State.Should().Be(ServerState.Disconnected);
         }
@@ -123,14 +128,17 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void DescriptionChanged_should_be_raised_during_initial_handshake()
         {
-            var changes = new List<ServerDescriptionChangedEventArgs>();
-            _subject.DescriptionChanged += (o, e) => changes.Add(e);
+            var capturedEvents = new EventCapturer();
 
-            SetupHeartbeatConnection();
-            _subject.Initialize();
+            var changes = new List<ServerDescriptionChangedEventArgs>();
+            var subject = CreateSubject(out var mockConnection, out _, out _, capturedEvents);
+            subject.DescriptionChanged += (o, e) => changes.Add(e);
+
+            SetupHeartbeatConnection(mockConnection);
+            subject.Initialize();
             SpinWait.SpinUntil(
                 () =>
-                    _subject.Description.State == ServerState.Connected &&
+                    subject.Description.State == ServerState.Connected &&
                     changes.Count > 0, // there is a small possible delay between triggering an event and the actual description changing
                     TimeSpan.FromSeconds(5))
                 .Should()
@@ -140,40 +148,44 @@ namespace MongoDB.Driver.Core.Servers
             changes[0].OldServerDescription.State.Should().Be(ServerState.Disconnected);
             changes[0].NewServerDescription.State.Should().Be(ServerState.Connected);
 
-            _capturedEvents.Any().Should().BeFalse();
+            capturedEvents.Any().Should().BeFalse();
         }
 
         [Fact]
         public void Description_should_be_connected_after_successful_heartbeat()
         {
-            SetupHeartbeatConnection();
-            _subject.Initialize();
-            SpinWait.SpinUntil(() => _subject.Description.State == ServerState.Connected, TimeSpan.FromSeconds(5)).Should().BeTrue();
+            var capturedEvents = new EventCapturer();
 
-            _subject.Description.State.Should().Be(ServerState.Connected);
-            _subject.Description.Type.Should().Be(ServerType.Standalone);
+            var subject = CreateSubject(out var mockConnection, out _, out _, capturedEvents);
+            SetupHeartbeatConnection(mockConnection);
+            subject.Initialize();
+            SpinWait.SpinUntil(() => subject.Description.State == ServerState.Connected, TimeSpan.FromSeconds(5)).Should().BeTrue();
+
+            subject.Description.State.Should().Be(ServerState.Connected);
+            subject.Description.Type.Should().Be(ServerType.Standalone);
 
             // no ServerHeartbeat events should be triggered during initial handshake
-            _capturedEvents.Any().Should().BeFalse();
+            capturedEvents.Any().Should().BeFalse();
         }
 
         [Fact]
         public void Dispose_should_clear_all_resources_only_once()
         {
-            _connection = new MockConnection(_serverId, new ConnectionSettings(), _capturedEvents);
-            _subject = CreateSubject(_connection);
+            var capturedEvents = new EventCapturer();
 
-            SetupHeartbeatConnection();
-            _subject.Initialize();
-            SpinWait.SpinUntil(() => _subject._connection() != null, TimeSpan.FromSeconds(5)).Should().BeTrue();
+            var subject = CreateSubject(out var mockConnection, out _, out var mockRoundTripTimeMonitor, capturedEvents, captureConnectionEvents: true);
 
-            _subject.Dispose();
+            SetupHeartbeatConnection(mockConnection);
+            subject.Initialize();
+            SpinWait.SpinUntil(() => subject._connection() != null, TimeSpan.FromSeconds(5)).Should().BeTrue();
+
+            subject.Dispose();
 
             for (int attempt = 1; attempt <= 2; attempt++)
             {
-                _capturedEvents.Events.Count(e => e is ConnectionClosingEvent).Should().Be(1);
+                capturedEvents.Events.Count(e => e is ConnectionClosingEvent).Should().Be(1);
                 _cancellationTokenSource.IsCancellationRequested.Should().BeTrue();
-                _mockRoundTripTimeMonitor.Verify(m => m.Dispose(), Times.Once);
+                mockRoundTripTimeMonitor.Verify(m => m.Dispose(), Times.Once);
             }
         }
 
@@ -181,13 +193,14 @@ namespace MongoDB.Driver.Core.Servers
         [ParameterAttributeData]
         public void InitializeIsMasterProtocol_should_use_streaming_protocol_when_available([Values(false, true)] bool isStreamable)
         {
-            SetupHeartbeatConnection(isStreamable, autoFillStreamingResponses: true);
+            var subject = CreateSubject(out var mockConnection, out _, out _);
+            SetupHeartbeatConnection(mockConnection, isStreamable, autoFillStreamingResponses: true);
 
-            _connection.WasReadTimeoutChanged.Should().Be(null);
-            var resultProtocol = _subject.InitializeIsMasterProtocol(_connection);
+            mockConnection.WasReadTimeoutChanged.Should().Be(null);
+            var resultProtocol = subject.InitializeIsMasterProtocol(mockConnection);
             if (isStreamable)
             {
-                _connection.WasReadTimeoutChanged.Should().BeTrue();
+                mockConnection.WasReadTimeoutChanged.Should().BeTrue();
                 resultProtocol._command().Should().Contain("isMaster");
                 resultProtocol._command().Should().Contain("topologyVersion");
                 resultProtocol._command().Should().Contain("maxAwaitTimeMS");
@@ -195,7 +208,7 @@ namespace MongoDB.Driver.Core.Servers
             }
             else
             {
-                _connection.WasReadTimeoutChanged.Should().Be(null);
+                mockConnection.WasReadTimeoutChanged.Should().Be(null);
                 resultProtocol._command().Should().Contain("isMaster");
                 resultProtocol._command().Should().NotContain("topologyVersion");
                 resultProtocol._command().Should().NotContain("maxAwaitTimeMS");
@@ -206,12 +219,14 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Initialize_should_run_round_time_trip_monitor_only_once()
         {
-            SetupHeartbeatConnection();
+            var subject = CreateSubject(out var mockConnection, out _, out var mockRoundTripTimeMonitor);
 
-            _subject.Initialize();
-            _subject.Initialize();
+            SetupHeartbeatConnection(mockConnection);
 
-            _mockRoundTripTimeMonitor.Verify(m => m.RunAsync(), Times.Once);
+            subject.Initialize();
+            subject.Initialize();
+
+            mockRoundTripTimeMonitor.Verify(m => m.RunAsync(), Times.Once);
         }
 
         [Theory]
@@ -219,68 +234,72 @@ namespace MongoDB.Driver.Core.Servers
         [InlineData("MongoConnectionException")]
         public void Heartbeat_should_make_immediate_next_attempt_for_streaming_protocol(string exceptionType)
         {
-            _subject = CreateSubject(
-                eventCapturer: new EventCapturer()
+            var capturedEvents = new EventCapturer()
                     .Capture<ServerHeartbeatSucceededEvent>()
                     .Capture<ServerHeartbeatFailedEvent>()
-                    .Capture<ServerDescriptionChangedEvent>());
-            _subject.DescriptionChanged +=
+                    .Capture<ServerDescriptionChangedEvent>();
+            var subject = CreateSubject(out var mockConnection, out _, out var mockRoundTimeTripMonitor, capturedEvents);
+
+            subject.DescriptionChanged +=
                 (o, e) =>
                 {
-                    _capturedEvents.TryGetEventHandler<ServerDescriptionChangedEvent>(out var handler);
-                    handler(new ServerDescriptionChangedEvent(e.OldServerDescription, e.NewServerDescription));
+                    capturedEvents.TryGetEventHandler<ServerDescriptionChangedEvent>(out var eventHandler);
+                    eventHandler(new ServerDescriptionChangedEvent(e.OldServerDescription, e.NewServerDescription));
                 };
 
-            SetupHeartbeatConnection(isStreamable: true, autoFillStreamingResponses: false);
+            SetupHeartbeatConnection(mockConnection, isStreamable: true, autoFillStreamingResponses: false);
 
             Exception exception = null;
             switch (exceptionType)
             {
                 case null:
-                    _connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), null);
+                    mockConnection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), null);
                     break;
                 case "MongoConnectionException":
                     // previousDescription type is "Known" for this case
-                    _connection.EnqueueCommandResponseMessage(
+                    mockConnection.EnqueueCommandResponseMessage(
                         exception = CoreExceptionHelper.CreateException(exceptionType));
                     break;
             }
 
-            // 10 seconds delay. Not expected to be processe
-            _connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), TimeSpan.FromSeconds(10));
+            // 10 seconds delay. Not expected to be processed
+            mockConnection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), TimeSpan.FromSeconds(10));
 
-            _subject.Initialize();
+            subject.Initialize();
 
-            _capturedEvents.WaitForOrThrowIfTimeout(
+            var expectedServerDescriptionChangedEventCount = exception != null
+                ? 3 // +1 event because a connection initialized event doesn't have waiting
+                : 2;
+            capturedEvents.WaitForOrThrowIfTimeout(
                 events =>
-                    events.Count(e => e is ServerDescriptionChangedEvent) > 1,  // the connection has been initialized and the first heatbeat event has been fired
-                TimeSpan.FromSeconds(5));
+                    events.Count(e => e is ServerDescriptionChangedEvent) >= expectedServerDescriptionChangedEventCount,  // the connection has been initialized and the first heatbeat event has been fired
+                TimeSpan.FromSeconds(10));
 
-            _capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>(); // connection initialized
+            capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>(); // connection initialized
             AssertHeartbeatAttempt();
-            _capturedEvents.Any().Should().BeFalse(); // the next attempt will be in 10 seconds because the second stremable respone has 10 seconds delay
+            capturedEvents.Any().Should().BeFalse(); // the next attempt will be in 10 seconds because the second stremable respone has 10 seconds delay
 
             void AssertHeartbeatAttempt()
             {
                 if (exception != null)
                 {
-                    _mockRoundTripTimeMonitor.Verify(c => c.Reset(), Times.Once);
+                    mockRoundTimeTripMonitor.Verify(c => c.Reset(), Times.Once);
 
-                    var serverHeartbeatFailedEvent = _capturedEvents.Next().Should().BeOfType<ServerHeartbeatFailedEvent>().Subject; // updating the server based on the heartbeat
+                    var serverHeartbeatFailedEvent = capturedEvents.Next().Should().BeOfType<ServerHeartbeatFailedEvent>().Subject; // updating the server based on the heartbeat
                     serverHeartbeatFailedEvent.Exception.Should().Be(exception);
 
-                    var serverDescriptionChangedEvent = _capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>().Subject;
+                    var serverDescriptionChangedEvent = capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>().Subject;
                     serverDescriptionChangedEvent.NewDescription.HeartbeatException.Should().Be(exception);
 
-                    serverDescriptionChangedEvent = _capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>().Subject;  // when we catch exceptions, we close the current connection, so opening connection will trigger one more ServerDescriptionChangedEvent
+                    serverDescriptionChangedEvent = capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>().Subject;  // when we catch exceptions, we close the current connection, so opening connection will trigger one more ServerDescriptionChangedEvent
                     serverDescriptionChangedEvent.OldDescription.HeartbeatException.Should().Be(exception);
                     serverDescriptionChangedEvent.NewDescription.HeartbeatException.Should().BeNull();
                 }
                 else
                 {
-                    _mockRoundTripTimeMonitor.Verify(c => c.Reset(), Times.Never);
-                    _capturedEvents.Next().Should().BeOfType<ServerHeartbeatSucceededEvent>();
-                    var serverDescriptionChangedEvent = _capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>().Subject; // updating the server based on the heartbeat
+                    mockRoundTimeTripMonitor.Verify(c => c.Reset(), Times.Never);
+                    capturedEvents.Next().Should().BeOfType<ServerHeartbeatSucceededEvent>();
+                    var serverDescriptionChangedEvent = capturedEvents.Next().Should().BeOfType<ServerDescriptionChangedEvent>().Subject; // updating the server based on the heartbeat
                     serverDescriptionChangedEvent.NewDescription.HeartbeatException.Should().BeNull();
                 }
             }
@@ -289,46 +308,65 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void RequestHeartbeat_should_force_another_heartbeat()
         {
-            SetupHeartbeatConnection();
-            _subject.Initialize();
-            SpinWait.SpinUntil(() => _subject.Description.State == ServerState.Connected, TimeSpan.FromSeconds(5)).Should().BeTrue();
-            _capturedEvents.Clear();
+            var capturedEvents = new EventCapturer();
+            var subject = CreateSubject(out var mockConnection, out _, out _, capturedEvents);
 
-            _subject.RequestHeartbeat();
+            SetupHeartbeatConnection(mockConnection);
+            subject.Initialize();
+            SpinWait.SpinUntil(() => subject.Description.State == ServerState.Connected, TimeSpan.FromSeconds(5)).Should().BeTrue();
+            capturedEvents.Clear();
+
+            subject.RequestHeartbeat();
 
             // the next requests down heartbeat connection will fail, so the state should
             // go back to disconnected
-            SpinWait.SpinUntil(() => _subject.Description.State == ServerState.Disconnected, TimeSpan.FromSeconds(5)).Should().BeTrue();
+            SpinWait.SpinUntil(() => subject.Description.State == ServerState.Disconnected, TimeSpan.FromSeconds(5)).Should().BeTrue();
 
-            _capturedEvents.Next().Should().BeOfType<ServerHeartbeatStartedEvent>();
-            _capturedEvents.Next().Should().BeOfType<ServerHeartbeatFailedEvent>();
-            _capturedEvents.Any().Should().BeFalse();
+            capturedEvents.Next().Should().BeOfType<ServerHeartbeatStartedEvent>();
+            capturedEvents.Next().Should().BeOfType<ServerHeartbeatFailedEvent>();
+            capturedEvents.Any().Should().BeFalse();
+        }
+
+        public void Dispose()
+        {
+            if (!_cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource?.Cancel();
+            }
         }
 
         // private methods
-        private ServerMonitor CreateSubject(MockConnection connection = null, EventCapturer eventCapturer = null)
+        private ServerMonitor CreateSubject(out MockConnection connection, out Mock<IConnectionFactory> mockConnectionFactory, out Mock<IRoundTripTimeMonitor> mockRoundTripTimeMonitor, EventCapturer eventCapturer = null, bool captureConnectionEvents = false)
         {
-            _mockRoundTripTimeMonitor = new Mock<IRoundTripTimeMonitor>();
-            _mockRoundTripTimeMonitor.Setup(m => m.RunAsync()).Returns(Task.FromResult(true));
+            mockRoundTripTimeMonitor = new Mock<IRoundTripTimeMonitor>();
+            mockRoundTripTimeMonitor.Setup(m => m.RunAsync()).Returns(Task.FromResult(true));
 
-            _connection = connection ?? new MockConnection();
-            _mockConnectionFactory = new Mock<IConnectionFactory>();
-            _mockConnectionFactory
-                .Setup(f => f.CreateConnection(_serverId, _endPoint))
-                .Returns(_connection);
+            if (captureConnectionEvents)
+            {
+                connection = new MockConnection(__serverId, new ConnectionSettings(), eventCapturer);
+            }
+            else
+            {
+                connection = new MockConnection();
+            }
+            mockConnectionFactory = new Mock<IConnectionFactory>();
+            mockConnectionFactory
+                .Setup(f => f.CreateConnection(__serverId, __endPoint))
+                .Returns(connection);
 
             return new ServerMonitor(
-                _serverId,
-                _endPoint,
-                _mockConnectionFactory.Object,
+                __serverId,
+                __endPoint,
+                mockConnectionFactory.Object,
                 Timeout.InfiniteTimeSpan,
                 Timeout.InfiniteTimeSpan,
-                _capturedEvents = (eventCapturer ?? _capturedEvents),
-                _mockRoundTripTimeMonitor.Object,
+                __tcpStreamSettings,
+                eventCapturer ?? new EventCapturer(),
+                mockRoundTripTimeMonitor.Object,
                 _cancellationTokenSource);
         }
 
-        private void SetupHeartbeatConnection(bool isStreamable = false, bool autoFillStreamingResponses = true)
+        private void SetupHeartbeatConnection(MockConnection connection, bool isStreamable = false, bool autoFillStreamingResponses = true)
         {
             var isMasterDocument = new BsonDocument
             {
@@ -339,18 +377,18 @@ namespace MongoDB.Driver.Core.Servers
 
             var streamingIsMaster = Feature.StreamingIsMaster;
             var version = isStreamable ? streamingIsMaster.FirstSupportedVersion : streamingIsMaster.LastNotSupportedVersion;
-            _connection.Description = new ConnectionDescription(
-                _connection.ConnectionId,
+            connection.Description = new ConnectionDescription(
+                connection.ConnectionId,
                 new IsMasterResult(isMasterDocument),
                 new BuildInfoResult(BsonDocument.Parse($"{{ ok : 1, version : '{version}' }}")));
 
             if (autoFillStreamingResponses && isStreamable)
             {
                 // immediate attempt
-                _connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), null);
+                connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), null);
 
                 // 10 seconds delay. Won't expected to be processed
-                _connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), TimeSpan.FromSeconds(10));
+                connection.EnqueueCommandResponseMessage(CreateStreamableCommandResponseMessage(), TimeSpan.FromSeconds(10));
             }
         }
 

@@ -14,6 +14,7 @@
 */
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver.Core.Servers;
 
@@ -31,6 +32,11 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             var pinnedServer = GetPinnedServer();
             pinnedServer.Should().NotBeNull();
             return pinnedServer;
+        }
+
+        protected async override Task<IServer> GetServerAsync()
+        {
+            return await Task.Run(() => GetServer()).ConfigureAwait(false);
         }
     }
 }

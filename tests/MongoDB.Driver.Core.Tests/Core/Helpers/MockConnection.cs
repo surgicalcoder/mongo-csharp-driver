@@ -127,11 +127,6 @@ namespace MongoDB.Driver.Core.Helpers
         public bool? WasReadTimeoutChanged => _wasReadTimeoutChanged;
 
         // methods
-        public void AddAdditionalReadTimeout(TimeSpan timeout)
-        {
-            _wasReadTimeoutChanged = true;
-        }
-
         public void Dispose()
         {
             _closingEventHandler?.Invoke(new ConnectionClosingEvent(_connectionId, EventContext.OperationId));
@@ -213,6 +208,11 @@ namespace MongoDB.Driver.Core.Helpers
         {
             _sentMessages.AddRange(messages);
             return Task.FromResult<object>(null);
+        }
+
+        public void SetReadTimeout(TimeSpan timeout)
+        {
+            _wasReadTimeoutChanged = true;
         }
 
         // nested type

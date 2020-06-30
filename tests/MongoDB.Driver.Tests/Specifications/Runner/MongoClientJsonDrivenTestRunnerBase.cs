@@ -227,18 +227,19 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
                 ModifyOperationIfNeeded(operation);
                 var receiver = operation["object"].AsString;
                 var name = operation["name"].AsString;
-                var jsonDrivenTest = factory.CreateTest(receiver, name);
-
-                jsonDrivenTest.Arrange(operation);
-                if (test["async"].AsBoolean)
+                using (var jsonDrivenTest = factory.CreateTest(receiver, name))
                 {
-                    jsonDrivenTest.ActAsync(CancellationToken.None).GetAwaiter().GetResult();
+                    jsonDrivenTest.Arrange(operation);
+                    if (test["async"].AsBoolean)
+                    {
+                        jsonDrivenTest.ActAsync(CancellationToken.None).GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        jsonDrivenTest.Act(CancellationToken.None);
+                    }
+                    jsonDrivenTest.Assert();
                 }
-                else
-                {
-                    jsonDrivenTest.Act(CancellationToken.None);
-                }
-                jsonDrivenTest.Assert();
             }
         }
 

@@ -159,12 +159,6 @@ namespace MongoDB.Driver.Core.Connections
         }
 
         // methods
-        public void AddAdditionalReadTimeout(TimeSpan timeout)
-        {
-            ThrowIfDisposed();
-            _stream.ReadTimeout += (int)timeout.TotalMilliseconds;
-        }
-
         private void ConnectionFailed(Exception exception)
         {
             if (!_state.TryChange(State.Open, State.Failed) && !_state.TryChange(State.Initializing, State.Failed))
@@ -483,7 +477,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                throw;
+                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
             }
         }
 
@@ -510,7 +504,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                throw;
+                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
             }
         }
 
@@ -605,7 +599,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                throw;
+                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
             }
         }
 
@@ -641,8 +635,14 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                throw;
+                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
             }
+        }
+
+        public void SetReadTimeout(TimeSpan timeout)
+        {
+            ThrowIfDisposed();
+            _stream.ReadTimeout = (int)timeout.TotalMilliseconds;
         }
 
         // private methods
@@ -733,7 +733,8 @@ namespace MongoDB.Driver.Core.Connections
                 ex is StackOverflowException ||
 #endif
                 ex is MongoAuthenticationException ||
-                ex is OutOfMemoryException)
+                ex is OutOfMemoryException ||
+                ex is OperationCanceledException)
             {
                 return ex;
             }
@@ -741,6 +742,19 @@ namespace MongoDB.Driver.Core.Connections
             {
                 var message = string.Format("An exception occurred while {0}.", action);
                 return new MongoConnectionException(_connectionId, message, ex);
+            }
+        }
+
+        private Exception WrapIfObjectDisposableExceptionAndIfRequired(Exception exception)
+        {
+            if (exception is ObjectDisposedException objectDisposedException &&
+                objectDisposedException.Message == "The semaphore has been disposed.")
+            {
+                return new OperationCanceledException("The BinaryConnection has been cancelled.", exception);
+            }
+            else
+            {
+                return exception;
             }
         }
 

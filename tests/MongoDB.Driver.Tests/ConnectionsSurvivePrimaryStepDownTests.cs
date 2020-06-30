@@ -13,6 +13,8 @@
 * limitations under the License.
 */
 
+using System.Linq;
+using System.Net;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
@@ -21,6 +23,7 @@ using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.TestHelpers;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.TestHelpers;
@@ -90,15 +93,20 @@ namespace MongoDB.Driver.Tests
                 var cursor = collection.FindSync(FilterDefinition<BsonDocument>.Empty, new FindOptions<BsonDocument> { BatchSize = 2 });
                 cursor.MoveNext();
 
-                var replSetStepDownCommand = BsonDocument.Parse("{ replSetStepDown : 5, force : true }");
+                foreach (var secondary in client.Cluster.Description.Servers.Where(c => c.Type == ServerType.ReplicaSetSecondary))
+                {
+                    RunOnSecondary(client, secondary.EndPoint, BsonDocument.Parse("{ replSetFreeze : 0 }"));
+                }
+
+                var replSetStepDownCommand = BsonDocument.Parse("{ replSetStepDown : 20, force : true }");
                 BsonDocument replSetStepDownResult;
                 if (async)
                 {
-                    replSetStepDownResult = RunCommandHelper.RunReplicaSetStepDownAsync(adminDatabase, replSetStepDownCommand).GetAwaiter().GetResult();
+                    replSetStepDownResult = adminDatabase.RunCommandAsync<BsonDocument>(replSetStepDownCommand).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    replSetStepDownResult = RunCommandHelper.RunReplicaSetStepDown(adminDatabase, replSetStepDownCommand);
+                    replSetStepDownResult = adminDatabase.RunCommand<BsonDocument>(replSetStepDownCommand);
                 }
 
                 replSetStepDownResult.Should().NotBeNull();
@@ -107,6 +115,20 @@ namespace MongoDB.Driver.Tests
                 cursor.MoveNext();
 
                 eventCapturer.Events.Should().BeEmpty();
+            }
+
+            void RunOnSecondary(IMongoClient primaryClient, EndPoint secondaryEndpoint, BsonDocument command)
+            {
+                var secondarySettings = primaryClient.Settings.Clone();
+                secondarySettings.ClusterConfigurator = null;
+                secondarySettings.ConnectionMode = ConnectionMode.Direct;
+                var secondaryDnsEndpoint = (DnsEndPoint)secondaryEndpoint;
+                secondarySettings.Server = new MongoServerAddress(secondaryDnsEndpoint.Host, secondaryDnsEndpoint.Port);
+                using (var secondaryClient = DriverTestConfiguration.CreateDisposableClient(secondarySettings))
+                {
+                    var adminDatabase = secondaryClient.GetDatabase(DatabaseNamespace.Admin.DatabaseName);
+                    adminDatabase.RunCommand<BsonDocument>(command);
+                }
             }
         }
 

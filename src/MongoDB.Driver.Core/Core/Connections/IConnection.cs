@@ -79,10 +79,10 @@ namespace MongoDB.Driver.Core.Connections
         ConnectionSettings Settings { get; }
 
         /// <summary>
-        /// Add additional read timeout value.
+        /// Set read timeout value.
         /// </summary>
         /// <param name="timeout">The timeout.</param>
-        void AddAdditionalReadTimeout(TimeSpan timeout);
+        void SetReadTimeout(TimeSpan timeout);
 
         // methods
         /// <summary>

@@ -13,17 +13,27 @@
 * limitations under the License.
 */
 
+using System;
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
+using MongoDB.Driver.TestHelpers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenRunAdminCommand : JsonDrivenRunCommandTest
+    public sealed class JsonDrivenRunAdminCommand : JsonDrivenRunCommandTest, IDisposable
     {
-        public JsonDrivenRunAdminCommand(IMongoClient mongoClient, Dictionary<string, object> objectMap)
+        private readonly DisposableMongoClient _mongoClient;
+
+        public JsonDrivenRunAdminCommand(DisposableMongoClient mongoClient, Dictionary<string, object> objectMap)
             : base(mongoClient.GetDatabase(DatabaseNamespace.Admin.DatabaseName), objectMap)
         {
+            _mongoClient = mongoClient;
+        }
+
+        public override void Dispose()
+        {
+            _mongoClient.Dispose();
         }
 
         protected override void EnsureObjectFieldIsValid(BsonDocument document)

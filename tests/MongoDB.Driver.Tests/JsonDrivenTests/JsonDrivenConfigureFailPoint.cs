@@ -34,11 +34,6 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             _client = client;
         }
 
-        protected override void AssertResult()
-        {
-            // do nothing
-        }
-
         protected override void CallMethod(CancellationToken cancellationToken)
         {
             var server = GetServer();
@@ -47,14 +42,20 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            var server = GetServer();
-            await TestRunner.ConfigureFailPointAsync(server, NoCoreSession.NewHandle(), _failCommand);
+            var server = await GetServerAsync().ConfigureAwait(false);
+            await TestRunner.ConfigureFailPointAsync(server, NoCoreSession.NewHandle(), _failCommand).ConfigureAwait(false);
         }
 
         protected virtual IServer GetServer()
         {
             var cluster = _client.Cluster;
             return cluster.SelectServer(WritableServerSelector.Instance, CancellationToken.None);
+        }
+
+        protected async virtual Task<IServer> GetServerAsync()
+        {
+            var cluster = _client.Cluster;
+            return await cluster.SelectServerAsync(WritableServerSelector.Instance, CancellationToken.None).ConfigureAwait(false);
         }
 
         protected override void SetArgument(string name, BsonValue value)

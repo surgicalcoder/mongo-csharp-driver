@@ -69,9 +69,8 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
                 var attemptDuration = heartbeatSuceededTimestampsList[i] - heartbeatSuceededTimestampsList[i - 1];
                 attemptDuration
                     .Should()
-                    .BeLessThan(TimeSpan.FromSeconds(1));
+                    .BeLessThan(TimeSpan.FromSeconds(2));
                 // Assert the client processes isMaster replies more frequently than 10 secs (approximately every 500ms)
-                // the expected value should be between approximately 500ms and 10 seconds
             }
         }
 

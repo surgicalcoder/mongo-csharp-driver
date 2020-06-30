@@ -279,6 +279,7 @@ namespace MongoDB.Driver.Core.Configuration
                 new EventAggregator());
 
             return new ServerMonitorFactory(
+                serverMonitorTcpStreamSettings,
                 _serverSettings,
                 serverMonitorConnectionFactory,
                 _eventAggregator);

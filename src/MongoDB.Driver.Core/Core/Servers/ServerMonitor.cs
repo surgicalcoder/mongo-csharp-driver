@@ -19,6 +19,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
@@ -45,6 +46,7 @@ namespace MongoDB.Driver.Core.Servers
         private readonly InterlockedInt32 _state;
         private readonly TimeSpan _timeout;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
+        private readonly TcpStreamSettings _tcpStreamSettings;
 
         private readonly Action<ServerHeartbeatStartedEvent> _heartbeatStartedEventHandler;
         private readonly Action<ServerHeartbeatSucceededEvent> _heartbeatSucceededEventHandler;
@@ -53,25 +55,26 @@ namespace MongoDB.Driver.Core.Servers
 
         public event EventHandler<ServerDescriptionChangedEventArgs> DescriptionChanged;
 
-        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, IEventSubscriber eventSubscriber)
-            : this(serverId, endPoint, connectionFactory, heartbeatInterval, timeout, eventSubscriber, new CancellationTokenSource())
+        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, TcpStreamSettings tcpStreamSettings, IEventSubscriber eventSubscriber)
+            : this(serverId, endPoint, connectionFactory, heartbeatInterval, timeout, tcpStreamSettings, eventSubscriber, new CancellationTokenSource())
         {
         }
 
-        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, IEventSubscriber eventSubscriber, CancellationTokenSource cancellationTokenSource)
+        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, TcpStreamSettings tcpStreamSettings, IEventSubscriber eventSubscriber, CancellationTokenSource cancellationTokenSource)
             : this(
                   serverId,
                   endPoint,
                   connectionFactory,
                   heartbeatInterval,
                   timeout,
+                  tcpStreamSettings,
                   eventSubscriber,
                   roundTripTimeMonitor: new RoundTripTimeMonitor(connectionFactory, serverId, endPoint, heartbeatInterval, cancellationTokenSource.Token),
                   cancellationTokenSource)
         {
         }
 
-        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, IEventSubscriber eventSubscriber, IRoundTripTimeMonitor roundTripTimeMonitor, CancellationTokenSource cancellationTokenSource)
+        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, TcpStreamSettings tcpStreamSettings, IEventSubscriber eventSubscriber, IRoundTripTimeMonitor roundTripTimeMonitor, CancellationTokenSource cancellationTokenSource)
         {
             _cancellationTokenSource = cancellationTokenSource;
             _serverId = Ensure.IsNotNull(serverId, nameof(serverId));
@@ -83,6 +86,7 @@ namespace MongoDB.Driver.Core.Servers
             _heartbeatInterval = heartbeatInterval;
             _timeout = timeout;
             _roundTripTimeMonitor = Ensure.IsNotNull(roundTripTimeMonitor, nameof(roundTripTimeMonitor));
+            _tcpStreamSettings = Ensure.IsNotNull(tcpStreamSettings, nameof(tcpStreamSettings));
 
             _state = new InterlockedInt32(State.Initial);
             eventSubscriber.TryGetEventHandler(out _heartbeatStartedEventHandler);
@@ -151,9 +155,7 @@ namespace MongoDB.Driver.Core.Servers
             var commandResponseHandling = CommandResponseHandling.Return;
             if (connection.Description.IsMasterResult.TopologyVersion != null)
             {
-                // the final Readtimeout will be:
-                // connectTimeoutMS (the default heartbeat read timeout) + maxAwaitTimeMS (_heartbeatInterval)
-                connection.AddAdditionalReadTimeout(_heartbeatInterval);
+                connection.SetReadTimeout(_tcpStreamSettings.ConnectTimeout + _heartbeatInterval);
                 commandResponseHandling = CommandResponseHandling.ExhaustAllowed;
 
                 isMasterCommand = IsMasterHelper.CreateCommand(connection.Description.IsMasterResult.TopologyVersion, _heartbeatInterval);
@@ -254,7 +256,7 @@ namespace MongoDB.Driver.Core.Servers
             CommandWireProtocol<BsonDocument> isMasterProtocol = null;
 
             bool immediateAttempt = true;
-            while (immediateAttempt)
+            while (immediateAttempt && !cancellationToken.IsCancellationRequested)
             {
                 IsMasterResult heartbeatIsMasterResult = null;
                 Exception heartbeatException = null;
@@ -272,26 +274,22 @@ namespace MongoDB.Driver.Core.Servers
                         heartbeatIsMasterResult = await GetHeartbeatInfoAsync(isMasterProtocol, _connection, cancellationToken).ConfigureAwait(false);
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    _currentCheckCancelled = false;
+                    return;
+                }
                 catch (Exception ex)
                 {
-                    isMasterProtocol = null;
-
-                    lock (_lock)
-                    {
-                        if (IsCancellationException(ex, _currentCheckCancelled, cancellationToken))
-                        {
-                            // makes sense only if _currentCheckCancelled is equal to true, but there is no harm to do it each time
-                            _currentCheckCancelled = false;
-                            return;
-                        }
-                    }
-
-                    heartbeatException = ex;
-                    _roundTripTimeMonitor.Reset();
-
                     IConnection toDispose = null;
+
                     lock (_lock)
                     {
+                        isMasterProtocol = null;
+
+                        heartbeatException = ex;
+                        _roundTripTimeMonitor.Reset();
+
                         toDispose = _connection;
                         _connection = null;
                     }
@@ -361,21 +359,6 @@ namespace MongoDB.Driver.Core.Servers
                     (isMasterProtocol != null && isMasterProtocol.MoreToCome) ||
                     // transitionedWithNetworkError
                     (IsNetworkError(heartbeatException) && previousDescription.Type != ServerType.Unknown);
-            }
-
-            bool IsCancellationException(Exception ex, bool currentCheckCancelled, CancellationToken token)
-            {
-                if (ex is ObjectDisposedException && (currentCheckCancelled || token.IsCancellationRequested))
-                {
-                    return true;
-                }
-
-                if (ex is MongoConnectionException && ex.InnerException is OperationCanceledException && token.IsCancellationRequested)
-                {
-                    return true;
-                }
-
-                return false;
             }
 
             bool IsNetworkError(Exception ex)
