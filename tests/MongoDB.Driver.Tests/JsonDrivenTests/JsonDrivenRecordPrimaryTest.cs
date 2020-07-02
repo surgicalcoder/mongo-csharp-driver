@@ -37,12 +37,12 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         }
     }
 
-    public sealed class JsonDrivenRecordPrimary : JsonDrivenTestRunnerTest
+    public sealed class JsonDrivenRecordPrimaryTest : JsonDrivenTestRunnerTest
     {
         private readonly IMongoClient _client;
         private readonly JsonDrivenRecordPrimaryTestContext _testContext;
 
-        public JsonDrivenRecordPrimary(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap)
+        public JsonDrivenRecordPrimaryTest(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap)
             : base(testRunner, objectMap)
         {
             _client = Ensure.IsNotNull(client, nameof(client));

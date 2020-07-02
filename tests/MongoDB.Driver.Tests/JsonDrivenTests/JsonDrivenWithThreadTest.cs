@@ -30,12 +30,12 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         public ConcurrentDictionary<string, Task> Tasks { get; } = new ConcurrentDictionary<string, Task>();
     }
 
-    public abstract class JsonDrivenWithThread : JsonDrivenTestRunnerTest
+    public abstract class JsonDrivenWithThreadTest : JsonDrivenTestRunnerTest
     {
         protected string _name;
         protected readonly JsonDrivenWithThreadContext _testContext;
 
-        public JsonDrivenWithThread(
+        public JsonDrivenWithThreadTest(
             JsonDrivenTestsContext testsContext,
             IJsonDrivenTestRunner testRunner,
             Dictionary<string, object> objectMap) : base(testRunner, objectMap)

@@ -19,7 +19,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
-using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
@@ -29,8 +28,6 @@ namespace MongoDB.Driver.Core.Servers
 {
     internal sealed class ServerMonitor : IServerMonitor
     {
-        private static readonly TimeSpan __minHeartbeatInterval = TimeSpan.FromMilliseconds(500);
-
         private readonly ServerDescription _baseDescription;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private volatile IConnection _connection;
@@ -40,13 +37,11 @@ namespace MongoDB.Driver.Core.Servers
         private readonly EndPoint _endPoint;
         private BuildInfoResult _handshakeBuildInfoResult;
         private HeartbeatDelay _heartbeatDelay;
-        private readonly TimeSpan _heartbeatInterval;
         private readonly object _lock = new object();
-        private readonly ServerId _serverId;
-        private readonly InterlockedInt32 _state;
-        private readonly TimeSpan _timeout;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
-        private readonly TcpStreamSettings _tcpStreamSettings;
+        private readonly InterlockedInt32 _state;
+        private readonly ServerId _serverId;
+        private readonly ServerMonitorSettings _serverMonitorSettings;
 
         private readonly Action<ServerHeartbeatStartedEvent> _heartbeatStartedEventHandler;
         private readonly Action<ServerHeartbeatSucceededEvent> _heartbeatSucceededEventHandler;
@@ -55,38 +50,39 @@ namespace MongoDB.Driver.Core.Servers
 
         public event EventHandler<ServerDescriptionChangedEventArgs> DescriptionChanged;
 
-        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, TcpStreamSettings tcpStreamSettings, IEventSubscriber eventSubscriber)
-            : this(serverId, endPoint, connectionFactory, heartbeatInterval, timeout, tcpStreamSettings, eventSubscriber, new CancellationTokenSource())
+        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, ServerMonitorSettings serverMonitorSettings, IEventSubscriber eventSubscriber)
+            : this(serverId, endPoint, connectionFactory, serverMonitorSettings, eventSubscriber, new CancellationTokenSource())
         {
         }
 
-        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, TcpStreamSettings tcpStreamSettings, IEventSubscriber eventSubscriber, CancellationTokenSource cancellationTokenSource)
+        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, ServerMonitorSettings serverMonitorSettings, IEventSubscriber eventSubscriber, CancellationTokenSource cancellationTokenSource)
             : this(
                   serverId,
                   endPoint,
                   connectionFactory,
-                  heartbeatInterval,
-                  timeout,
-                  tcpStreamSettings,
+                  serverMonitorSettings,
                   eventSubscriber,
-                  roundTripTimeMonitor: new RoundTripTimeMonitor(connectionFactory, serverId, endPoint, heartbeatInterval, cancellationTokenSource.Token),
+                  roundTripTimeMonitor: new RoundTripTimeMonitor(
+                      connectionFactory,
+                      serverId,
+                      endPoint,
+                      Ensure.IsNotNull(serverMonitorSettings, nameof(serverMonitorSettings)).HeartbeatInterval,
+                      cancellationTokenSource.Token),
                   cancellationTokenSource)
         {
         }
 
-        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, TimeSpan heartbeatInterval, TimeSpan timeout, TcpStreamSettings tcpStreamSettings, IEventSubscriber eventSubscriber, IRoundTripTimeMonitor roundTripTimeMonitor, CancellationTokenSource cancellationTokenSource)
+        public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, ServerMonitorSettings serverMonitorSettings, IEventSubscriber eventSubscriber, IRoundTripTimeMonitor roundTripTimeMonitor, CancellationTokenSource cancellationTokenSource)
         {
             _cancellationTokenSource = cancellationTokenSource;
             _serverId = Ensure.IsNotNull(serverId, nameof(serverId));
             _endPoint = Ensure.IsNotNull(endPoint, nameof(endPoint));
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
             Ensure.IsNotNull(eventSubscriber, nameof(eventSubscriber));
+            _serverMonitorSettings = Ensure.IsNotNull(serverMonitorSettings, nameof(serverMonitorSettings));
 
-            _baseDescription = _currentDescription = new ServerDescription(_serverId, endPoint, reasonChanged: "InitialDescription", heartbeatInterval: heartbeatInterval);
-            _heartbeatInterval = heartbeatInterval;
-            _timeout = timeout;
+            _baseDescription = _currentDescription = new ServerDescription(_serverId, endPoint, reasonChanged: "InitialDescription", heartbeatInterval: serverMonitorSettings.HeartbeatInterval);
             _roundTripTimeMonitor = Ensure.IsNotNull(roundTripTimeMonitor, nameof(roundTripTimeMonitor));
-            _tcpStreamSettings = Ensure.IsNotNull(tcpStreamSettings, nameof(tcpStreamSettings));
 
             _state = new InterlockedInt32(State.Initial);
             eventSubscriber.TryGetEventHandler(out _heartbeatStartedEventHandler);
@@ -155,10 +151,10 @@ namespace MongoDB.Driver.Core.Servers
             var commandResponseHandling = CommandResponseHandling.Return;
             if (connection.Description.IsMasterResult.TopologyVersion != null)
             {
-                connection.SetReadTimeout(_tcpStreamSettings.ConnectTimeout + _heartbeatInterval);
+                connection.SetReadTimeout(_serverMonitorSettings.ConnectTimeout + _serverMonitorSettings.HeartbeatInterval);
                 commandResponseHandling = CommandResponseHandling.ExhaustAllowed;
 
-                isMasterCommand = IsMasterHelper.CreateCommand(connection.Description.IsMasterResult.TopologyVersion, _heartbeatInterval);
+                isMasterCommand = IsMasterHelper.CreateCommand(connection.Description.IsMasterResult.TopologyVersion, _serverMonitorSettings.HeartbeatInterval);
             }
             else
             {
@@ -189,7 +185,7 @@ namespace MongoDB.Driver.Core.Servers
         {
             await Task.Yield(); // return control immediately
 
-            var metronome = new Metronome(_heartbeatInterval);
+            var metronome = new Metronome(_serverMonitorSettings.HeartbeatInterval);
             var heartbeatCancellationToken = _cancellationTokenSource.Token;
             while (!heartbeatCancellationToken.IsCancellationRequested)
             {
@@ -236,7 +232,7 @@ namespace MongoDB.Driver.Core.Servers
                         }
                     }
 
-                    var newHeartbeatDelay = new HeartbeatDelay(metronome.GetNextTickDelay(), __minHeartbeatInterval);
+                    var newHeartbeatDelay = new HeartbeatDelay(metronome.GetNextTickDelay(), _serverMonitorSettings.MinHeartbeatInterval);
                     var oldHeartbeatDelay = Interlocked.Exchange(ref _heartbeatDelay, newHeartbeatDelay);
                     if (oldHeartbeatDelay != null)
                     {

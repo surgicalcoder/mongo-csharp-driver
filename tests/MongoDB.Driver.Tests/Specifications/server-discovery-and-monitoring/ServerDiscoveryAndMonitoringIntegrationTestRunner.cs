@@ -38,13 +38,13 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         public void ConfigureFailPoint(IServer server, ICoreSessionHandle session, BsonDocument failCommand)
         {
             var failPoint = FailPoint.Configure(server, session, failCommand);
-            Disposables.Add(failPoint);
+            AddDisposable(failPoint);
         }
 
         public async Task ConfigureFailPointAsync(IServer server, ICoreSessionHandle session, BsonDocument failCommand)
         {
             var failPoint = await Task.Run(() => FailPoint.Configure(server, session, failCommand)).ConfigureAwait(false);
-            Disposables.Add(failPoint);
+            AddDisposable(failPoint);
         }
 
         [SkippableTheory]
@@ -55,7 +55,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         }
 
         // protected methods
-        protected override JsonDrivenTestFactory CreateJsonFactory(IMongoClient mongoClient, string databaseName, string collectionName, Dictionary<string, object> objectMap, EventCapturer eventCapturer)
+        protected override JsonDrivenTestFactory CreateJsonDrivenTestFactory(IMongoClient mongoClient, string databaseName, string collectionName, Dictionary<string, object> objectMap, EventCapturer eventCapturer)
         {
             return new JsonDrivenTestFactory(this, mongoClient, databaseName, collectionName, bucketName: null, objectMap, eventCapturer);
         }

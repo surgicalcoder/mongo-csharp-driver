@@ -20,7 +20,12 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
 {
     public abstract class DisposableJsonDrivenTestRunner : MongoClientJsonDrivenTestRunnerBase, IDisposable
     {
-        protected List<IDisposable> Disposables { get; } = new List<IDisposable>();
+        private readonly List<IDisposable> _disposables = new List<IDisposable>();
+
+        protected void AddDisposable(IDisposable disposable)
+        {
+            _disposables.Add(disposable);
+        }
 
         public void Dispose()
         {
@@ -33,7 +38,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
         {
             if (disposing)
             {
-                foreach (var disposable in Disposables)
+                foreach (var disposable in _disposables)
                 {
                     disposable.Dispose();
                 }

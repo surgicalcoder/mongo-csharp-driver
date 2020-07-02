@@ -21,11 +21,11 @@ using MongoDB.Driver.TestHelpers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenRunAdminCommand : JsonDrivenRunCommandTest, IDisposable
+    public sealed class JsonDrivenRunAdminCommandTest : JsonDrivenRunCommandTest
     {
         private readonly DisposableMongoClient _mongoClient;
 
-        public JsonDrivenRunAdminCommand(DisposableMongoClient mongoClient, Dictionary<string, object> objectMap)
+        public JsonDrivenRunAdminCommandTest(DisposableMongoClient mongoClient, Dictionary<string, object> objectMap)
             : base(mongoClient.GetDatabase(DatabaseNamespace.Admin.DatabaseName), objectMap)
         {
             _mongoClient = mongoClient;

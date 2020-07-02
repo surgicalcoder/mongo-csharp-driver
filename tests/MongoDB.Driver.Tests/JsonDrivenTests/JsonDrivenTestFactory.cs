@@ -86,32 +86,32 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                     switch (name)
                     {
                         case "targetedFailPoint": return new JsonDrivenTargetedFailPointTest(_testRunner, _objectMap);
-                        case "configureFailPoint": return new JsonDrivenConfigureFailPoint(_testRunner, _client, _objectMap);
-                        case "assertCollectionExists": return new JsonDrivenAssertCollectionExists(_testRunner, _objectMap);
-                        case "assertCollectionNotExists": return new JsonDrivenAssertCollectionNotExists(_testRunner, _objectMap);
+                        case "configureFailPoint": return new JsonDrivenConfigureFailPointTest(_testRunner, _client, _objectMap);
+                        case "assertCollectionExists": return new JsonDrivenAssertCollectionExistsTest(_testRunner, _objectMap);
+                        case "assertCollectionNotExists": return new JsonDrivenAssertCollectionNotExistsTest(_testRunner, _objectMap);
                         case "assertDifferentLsidOnLastTwoCommands": return new JsonDrivenAssertDifferentLsidOnLastTwoCommandsTest(_testRunner, _eventCapturer, _objectMap);
-                        case "assertIndexExists": return new JsonDrivenAssertIndexExists(_testRunner, _objectMap);
-                        case "assertIndexNotExists": return new JsonDrivenAssertIndexNotExists(_testRunner, _objectMap);
+                        case "assertIndexExists": return new JsonDrivenAssertIndexExistsTest(_testRunner, _objectMap);
+                        case "assertIndexNotExists": return new JsonDrivenAssertIndexNotExistsTest(_testRunner, _objectMap);
                         case "assertSessionDirty": return new JsonDrivenAssertSessionDirtyTest(_testRunner, _objectMap);
                         case "assertSessionNotDirty": return new JsonDrivenAssertSessionNotDirtyTest(_testRunner, _objectMap);
                         case "assertSessionPinned": return new JsonDrivenAssertSessionPinnedTest(_testRunner, _objectMap);
                         case "assertSessionUnpinned": return new JsonDrivenAssertSessionUnpinnedTest(_testRunner, _objectMap);
                         case "assertSameLsidOnLastTwoCommands": return new JsonDrivenAssertSameLsidOnLastTwoCommandsTest(_testRunner, _eventCapturer, _objectMap);
                         case "assertSessionTransactionState": return new JsonDrivenAssertSessionTransactionStateTest(_testRunner, _objectMap);
-                        case "wait": return new JsonDrivenWait(_testRunner, _objectMap);
-                        case "waitForEvent": return new JsonDrivenWaitForEvent(_testRunner, _objectMap, _eventCapturer);
-                        case "assertEventCount": return new JsonDrivenAssertEventsCount(_testRunner, _objectMap, _eventCapturer);
-                        case "startThread": return new JsonDrivenStartThread(_testsContext, _testRunner, _objectMap);
+                        case "wait": return new JsonDrivenWaitTest(_testRunner, _objectMap);
+                        case "waitForEvent": return new JsonDrivenWaitForEventTest(_testRunner, _objectMap, _eventCapturer);
+                        case "assertEventCount": return new JsonDrivenAssertEventsCountTest(_testRunner, _objectMap, _eventCapturer);
+                        case "startThread": return new JsonDrivenStartThreadTest(_testsContext, _testRunner, _objectMap);
                         case "runAdminCommand":
                             {
-                                var commandSettings = _client.Settings.Clone();
-                                commandSettings.ClusterConfigurator = null;
-                                return new JsonDrivenRunAdminCommand(DriverTestConfiguration.CreateDisposableClient(commandSettings), _objectMap);
+                                var clientSettingsForRunCommand = _client.Settings.Clone();
+                                clientSettingsForRunCommand.ClusterConfigurator = null;
+                                return new JsonDrivenRunAdminCommandTest(DriverTestConfiguration.CreateDisposableClient(clientSettingsForRunCommand), _objectMap);
                             }
-                        case "runOnThread": return new JsonDrivenRunOnThread(_testsContext, _testRunner, _objectMap, this);
-                        case "recordPrimary": return new JsonDrivenRecordPrimary(_testsContext, _testRunner, _client, _objectMap);
-                        case "waitForThread": return new JsonDrivenWaitForThread(_testsContext, _testRunner, _objectMap);
-                        case "waitForPrimaryChange": return new JsonDrivenWaitForPrimaryChange(_testsContext, _testRunner, _client, _objectMap);
+                        case "runOnThread": return new JsonDrivenRunOnThreadTest(_testsContext, _testRunner, _objectMap, this);
+                        case "recordPrimary": return new JsonDrivenRecordPrimaryTest(_testsContext, _testRunner, _client, _objectMap);
+                        case "waitForThread": return new JsonDrivenWaitForThreadTest(_testsContext, _testRunner, _objectMap);
+                        case "waitForPrimaryChange": return new JsonDrivenWaitForPrimaryChangeTest(_testsContext, _testRunner, _client, _objectMap);
                         default: throw new FormatException($"Invalid method name: \"{name}\".");
                     }
 

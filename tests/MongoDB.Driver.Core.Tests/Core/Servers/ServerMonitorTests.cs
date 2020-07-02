@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Core.Servers
         #region static
         private static readonly EndPoint __endPoint = new DnsEndPoint("localhost", 27017);
         private static readonly ServerId __serverId = new ServerId(new ClusterId(), __endPoint);
-        private static readonly TcpStreamSettings __tcpStreamSettings = new TcpStreamSettings();
+        private static readonly ServerMonitorSettings __serverMonitorSettings = new ServerMonitorSettings(TimeSpan.FromSeconds(30), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         #endregion
 
         private CancellationTokenSource _cancellationTokenSource;
@@ -55,7 +55,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_serverId_is_null()
         {
-            Action act = () => new ServerMonitor(null, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer());
+            Action act = () => new ServerMonitor(null, __endPoint, Mock.Of<IConnectionFactory>(), __serverMonitorSettings, new EventCapturer());
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -63,7 +63,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_endPoint_is_null()
         {
-            Action act = () => new ServerMonitor(__serverId, null, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer());
+            Action act = () => new ServerMonitor(__serverId, null, Mock.Of<IConnectionFactory>(), __serverMonitorSettings, new EventCapturer());
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -71,7 +71,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_connectionFactory_is_null()
         {
-            Action act = () => new ServerMonitor(__serverId, __endPoint, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer());
+            Action act = () => new ServerMonitor(__serverId, __endPoint, null, __serverMonitorSettings, new EventCapturer());
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -79,7 +79,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_eventSubscriber_is_null()
         {
-            Action act = () => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, null);
+            Action act = () => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), __serverMonitorSettings, null);
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -87,15 +87,15 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_roundTripTimeMonitor_is_null()
         {
-            var exception = Record.Exception(() => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, __tcpStreamSettings, new EventCapturer(), roundTripTimeMonitor: null, Mock.Of<CancellationTokenSource>()));
+            var exception = Record.Exception(() => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), __serverMonitorSettings, new EventCapturer(), roundTripTimeMonitor: null, Mock.Of<CancellationTokenSource>()));
 
             exception.Should().BeOfType<ArgumentNullException>();
         }
 
         [Fact]
-        public void Constructor_should_throw_when_tcpStreamSettings_is_null()
+        public void Constructor_should_throw_when_serverMonitorSettings_is_null()
         {
-            var exception = Record.Exception(() => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan, null, new EventCapturer()));
+            var exception = Record.Exception(() => new ServerMonitor(__serverId, __endPoint, Mock.Of<IConnectionFactory>(), null, new EventCapturer()));
 
             exception.Should().BeOfType<ArgumentNullException>();
         }
@@ -358,9 +358,7 @@ namespace MongoDB.Driver.Core.Servers
                 __serverId,
                 __endPoint,
                 mockConnectionFactory.Object,
-                Timeout.InfiniteTimeSpan,
-                Timeout.InfiniteTimeSpan,
-                __tcpStreamSettings,
+                __serverMonitorSettings,
                 eventCapturer ?? new EventCapturer(),
                 mockRoundTripTimeMonitor.Object,
                 _cancellationTokenSource);

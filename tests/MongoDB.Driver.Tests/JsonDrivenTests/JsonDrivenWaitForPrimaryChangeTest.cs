@@ -24,13 +24,13 @@ using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenWaitForPrimaryChange : JsonDrivenTestRunnerTest
+    public sealed class JsonDrivenWaitForPrimaryChangeTest : JsonDrivenTestRunnerTest
     {
         private readonly IMongoClient _client;
         private readonly JsonDrivenRecordPrimaryTestContext _testContext;
         private TimeSpan _timeout;
 
-        public JsonDrivenWaitForPrimaryChange(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap) : base(testRunner, objectMap)
+        public JsonDrivenWaitForPrimaryChangeTest(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap) : base(testRunner, objectMap)
         {
             _testContext = Ensure.IsNotNull(testsContext, nameof(testsContext)).GetTestContext<JsonDrivenRecordPrimaryTestContext>(JsonDrivenRecordPrimaryTestContext.Key);
             _client = Ensure.IsNotNull(client, nameof(client));
@@ -51,15 +51,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            var changedPrimary = WaitPrimaryChange(_testContext.RecordedPrimary);
-            if (changedPrimary != null)
-            {
-                _testContext.RecordedPrimary = changedPrimary;
-            }
-            else
-            {
-                throw new Exception($"The primary has not been changed from {_testContext.RecordedPrimary} or timeout {_timeout} has been exceeded.");
-            }
+            CallMethod(cancellationToken); // we don't have async specific code here
             return Task.FromResult(true);
         }
 

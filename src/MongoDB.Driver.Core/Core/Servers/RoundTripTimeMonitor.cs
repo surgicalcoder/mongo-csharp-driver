@@ -39,11 +39,10 @@ namespace MongoDB.Driver.Core.Servers
         private readonly IConnectionFactory _connectionFactory;
         private bool _disposed;
         private readonly EndPoint _endPoint;
-        private IConnection _roundTripTimeConnection;
-        private readonly ServerId _serverId;
         private readonly TimeSpan _heartbeatFrequency;
         private readonly object _lock = new object();
-        private readonly object _disposeLock = new object();
+        private IConnection _roundTripTimeConnection;
+        private readonly ServerId _serverId;
 
         public RoundTripTimeMonitor(
             IConnectionFactory connectionFactory,
@@ -76,7 +75,7 @@ namespace MongoDB.Driver.Core.Servers
             _disposed = true;
 
             IConnection toDispose;
-            lock (_disposeLock)
+            lock (_lock)
             {
                 toDispose = _roundTripTimeConnection;
                 _roundTripTimeConnection = null;
@@ -118,7 +117,7 @@ namespace MongoDB.Driver.Core.Servers
                 catch (Exception)
                 {
                     IConnection toDispose;
-                    lock (_disposeLock)
+                    lock (_lock)
                     {
                         toDispose = _roundTripTimeConnection;
                         _roundTripTimeConnection = null;
@@ -135,7 +134,7 @@ namespace MongoDB.Driver.Core.Servers
         {
             _cancellationToken.ThrowIfCancellationRequested();
 
-            lock (_disposeLock)
+            lock (_lock)
             {
                 _roundTripTimeConnection = _connectionFactory.CreateConnection(_serverId, _endPoint);
             }

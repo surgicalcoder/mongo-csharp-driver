@@ -59,7 +59,7 @@ namespace MongoDB.Driver.Core.Configuration
 
             var eventSuscriber = result._eventSubscriber();
 
-            var serverSettings = result._serverSettings();
+            var serverSettings = result._serverMonitorSettings();
         }
 
         [Fact]

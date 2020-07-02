@@ -23,12 +23,12 @@ using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public class JsonDrivenConfigureFailPoint : JsonDrivenTestRunnerTest
+    public class JsonDrivenConfigureFailPointTest : JsonDrivenTestRunnerTest
     {
         private readonly IMongoClient _client;
         protected BsonDocument _failCommand;
 
-        public JsonDrivenConfigureFailPoint(IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap)
+        public JsonDrivenConfigureFailPointTest(IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap)
             : base(testRunner, objectMap)
         {
             _client = client;

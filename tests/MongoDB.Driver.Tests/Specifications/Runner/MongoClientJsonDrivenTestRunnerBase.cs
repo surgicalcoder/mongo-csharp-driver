@@ -205,7 +205,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
             // do nothing by default.
         }
 
-        protected virtual JsonDrivenTestFactory CreateJsonFactory(IMongoClient mongoClient, string databaseName, string collectionName, Dictionary<string, object> objectMap, EventCapturer eventCapturer)
+        protected virtual JsonDrivenTestFactory CreateJsonDrivenTestFactory(IMongoClient mongoClient, string databaseName, string collectionName, Dictionary<string, object> objectMap, EventCapturer eventCapturer)
         {
             return new JsonDrivenTestFactory(mongoClient, databaseName, collectionName, bucketName: null, objectMap, eventCapturer);
         }
@@ -220,7 +220,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
         {
             _objectMap = objectMap;
 
-            var factory = CreateJsonFactory(client, DatabaseName, CollectionName, objectMap, eventCapturer);
+            var factory = CreateJsonDrivenTestFactory(client, DatabaseName, CollectionName, objectMap, eventCapturer);
 
             foreach (var operation in test[OperationsKey].AsBsonArray.Cast<BsonDocument>())
             {

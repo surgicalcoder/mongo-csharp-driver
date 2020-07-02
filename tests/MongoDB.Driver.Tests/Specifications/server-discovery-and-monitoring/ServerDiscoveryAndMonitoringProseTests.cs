@@ -139,7 +139,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         }
     }
 
-    internal static class ServerRelfector
+    internal static class ServerReflector
     {
         public static IServerMonitor _monitor(this IServer server)
         {

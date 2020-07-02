@@ -13,44 +13,33 @@
 * limitations under the License.
 */
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenWaitForThread : JsonDrivenWithThread
+    public sealed class JsonDrivenStartThreadTest : JsonDrivenWithThreadTest
     {
-        public JsonDrivenWaitForThread(
-            JsonDrivenTestsContext testsContext,
-            IJsonDrivenTestRunner testRunner,
-            Dictionary<string, object> objectMap) : base(testsContext, testRunner, objectMap)
+        public JsonDrivenStartThreadTest(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap) : base(testsContext, testRunner, objectMap)
         {
         }
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            WaitTask();
+            _testContext.Tasks.TryAdd(_name, null);
         }
 
         protected override Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            WaitTask();
+            _testContext.Tasks.TryAdd(_name, null);
             return Task.FromResult(true);
         }
 
-        // private methods
-        private void WaitTask()
+        // public methods
+        public override void Assert()
         {
-            if (_testContext.Tasks.TryGetValue(_name, out var task) && task != null)
-            {
-                task.GetAwaiter().GetResult();
-            }
-            else
-            {
-                throw new Exception($"The task {_name} must be configured before waiting.");
-            }
+            // do nothing
         }
     }
 }

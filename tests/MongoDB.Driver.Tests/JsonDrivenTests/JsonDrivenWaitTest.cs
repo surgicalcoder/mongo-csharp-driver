@@ -21,11 +21,11 @@ using MongoDB.Bson;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenWait : JsonDrivenTestRunnerTest
+    public sealed class JsonDrivenWaitTest : JsonDrivenTestRunnerTest
     {
         private TimeSpan _delay;
 
-        public JsonDrivenWait(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap) : base(testRunner, objectMap)
+        public JsonDrivenWaitTest(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap) : base(testRunner, objectMap)
         {
         }
 

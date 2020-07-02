@@ -64,25 +64,33 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            if (_session != null)
+            if (_session == null)
             {
-                _result = _database.WithReadConcern(_readConcern).RunCommand<BsonDocument>(_session, _command, _readPreference, cancellationToken);
+                _result = _database
+                    .WithReadConcern(_readConcern)
+                    .RunCommand<BsonDocument>(_command, _readPreference, cancellationToken);
             }
             else
             {
-                _result = _database.WithReadConcern(_readConcern).RunCommand<BsonDocument>(_command, _readPreference, cancellationToken);
+                _result = _database
+                    .WithReadConcern(_readConcern)
+                    .RunCommand<BsonDocument>(_session, _command, _readPreference, cancellationToken);
             }
         }
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            if (_session != null)
+            if (_session == null)
             {
-                _result = await _database.WithReadConcern(_readConcern).RunCommandAsync<BsonDocument>(_session, _command, _readPreference, cancellationToken).ConfigureAwait(false);
+                _result = await _database
+                    .WithReadConcern(_readConcern)
+                    .RunCommandAsync<BsonDocument>(_command, _readPreference, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                _result = await _database.WithReadConcern(_readConcern).RunCommandAsync<BsonDocument>(_command, _readPreference, cancellationToken).ConfigureAwait(false);
+                _result = await _database
+                    .WithReadConcern(_readConcern)
+                    .RunCommandAsync<BsonDocument>(_session, _command, _readPreference, cancellationToken).ConfigureAwait(false);
             }
         }
 

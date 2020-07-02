@@ -20,7 +20,7 @@ using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenTargetedFailPointTest : JsonDrivenConfigureFailPoint
+    public sealed class JsonDrivenTargetedFailPointTest : JsonDrivenConfigureFailPointTest
     {
         public JsonDrivenTargetedFailPointTest(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap)
             : base(testRunner, client: null, objectMap)

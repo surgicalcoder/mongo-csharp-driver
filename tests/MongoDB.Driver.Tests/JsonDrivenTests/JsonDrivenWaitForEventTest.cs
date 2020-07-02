@@ -18,45 +18,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver.Core;
 using MongoDB.Driver.Core.Events;
-using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public class JsonDrivenAssertEventsCount : JsonDrivenTestRunnerTest
+    public sealed class JsonDrivenWaitForEventTest : JsonDrivenTestRunnerTest
     {
-        private readonly EventCapturer _eventCapturer;
         private int _count;
         private string _event;
+        private readonly EventCapturer _eventCapturer;
 
-        public JsonDrivenAssertEventsCount(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap, EventCapturer eventCapturer) : base(testRunner, objectMap)
+        public JsonDrivenWaitForEventTest(
+            IJsonDrivenTestRunner testRunner,
+            Dictionary<string, object> objectMap,
+            EventCapturer eventCapturer) : base(testRunner, objectMap)
         {
-            _eventCapturer = Ensure.IsNotNull(eventCapturer, nameof(eventCapturer));
+            _eventCapturer = eventCapturer;
         }
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            // do nothing
+            Wait();
         }
 
         protected override Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            // do nothing
-            return Task.FromResult(true);
-        }
-
-        public override void Assert()
-        {
-            var eventCondition = MapEventNameToCondition(_event);
-            var actualEventsCount = _eventCapturer
-                .Events
-                .Count(eventCondition);
-
-            actualEventsCount.Should().Be(_count, $"{_event} must be triggered exactly {_count} times");
+            return Task.Run(() => Wait());
         }
 
         protected override void SetArgument(string name, BsonValue value)
@@ -89,8 +79,23 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                     return @event => @event is ConnectionPoolClearedEvent;
 
                 default:
-                    throw new Exception($"Unexpected event name {eventName}.");
+                    throw new Exception($"Unexpected event type {eventName}.");
             }
+        }
+
+        private void Wait()
+        {
+            var eventCondition = MapEventNameToCondition(_event);
+            Func<IEnumerable<object>, bool> eventsConditionWithFilterByCount = (events) => events.Count(eventCondition) >= _count;
+
+            _eventCapturer.WaitForOrThrowIfTimeout(
+                eventsConditionWithFilterByCount,
+                TimeSpan.FromSeconds(10),
+                (timeout) =>
+                {
+                    var triggeredEventsCount = _eventCapturer.Events.Count(eventCondition);
+                    return $"Waiting for {_count} {_event} exceeded the timeout {timeout}. The number of triggered events is {triggeredEventsCount}.";
+                });
         }
     }
 }

@@ -80,8 +80,8 @@ namespace MongoDB.Driver.Core.Connections
         {
             try
             {
-                var isMasterResult = isMasterProtocol.Execute(connection, cancellationToken);
-                return new IsMasterResult(isMasterResult);
+                var isMasterResultDocument = isMasterProtocol.Execute(connection, cancellationToken);
+                return new IsMasterResult(isMasterResultDocument);
             }
             catch (MongoCommandException ex) when (ex.Code == 11)
             {
@@ -90,12 +90,11 @@ namespace MongoDB.Driver.Core.Connections
                 // raised if the authentication mechanism were specified and the server responded the same way.
                 throw new MongoAuthenticationException(connection.ConnectionId, "User not found.", ex);
             }
-            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex))
+            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex, connection))
             {
                 throw new OperationCanceledException("The isMaster check has been cancelled.", ex);
             }
 
-            bool IsExceptionFromConnection(ObjectDisposedException ex) => ex.ObjectName == connection.GetType().Name;
         }
 
         internal static async Task<IsMasterResult> GetResultAsync(
@@ -115,12 +114,12 @@ namespace MongoDB.Driver.Core.Connections
                 // raised if the authentication mechanism were specified and the server responded the same way.
                 throw new MongoAuthenticationException(connection.ConnectionId, "User not found.", ex);
             }
-            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex))
+            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex, connection))
             {
                 throw new OperationCanceledException("The isMaster check has been cancelled.", ex);
             }
-
-            bool IsExceptionFromConnection(ObjectDisposedException ex) => ex.ObjectName == connection.GetType().Name;
         }
+
+        private static bool IsExceptionFromConnection(ObjectDisposedException ex, IConnection connection) => ex.ObjectName == connection.GetType().Name;
     }
 }

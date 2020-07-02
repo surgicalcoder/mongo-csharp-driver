@@ -272,6 +272,10 @@ namespace MongoDB.Driver.Core.Configuration
                 );
 
             var serverMonitorStreamFactory = CreateTcpStreamFactory(serverMonitorTcpStreamSettings);
+            var serverMonitorSettings = new ServerMonitorSettings(
+                connectTimeout: serverMonitorTcpStreamSettings.ConnectTimeout,
+                heartbeatInterval: _serverSettings.HeartbeatInterval,
+                timeout: _serverSettings.HeartbeatTimeout);
 
             var serverMonitorConnectionFactory = new BinaryConnectionFactory(
                 serverMonitorConnectionSettings,
@@ -279,8 +283,7 @@ namespace MongoDB.Driver.Core.Configuration
                 new EventAggregator());
 
             return new ServerMonitorFactory(
-                serverMonitorTcpStreamSettings,
-                _serverSettings,
+                serverMonitorSettings,
                 serverMonitorConnectionFactory,
                 _eventAggregator);
         }
