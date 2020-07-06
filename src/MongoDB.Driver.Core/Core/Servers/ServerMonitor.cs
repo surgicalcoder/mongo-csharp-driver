@@ -32,12 +32,12 @@ namespace MongoDB.Driver.Core.Servers
         private readonly CancellationTokenSource _cancellationTokenSource;
         private volatile IConnection _connection;
         private readonly IConnectionFactory _connectionFactory;
-        private bool _currentCheckCancelled;
         private ServerDescription _currentDescription;
         private readonly EndPoint _endPoint;
         private BuildInfoResult _handshakeBuildInfoResult;
         private HeartbeatDelay _heartbeatDelay;
         private readonly object _lock = new object();
+        private CancellationTokenSource _operationCancellationTokenSource;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
         private readonly InterlockedInt32 _state;
         private readonly ServerId _serverId;
@@ -98,17 +98,20 @@ namespace MongoDB.Driver.Core.Servers
         // public methods
         public void CancelCurrentCheck()
         {
-            IConnection toDispose = null;
             lock (_lock)
             {
-                if (_connection != null && !_currentCheckCancelled)
+                if (!_operationCancellationTokenSource.IsCancellationRequested)
                 {
-                    toDispose = _connection;
-                    _currentCheckCancelled = true;
+                    _operationCancellationTokenSource.Cancel();
                     _connection = null;
+                    if (!_cancellationTokenSource.IsCancellationRequested)
+                    {
+                        _operationCancellationTokenSource.Dispose();
+                        _operationCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token);
+                        // previous operation cancelation token is still cancelled
+                    }
                 }
             }
-            toDispose?.Dispose();
         }
 
         public void Dispose()
@@ -187,15 +190,18 @@ namespace MongoDB.Driver.Core.Servers
 
             var metronome = new Metronome(_serverMonitorSettings.HeartbeatInterval);
             var heartbeatCancellationToken = _cancellationTokenSource.Token;
+
+            _operationCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(heartbeatCancellationToken);
             while (!heartbeatCancellationToken.IsCancellationRequested)
             {
+                var cancellationOperationToken = _operationCancellationTokenSource.Token;
                 try
                 {
                     try
                     {
-                        await HeartbeatAsync(heartbeatCancellationToken).ConfigureAwait(false);
+                        await HeartbeatAsync(cancellationOperationToken).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException) when (heartbeatCancellationToken.IsCancellationRequested)
+                    catch (OperationCanceledException) when (cancellationOperationToken.IsCancellationRequested)
                     {
                         // ignore OperationCanceledException when heartbeat cancellation is requested
                     }
@@ -270,9 +276,8 @@ namespace MongoDB.Driver.Core.Servers
                         heartbeatIsMasterResult = await GetHeartbeatInfoAsync(isMasterProtocol, _connection, cancellationToken).ConfigureAwait(false);
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    _currentCheckCancelled = false;
                     return;
                 }
                 catch (Exception ex)
@@ -294,9 +299,8 @@ namespace MongoDB.Driver.Core.Servers
 
                 lock (_lock)
                 {
-                    if (_currentCheckCancelled)
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        _currentCheckCancelled = false;
                         return;
                     }
                 }

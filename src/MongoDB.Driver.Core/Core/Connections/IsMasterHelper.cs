@@ -90,11 +90,6 @@ namespace MongoDB.Driver.Core.Connections
                 // raised if the authentication mechanism were specified and the server responded the same way.
                 throw new MongoAuthenticationException(connection.ConnectionId, "User not found.", ex);
             }
-            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex, connection))
-            {
-                throw new OperationCanceledException("The isMaster check has been cancelled.", ex);
-            }
-
         }
 
         internal static async Task<IsMasterResult> GetResultAsync(
@@ -114,12 +109,6 @@ namespace MongoDB.Driver.Core.Connections
                 // raised if the authentication mechanism were specified and the server responded the same way.
                 throw new MongoAuthenticationException(connection.ConnectionId, "User not found.", ex);
             }
-            catch (ObjectDisposedException ex) when (IsExceptionFromConnection(ex, connection))
-            {
-                throw new OperationCanceledException("The isMaster check has been cancelled.", ex);
-            }
         }
-
-        private static bool IsExceptionFromConnection(ObjectDisposedException ex, IConnection connection) => ex.ObjectName == connection.GetType().Name;
     }
 }

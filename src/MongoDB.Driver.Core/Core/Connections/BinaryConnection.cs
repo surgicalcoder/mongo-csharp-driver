@@ -40,8 +40,6 @@ namespace MongoDB.Driver.Core.Connections
     internal class BinaryConnection : IConnection
     {
         // fields
-        private readonly CancellationToken _backgroundTaskCancellationToken;
-        private readonly CancellationTokenSource _backgroundTaskCancellationTokenSource;
         private readonly CommandEventHelper _commandEventHelper;
         private readonly ICompressorSource _compressorSource;
         private ConnectionId _connectionId;
@@ -84,9 +82,6 @@ namespace MongoDB.Driver.Core.Connections
             _streamFactory = Ensure.IsNotNull(streamFactory, nameof(streamFactory));
             _connectionInitializer = Ensure.IsNotNull(connectionInitializer, nameof(connectionInitializer));
             Ensure.IsNotNull(eventSubscriber, nameof(eventSubscriber));
-
-            _backgroundTaskCancellationTokenSource = new CancellationTokenSource();
-            _backgroundTaskCancellationToken = _backgroundTaskCancellationTokenSource.Token;
 
             _connectionId = new ConnectionId(serverId);
             _receiveLock = new SemaphoreSlim(1);
@@ -199,8 +194,6 @@ namespace MongoDB.Driver.Core.Connections
                     }
 
                     var stopwatch = Stopwatch.StartNew();
-                    _backgroundTaskCancellationTokenSource.Cancel();
-                    _backgroundTaskCancellationTokenSource.Dispose();
                     _receiveLock.Dispose();
                     _sendLock.Dispose();
 
@@ -329,19 +322,19 @@ namespace MongoDB.Driver.Core.Connections
             }
         }
 
-        private IByteBuffer ReceiveBuffer()
+        private IByteBuffer ReceiveBuffer(CancellationToken cancellationToken)
         {
             try
             {
                 var messageSizeBytes = new byte[4];
-                _stream.ReadBytes(messageSizeBytes, 0, 4, _backgroundTaskCancellationToken);
+                _stream.ReadBytes(messageSizeBytes, 0, 4, cancellationToken);
                 var messageSize = BitConverter.ToInt32(messageSizeBytes, 0);
                 EnsureMessageSizeIsValid(messageSize);
                 var inputBufferChunkSource = new InputBufferChunkSource(BsonChunkPool.Default);
                 var buffer = ByteBufferFactory.Create(inputBufferChunkSource, messageSize);
                 buffer.Length = messageSize;
                 buffer.SetBytes(0, messageSizeBytes, 0, 4);
-                _stream.ReadBytes(buffer, 4, messageSize - 4, _backgroundTaskCancellationToken);
+                _stream.ReadBytes(buffer, 4, messageSize - 4, cancellationToken);
                 _lastUsedAtUtc = DateTime.UtcNow;
                 buffer.MakeReadOnly();
                 return buffer;
@@ -370,7 +363,7 @@ namespace MongoDB.Driver.Core.Connections
                     receiveLockRequest.Task.GetAwaiter().GetResult(); // propagate exceptions
                     while (true)
                     {
-                        var buffer = ReceiveBuffer();
+                        var buffer = ReceiveBuffer(cancellationToken);
                         _dropbox.AddMessage(buffer);
 
                         if (messageTask.IsCompleted)
@@ -391,20 +384,20 @@ namespace MongoDB.Driver.Core.Connections
             }
         }
 
-        private async Task<IByteBuffer> ReceiveBufferAsync()
+        private async Task<IByteBuffer> ReceiveBufferAsync(CancellationToken cancellationToken)
         {
             try
             {
                 var messageSizeBytes = new byte[4];
                 var readTimeout = _stream.CanTimeout ? TimeSpan.FromMilliseconds(_stream.ReadTimeout) : Timeout.InfiniteTimeSpan;
-                await _stream.ReadBytesAsync(messageSizeBytes, 0, 4, readTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                await _stream.ReadBytesAsync(messageSizeBytes, 0, 4, readTimeout, cancellationToken).ConfigureAwait(false);
                 var messageSize = BitConverter.ToInt32(messageSizeBytes, 0);
                 EnsureMessageSizeIsValid(messageSize);
                 var inputBufferChunkSource = new InputBufferChunkSource(BsonChunkPool.Default);
                 var buffer = ByteBufferFactory.Create(inputBufferChunkSource, messageSize);
                 buffer.Length = messageSize;
                 buffer.SetBytes(0, messageSizeBytes, 0, 4);
-                await _stream.ReadBytesAsync(buffer, 4, messageSize - 4, readTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                await _stream.ReadBytesAsync(buffer, 4, messageSize - 4, readTimeout, cancellationToken).ConfigureAwait(false);
                 _lastUsedAtUtc = DateTime.UtcNow;
                 buffer.MakeReadOnly();
                 return buffer;
@@ -433,7 +426,7 @@ namespace MongoDB.Driver.Core.Connections
                     receiveLockRequest.Task.GetAwaiter().GetResult(); // propagate exceptions
                     while (true)
                     {
-                        var buffer = await ReceiveBufferAsync().ConfigureAwait(false);
+                        var buffer = await ReceiveBufferAsync(cancellationToken).ConfigureAwait(false);
                         _dropbox.AddMessage(buffer);
 
                         if (messageTask.IsCompleted)
@@ -477,7 +470,8 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
+                DisposeConnectionIfCancelled(ex);
+                throw;
             }
         }
 
@@ -504,7 +498,8 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
+                DisposeConnectionIfCancelled(ex);
+                throw;
             }
         }
 
@@ -521,7 +516,7 @@ namespace MongoDB.Driver.Core.Connections
                 try
                 {
                     // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
-                    _stream.WriteBytes(buffer, 0, buffer.Length, _backgroundTaskCancellationToken);
+                    _stream.WriteBytes(buffer, 0, buffer.Length, cancellationToken);
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
                 catch (Exception ex)
@@ -551,7 +546,7 @@ namespace MongoDB.Driver.Core.Connections
                 {
                     // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
                     var writeTimeout = _stream.CanTimeout ? TimeSpan.FromMilliseconds(_stream.WriteTimeout) : Timeout.InfiniteTimeSpan;
-                    await _stream.WriteBytesAsync(buffer, 0, buffer.Length, writeTimeout, _backgroundTaskCancellationToken).ConfigureAwait(false);
+                    await _stream.WriteBytesAsync(buffer, 0, buffer.Length, writeTimeout, cancellationToken).ConfigureAwait(false);
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
                 catch (Exception ex)
@@ -599,7 +594,8 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
+                DisposeConnectionIfCancelled(ex);
+                throw;
             }
         }
 
@@ -635,7 +631,8 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                throw WrapIfObjectDisposableExceptionAndIfRequired(ex);
+                DisposeConnectionIfCancelled(ex);
+                throw;
             }
         }
 
@@ -745,16 +742,11 @@ namespace MongoDB.Driver.Core.Connections
             }
         }
 
-        private Exception WrapIfObjectDisposableExceptionAndIfRequired(Exception exception)
+        private void DisposeConnectionIfCancelled(Exception exception)
         {
-            if (exception is ObjectDisposedException objectDisposedException &&
-                objectDisposedException.Message == "The semaphore has been disposed.")
+            if (exception is OperationCanceledException)
             {
-                return new OperationCanceledException("The BinaryConnection has been cancelled.", exception);
-            }
-            else
-            {
-                return exception;
+                Dispose();
             }
         }
 
