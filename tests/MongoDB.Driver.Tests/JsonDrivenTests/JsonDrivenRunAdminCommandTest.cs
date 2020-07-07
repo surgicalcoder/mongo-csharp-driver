@@ -15,30 +15,115 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
-using MongoDB.Driver.TestHelpers;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenRunAdminCommandTest : JsonDrivenRunCommandTest
+    public sealed class JsonDrivenRunAdminCommandTest : JsonDrivenTestRunnerTest
     {
-        private readonly DisposableMongoClient _mongoClient;
+        // private fields
+        private BsonDocument _command;
+        private readonly MongoClientSettings _mongoClientSettings;
+        private ReadConcern _readConcern = new ReadConcern();
+        private ReadPreference _readPreference;
+        private BsonDocument _result;
+        private IClientSessionHandle _session;
 
-        public JsonDrivenRunAdminCommandTest(DisposableMongoClient mongoClient, Dictionary<string, object> objectMap)
-            : base(mongoClient.GetDatabase(DatabaseNamespace.Admin.DatabaseName), objectMap)
+        public JsonDrivenRunAdminCommandTest(IMongoClient mongoClient, IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap)
+            : base(testRunner, objectMap)
         {
-            _mongoClient = mongoClient;
+            _mongoClientSettings = mongoClient.Settings.Clone();
+            _mongoClientSettings.ClusterConfigurator = null;
         }
 
-        public override void Dispose()
+        public override void Arrange(BsonDocument document)
         {
-            _mongoClient.Dispose();
+            var expectedNames = new[] { "name", "object", "command_name", "arguments", "result", "databaseOptions" };
+            JsonDrivenHelper.EnsureAllFieldsAreValid(document, expectedNames);
+            base.Arrange(document);
+
+            if (document.Contains("command_name"))
+            {
+                var actualCommandName = _command.GetElement(0).Name;
+                var expectedCommandName = document["command_name"].AsString;
+                if (actualCommandName != expectedCommandName)
+                {
+                    throw new FormatException($"Actual command name \"{actualCommandName}\" does not match expected command name \"{expectedCommandName}\".");
+                }
+            }
         }
 
-        protected override void EnsureObjectFieldIsValid(BsonDocument document)
+        // protected methods
+        protected override void AssertResult()
         {
-            JsonDrivenHelper.EnsureFieldEquals(document, "object", "testRunner");
+            var aspectAsserter = new BsonDocumentAspectAsserter();
+            aspectAsserter.AssertAspects(_result, _expectedResult.AsBsonDocument);
+        }
+
+        protected override void CallMethod(CancellationToken cancellationToken)
+        {
+            using (var client = DriverTestConfiguration.CreateDisposableClient(_mongoClientSettings))
+            {
+                if (_session == null)
+                {
+                    _result = GetAdminDatabase(client).RunCommand<BsonDocument>(_command, _readPreference, cancellationToken);
+                }
+                else
+                {
+                    _result = GetAdminDatabase(client).RunCommand<BsonDocument>(_session, _command, _readPreference, cancellationToken);
+                }
+            }
+        }
+
+        protected override async Task CallMethodAsync(CancellationToken cancellationToken)
+        {
+            using (var client = DriverTestConfiguration.CreateDisposableClient(_mongoClientSettings))
+            {
+                if (_session == null)
+                {
+                    _result = await GetAdminDatabase(client).RunCommandAsync<BsonDocument>(_command, _readPreference, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _result = await GetAdminDatabase(client).RunCommandAsync<BsonDocument>(_session, _command, _readPreference, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        protected override void SetArgument(string name, BsonValue value)
+        {
+            switch (name)
+            {
+                case "command":
+                    _command = value.AsBsonDocument;
+                    return;
+
+                case "databaseOptions":
+                    if (value.AsBsonDocument.TryGetValue("readConcern", out var readConcernValue))
+                    {
+                        _readConcern = ReadConcern.FromBsonDocument(readConcernValue.AsBsonDocument);
+                    }
+                    return;
+
+                case "readPreference":
+                    _readPreference = ReadPreference.FromBsonDocument(value.AsBsonDocument);
+                    return;
+
+                case "session":
+                    _session = (IClientSessionHandle)_objectMap[value.AsString];
+                    return;
+            }
+
+            base.SetArgument(name, value);
+        }
+
+        // private methods
+        private IMongoDatabase GetAdminDatabase(IMongoClient mongoClient)
+        {
+            return mongoClient.GetDatabase(DatabaseNamespace.Admin.DatabaseName).WithReadConcern(_readConcern);
         }
     }
 }

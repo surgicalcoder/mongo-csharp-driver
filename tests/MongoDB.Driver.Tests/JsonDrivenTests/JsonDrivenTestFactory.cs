@@ -102,12 +102,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                         case "waitForEvent": return new JsonDrivenWaitForEventTest(_testRunner, _objectMap, _eventCapturer);
                         case "assertEventCount": return new JsonDrivenAssertEventsCountTest(_testRunner, _objectMap, _eventCapturer);
                         case "startThread": return new JsonDrivenStartThreadTest(_testsContext, _testRunner, _objectMap);
-                        case "runAdminCommand":
-                            {
-                                var clientSettingsForRunCommand = _client.Settings.Clone();
-                                clientSettingsForRunCommand.ClusterConfigurator = null;
-                                return new JsonDrivenRunAdminCommandTest(DriverTestConfiguration.CreateDisposableClient(clientSettingsForRunCommand), _objectMap);
-                            }
+                        case "runAdminCommand": return new JsonDrivenRunAdminCommandTest(_client, _testRunner, _objectMap);
                         case "runOnThread": return new JsonDrivenRunOnThreadTest(_testsContext, _testRunner, _objectMap, this);
                         case "recordPrimary": return new JsonDrivenRecordPrimaryTest(_testsContext, _testRunner, _client, _objectMap);
                         case "waitForThread": return new JsonDrivenWaitForThreadTest(_testsContext, _testRunner, _objectMap);
