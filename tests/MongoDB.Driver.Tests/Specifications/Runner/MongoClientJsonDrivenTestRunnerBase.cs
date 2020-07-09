@@ -381,6 +381,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
             return DriverTestConfiguration.CreateDisposableClient(
                 settings =>
                 {
+                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // the default value for spec tests
                     ConfigureClientSettings(settings, test);
                     if (eventCapturer != null)
                     {

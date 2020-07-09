@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.Linq;
 using System.Net;
 using FluentAssertions;
@@ -178,6 +179,7 @@ namespace MongoDB.Driver.Tests
             return DriverTestConfiguration.CreateDisposableClient(
                 settings =>
                 {
+                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // the default value for spec tests
                     settings.RetryWrites = false;
                     settings.ClusterConfigurator = c => { c.Subscribe(capturedEvents); };
                 });
