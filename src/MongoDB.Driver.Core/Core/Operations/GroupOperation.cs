@@ -239,7 +239,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // private methods
-        internal BsonDocument CreateCommand(SemanticVersion serverVersion)
+        internal BsonDocument CreateCommand(ServerVersion serverVersion)
         {
             Feature.Collation.ThrowIfNotSupported(serverVersion, _collation);
 
@@ -261,7 +261,7 @@ namespace MongoDB.Driver.Core.Operations
            };
         }
 
-        private ReadCommandOperation<TResult[]> CreateOperation(SemanticVersion serverVersion)
+        private ReadCommandOperation<TResult[]> CreateOperation(ServerVersion serverVersion)
         {
             var command = CreateCommand(serverVersion);
             var resultSerializer = _resultSerializer ?? BsonSerializer.LookupSerializer<TResult>();

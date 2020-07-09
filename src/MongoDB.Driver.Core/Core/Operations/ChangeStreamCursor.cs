@@ -45,7 +45,7 @@ namespace MongoDB.Driver.Core.Operations
         private readonly BsonDocument _initialResumeAfter;
         private readonly BsonDocument _initialStartAfter;
         private readonly BsonTimestamp _initialStartAtOperationTime;
-        private readonly SemanticVersion _serverVersion;
+        private readonly ServerVersion _serverVersion;
 
         // public properties
         /// <inheritdoc />
@@ -75,7 +75,7 @@ namespace MongoDB.Driver.Core.Operations
             BsonDocument initialStartAfter,
             BsonDocument initialResumeAfter,
             BsonTimestamp initialStartAtOperationTime,
-            SemanticVersion serverVersion)
+            ServerVersion serverVersion)
         {
             _cursor = Ensure.IsNotNull(cursor, nameof(cursor));
             _documentSerializer = Ensure.IsNotNull(documentSerializer, nameof(documentSerializer));

@@ -28,7 +28,7 @@ namespace MongoDB.Driver.Core.Operations
     {
         public static IChannelHandle CreateChannel(
             ConnectionDescription connectionDescription = null,
-            SemanticVersion serverVersion = null,
+            ServerVersion serverVersion = null,
             bool supportsSessions = true)
         {
             if (connectionDescription == null)
@@ -44,13 +44,13 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         public static ConnectionDescription CreateConnectionDescription(
-            SemanticVersion serverVersion = null,
+            ServerVersion serverVersion = null,
             ServerType serverType = ServerType.Standalone,
             bool supportsSessions = true)
         {
             if (serverVersion == null)
             {
-                serverVersion = new SemanticVersion(3, 6, 0);
+                serverVersion = new ServerVersion(3, 6, 0);
             }
 
             var clusterId = new ClusterId();
@@ -74,7 +74,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         public static IsMasterResult CreateIsMasterResult(
-            SemanticVersion version = null,
+            ServerVersion version = null,
             ServerType serverType = ServerType.Standalone,
             bool supportsSessions = true)
         {

@@ -21,14 +21,14 @@ namespace MongoDB.Driver.Core.Misc
     /// <seealso cref="MongoDB.Driver.Core.Misc.Feature" />
     public class HintForUpdateAndReplaceOperationsFeature : Feature
     {
-        private readonly SemanticVersion _firstServerVersionWhereWeRelyOnServerToReturnError = new SemanticVersion(3, 4, 0);
+        private readonly ServerVersion _firstServerVersionWhereWeRelyOnServerToReturnError = new ServerVersion(3, 4, 0);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HintForUpdateAndReplaceOperationsFeature"/> class.
         /// </summary>
         /// <param name="name">The name of the feature.</param>
         /// <param name="firstSupportedVersion">The first server version that supports the feature.</param>
-        public HintForUpdateAndReplaceOperationsFeature(string name, SemanticVersion firstSupportedVersion)
+        public HintForUpdateAndReplaceOperationsFeature(string name, ServerVersion firstSupportedVersion)
             : base(name, firstSupportedVersion)
         {
         }
@@ -38,7 +38,7 @@ namespace MongoDB.Driver.Core.Misc
         /// </summary>
         /// <param name="serverVersion">The server version.</param>
         /// <returns>Whether the driver must throw if feature is not supported.</returns>
-        public bool DriverMustThrowIfNotSupported(SemanticVersion serverVersion)
+        public bool DriverMustThrowIfNotSupported(ServerVersion serverVersion)
         {
             return serverVersion < _firstServerVersionWhereWeRelyOnServerToReturnError;
         }

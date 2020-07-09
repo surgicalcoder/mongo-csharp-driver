@@ -51,11 +51,11 @@ namespace MongoDB.Driver.Core.Connections
         /// <value>
         /// The server version.
         /// </value>
-        public SemanticVersion ServerVersion
+        public ServerVersion ServerVersion
         {
             get
             {
-                return SemanticVersion.Parse(_wrapped.GetValue("version").ToString());
+                return ServerVersion.Parse(_wrapped.GetValue("version").ToString());
             }
         }
 

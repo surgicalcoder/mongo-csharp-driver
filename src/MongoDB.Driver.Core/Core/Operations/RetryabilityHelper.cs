@@ -87,7 +87,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // public static methods
-        public static void AddRetryableWriteErrorLabelIfRequired(MongoException exception, SemanticVersion serverVersion)
+        public static void AddRetryableWriteErrorLabelIfRequired(MongoException exception, ServerVersion serverVersion)
         {
             if (ShouldRetryableWriteExceptionLabelBeAdded(exception, serverVersion))
             {
@@ -103,7 +103,7 @@ namespace MongoDB.Driver.Core.Operations
                 command.Contains("abortTransaction");
         }
 
-        public static bool IsResumableChangeStreamException(Exception exception, SemanticVersion serverVersion)
+        public static bool IsResumableChangeStreamException(Exception exception, ServerVersion serverVersion)
         {
             if (IsNetworkException(exception))
             {
@@ -161,7 +161,7 @@ namespace MongoDB.Driver.Core.Operations
             return exception is MongoConnectionException mongoConnectionException && mongoConnectionException.IsNetworkException;
         }
 
-        private static bool ShouldRetryableWriteExceptionLabelBeAdded(Exception exception, SemanticVersion serverVersion)
+        private static bool ShouldRetryableWriteExceptionLabelBeAdded(Exception exception, ServerVersion serverVersion)
         {
             if (!Feature.RetryableWrites.IsSupported(serverVersion))
             {

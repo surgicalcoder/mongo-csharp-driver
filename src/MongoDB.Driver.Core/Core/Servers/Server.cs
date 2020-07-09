@@ -427,7 +427,7 @@ namespace MongoDB.Driver.Core.Servers
             OnDescriptionChanged(sender: this, new ServerDescriptionChangedEventArgs(oldDescription, newDescription));
         }
 
-        private bool ShouldClearConnectionPoolForChannelException(Exception ex, SemanticVersion serverVersion)
+        private bool ShouldClearConnectionPoolForChannelException(Exception ex, ServerVersion serverVersion)
         {
             if (ex is MongoConnectionException mongoCommandException &&
                 mongoCommandException.IsNetworkException &&

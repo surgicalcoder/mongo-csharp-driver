@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Core.Connections
         private readonly int _maxBatchCount;
         private readonly int _maxDocumentSize;
         private readonly int _maxMessageSize;
-        private readonly SemanticVersion _serverVersion;
+        private readonly ServerVersion _serverVersion;
 
         // constructors
         /// <summary>
@@ -149,7 +149,7 @@ namespace MongoDB.Driver.Core.Connections
         /// <value>
         /// The server version.
         /// </value>
-        public SemanticVersion ServerVersion
+        public ServerVersion ServerVersion
         {
             get { return _serverVersion; }
         }
