@@ -36,6 +36,7 @@ namespace MongoDB.Driver.Core.Servers
         private readonly EndPoint _endPoint;
         private BuildInfoResult _handshakeBuildInfoResult;
         private HeartbeatDelay _heartbeatDelay;
+        private readonly object _heartbeatDelayLock = new object();
         private readonly object _lock = new object();
         private CancellationTokenSource _operationCancellationTokenSource;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
@@ -140,10 +141,9 @@ namespace MongoDB.Driver.Core.Servers
         public void RequestHeartbeat()
         {
             ThrowIfNotOpen();
-            var heartbeatDelay = Interlocked.CompareExchange(ref _heartbeatDelay, null, null);
-            if (heartbeatDelay != null)
+            lock (_heartbeatDelayLock)
             {
-                heartbeatDelay.RequestHeartbeat();
+                _heartbeatDelay?.RequestHeartbeat();
             }
         }
 
@@ -239,11 +239,13 @@ namespace MongoDB.Driver.Core.Servers
                     }
 
                     var newHeartbeatDelay = new HeartbeatDelay(metronome.GetNextTickDelay(), _serverMonitorSettings.MinHeartbeatInterval);
-                    var oldHeartbeatDelay = Interlocked.Exchange(ref _heartbeatDelay, newHeartbeatDelay);
-                    if (oldHeartbeatDelay != null)
+                    HeartbeatDelay toDispose = null;
+                    lock (_heartbeatDelayLock)
                     {
-                        oldHeartbeatDelay.Dispose();
+                        toDispose = _heartbeatDelay;
+                        _heartbeatDelay= newHeartbeatDelay;
                     }
+                    toDispose?.Dispose();
                     await newHeartbeatDelay.Task.ConfigureAwait(false);
                 }
                 catch
