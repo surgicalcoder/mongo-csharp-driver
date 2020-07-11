@@ -27,25 +27,26 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
     public sealed class JsonDrivenWaitForPrimaryChangeTest : JsonDrivenTestRunnerTest
     {
         private readonly IMongoClient _client;
-        private readonly JsonDrivenRecordPrimaryTestContext _testContext;
+        private readonly JsonDrivenRecordedPrimaryState _testState;
         private TimeSpan _timeout;
 
-        public JsonDrivenWaitForPrimaryChangeTest(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap) : base(testRunner, objectMap)
+        public JsonDrivenWaitForPrimaryChangeTest(JsonDrivenTestsStateHolder stateHolder, IJsonDrivenTestRunner testRunner, IMongoClient client, Dictionary<string, object> objectMap)
+            : base(testRunner, objectMap)
         {
-            _testContext = Ensure.IsNotNull(testsContext, nameof(testsContext)).GetTestContext<JsonDrivenRecordPrimaryTestContext>(JsonDrivenRecordPrimaryTestContext.Key);
+            _testState = Ensure.IsNotNull(stateHolder, nameof(stateHolder)).GetTestState<JsonDrivenRecordedPrimaryState>(JsonDrivenRecordedPrimaryState.Key);
             _client = Ensure.IsNotNull(client, nameof(client));
         }
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            var changedPrimary = WaitPrimaryChange(_testContext.RecordedPrimary);
-            if (changedPrimary != null)
+            var newPrimary = WaitForPrimaryChange(_testState.RecordedPrimary);
+            if (newPrimary != null)
             {
-                _testContext.RecordedPrimary = changedPrimary;
+                _testState.RecordedPrimary = newPrimary ;
             }
             else
             {
-                throw new Exception($"The primary has not been changed from {_testContext.RecordedPrimary} or timeout {_timeout} has been exceeded.");
+                throw new Exception($"The primary has not been changed from {_testState.RecordedPrimary} or timeout {_timeout} has been exceeded.");
             }
         }
 
@@ -81,7 +82,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             return null;
         }
 
-        private EndPoint WaitPrimaryChange(EndPoint previousPrimary)
+        private EndPoint WaitForPrimaryChange(EndPoint previousPrimary)
         {
             EndPoint currentPrimary = null;
             if (SpinWait.SpinUntil(

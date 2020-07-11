@@ -88,7 +88,8 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
                 _ = client
                     .GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName)
                     .GetCollection<BsonDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName)
-                    .Find(FilterDefinition<BsonDocument>.Empty);
+                    .Find(FilterDefinition<BsonDocument>.Empty)
+                    .ToList();
 
                 // Sleep for 2 seconds. This must be long enough for multiple heartbeats to succeed.
                 Thread.Sleep(TimeSpan.FromSeconds(2));

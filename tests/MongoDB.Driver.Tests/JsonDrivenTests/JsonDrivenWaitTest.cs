@@ -25,7 +25,8 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
     {
         private TimeSpan _delay;
 
-        public JsonDrivenWaitTest(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap) : base(testRunner, objectMap)
+        public JsonDrivenWaitTest(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap)
+            : base(testRunner, objectMap)
         {
         }
 

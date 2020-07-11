@@ -23,19 +23,16 @@ namespace MongoDB.Driver.Core.Servers
         private readonly TimeSpan _connectTimeout;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _minHeartbeatInterval;
-        private readonly TimeSpan _timeout;
 
-        public ServerMonitorSettings(TimeSpan connectTimeout, TimeSpan heartbeatInterval, TimeSpan timeout, Optional<TimeSpan> minHeartbeatInterval = default)
+        public ServerMonitorSettings(TimeSpan connectTimeout, TimeSpan heartbeatInterval, Optional<TimeSpan> minHeartbeatInterval = default)
         {
             _connectTimeout = connectTimeout;
             _heartbeatInterval = heartbeatInterval;
             _minHeartbeatInterval = minHeartbeatInterval.WithDefault(TimeSpan.FromMilliseconds(500));
-            _timeout = timeout;
         }
 
         public TimeSpan ConnectTimeout => _connectTimeout;
         public TimeSpan HeartbeatInterval => _heartbeatInterval;
         public TimeSpan MinHeartbeatInterval => _minHeartbeatInterval;
-        public TimeSpan Timeout => _timeout;
     }
 }

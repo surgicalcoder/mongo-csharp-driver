@@ -29,16 +29,16 @@ namespace MongoDB.Driver.Core.Servers
     internal sealed class ServerMonitor : IServerMonitor
     {
         private readonly ServerDescription _baseDescription;
-        private readonly CancellationTokenSource _cancellationTokenSource;
         private volatile IConnection _connection;
         private readonly IConnectionFactory _connectionFactory;
+        private CancellationTokenSource _currentCheckCancellationTokenSource;
         private ServerDescription _currentDescription;
         private readonly EndPoint _endPoint;
         private BuildInfoResult _handshakeBuildInfoResult;
         private HeartbeatDelay _heartbeatDelay;
         private readonly object _heartbeatDelayLock = new object();
         private readonly object _lock = new object();
-        private CancellationTokenSource _operationCancellationTokenSource;
+        private readonly CancellationTokenSource _monitorCancellationTokenSource;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
         private readonly InterlockedInt32 _state;
         private readonly ServerId _serverId;
@@ -75,7 +75,7 @@ namespace MongoDB.Driver.Core.Servers
 
         public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, ServerMonitorSettings serverMonitorSettings, IEventSubscriber eventSubscriber, IRoundTripTimeMonitor roundTripTimeMonitor, CancellationTokenSource cancellationTokenSource)
         {
-            _cancellationTokenSource = cancellationTokenSource;
+            _monitorCancellationTokenSource = cancellationTokenSource;
             _serverId = Ensure.IsNotNull(serverId, nameof(serverId));
             _endPoint = Ensure.IsNotNull(endPoint, nameof(endPoint));
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
@@ -101,16 +101,13 @@ namespace MongoDB.Driver.Core.Servers
         {
             lock (_lock)
             {
-                if (!_operationCancellationTokenSource.IsCancellationRequested)
+                if (!_currentCheckCancellationTokenSource.IsCancellationRequested)
                 {
-                    _operationCancellationTokenSource.Cancel();
+                    _currentCheckCancellationTokenSource.Cancel();
                     _connection = null;
-                    if (!_cancellationTokenSource.IsCancellationRequested)
-                    {
-                        _operationCancellationTokenSource.Dispose();
-                        _operationCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token);
+                    _currentCheckCancellationTokenSource.Dispose();
+                    _currentCheckCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_monitorCancellationTokenSource.Token);
                         // previous operation cancelation token is still cancelled
-                    }
                 }
             }
         }
@@ -119,8 +116,8 @@ namespace MongoDB.Driver.Core.Servers
         {
             if (_state.TryChange(State.Disposed))
             {
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
+                _monitorCancellationTokenSource.Cancel();
+                _monitorCancellationTokenSource.Dispose();
                 if (_connection != null)
                 {
                     _connection.Dispose();
@@ -167,21 +164,32 @@ namespace MongoDB.Driver.Core.Servers
             return IsMasterHelper.CreateProtocol(isMasterCommand, commandResponseHandling);
         }
 
-        private async Task<IsMasterResult> InitializeConnectionAsync(CancellationToken cancellationToken)
+        private async Task<IsMasterResult> InitializeConnectionAsync(CancellationToken cancellationToken) // called setUpConnection in spec
         {
-            lock (_lock)
-            {
-                _connection = _connectionFactory.CreateConnection(_serverId, _endPoint);
-            }
-            // if we are cancelling, it's because the server has
-            // been shut down and we really don't need to wait.
+            var connection = _connectionFactory.CreateConnection(_serverId, _endPoint);
+
             var stopwatch = Stopwatch.StartNew();
-            await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // if we are cancelling, it's because the server has
+                // been shut down and we really don't need to wait.
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // dispose it here because the _connection is not initialized yet
+                try { connection.Dispose(); } catch { }
+                throw;
+            }
             stopwatch.Stop();
 
-            _handshakeBuildInfoResult = _connection.Description.BuildInfoResult;
-            _roundTripTimeMonitor.AddSample(stopwatch.Elapsed);
-            return _connection.Description.IsMasterResult;
+            lock (_lock)
+            {
+                _handshakeBuildInfoResult = connection.Description.BuildInfoResult;
+                _roundTripTimeMonitor.AddSample(stopwatch.Elapsed);
+                _connection = connection;
+            }
+            return connection.Description.IsMasterResult;
         }
 
         private async Task MonitorServerAsync()
@@ -189,19 +197,19 @@ namespace MongoDB.Driver.Core.Servers
             await Task.Yield(); // return control immediately
 
             var metronome = new Metronome(_serverMonitorSettings.HeartbeatInterval);
-            var heartbeatCancellationToken = _cancellationTokenSource.Token;
+            var monitorCancellationToken = _monitorCancellationTokenSource.Token;
 
-            _operationCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(heartbeatCancellationToken);
-            while (!heartbeatCancellationToken.IsCancellationRequested)
+            _currentCheckCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(monitorCancellationToken);
+            while (!monitorCancellationToken.IsCancellationRequested)
             {
-                var cancellationOperationToken = _operationCancellationTokenSource.Token;
+                var currentCheckCancellationToken = _currentCheckCancellationTokenSource.Token;
                 try
                 {
                     try
                     {
-                        await HeartbeatAsync(cancellationOperationToken).ConfigureAwait(false);
+                        await HeartbeatAsync(currentCheckCancellationToken).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException) when (cancellationOperationToken.IsCancellationRequested)
+                    catch (OperationCanceledException) when (currentCheckCancellationToken.IsCancellationRequested)
                     {
                         // ignore OperationCanceledException when heartbeat cancellation is requested
                     }
@@ -238,15 +246,17 @@ namespace MongoDB.Driver.Core.Servers
                         }
                     }
 
-                    var newHeartbeatDelay = new HeartbeatDelay(metronome.GetNextTickDelay(), _serverMonitorSettings.MinHeartbeatInterval);
-                    HeartbeatDelay toDispose = null;
+                    HeartbeatDelay newHeartbeatDelay;
                     lock (_heartbeatDelayLock)
                     {
-                        toDispose = _heartbeatDelay;
-                        _heartbeatDelay= newHeartbeatDelay;
+                        newHeartbeatDelay = new HeartbeatDelay(metronome.GetNextTickDelay(), _serverMonitorSettings.MinHeartbeatInterval);
+                        if (_heartbeatDelay != null)
+                        {
+                            _heartbeatDelay.Dispose();
+                        }
+                        _heartbeatDelay = newHeartbeatDelay;
                     }
-                    toDispose?.Dispose();
-                    await newHeartbeatDelay.Task.ConfigureAwait(false);
+                    await newHeartbeatDelay.Task.ConfigureAwait(false); // corresponds to wait method in spec
                 }
                 catch
                 {
@@ -259,8 +269,8 @@ namespace MongoDB.Driver.Core.Servers
         {
             CommandWireProtocol<BsonDocument> isMasterProtocol = null;
 
-            bool immediateAttempt = true;
-            while (immediateAttempt && !cancellationToken.IsCancellationRequested)
+            bool processAnother = true;
+            while (processAnother && !cancellationToken.IsCancellationRequested)
             {
                 IsMasterResult heartbeatIsMasterResult = null;
                 Exception heartbeatException = null;
@@ -275,7 +285,7 @@ namespace MongoDB.Driver.Core.Servers
                     else
                     {
                         isMasterProtocol = isMasterProtocol ?? InitializeIsMasterProtocol(_connection);
-                        heartbeatIsMasterResult = await GetHeartbeatInfoAsync(isMasterProtocol, _connection, cancellationToken).ConfigureAwait(false);
+                        heartbeatIsMasterResult = await GetIsMasterResultAsync(_connection, isMasterProtocol, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -331,6 +341,7 @@ namespace MongoDB.Driver.Core.Servers
                         replicaSetConfig: heartbeatIsMasterResult.GetReplicaSetConfig(),
                         state: ServerState.Connected,
                         tags: heartbeatIsMasterResult.Tags,
+                        topologyVersion: heartbeatIsMasterResult.TopologyVersion,
                         type: heartbeatIsMasterResult.ServerType,
                         version: _handshakeBuildInfoResult.ServerVersion,
                         wireVersionRange: new Range<int>(heartbeatIsMasterResult.MinWireVersion, heartbeatIsMasterResult.MaxWireVersion));
@@ -354,7 +365,7 @@ namespace MongoDB.Driver.Core.Servers
 
                 SetDescription(newDescription);
 
-                immediateAttempt =
+                processAnother =
                     // serverSupportsStreaming
                     (newDescription.Type != ServerType.Unknown && heartbeatIsMasterResult != null && heartbeatIsMasterResult.TopologyVersion != null) ||
                     // connectionIsStreaming
@@ -369,9 +380,9 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
-        private async Task<IsMasterResult> GetHeartbeatInfoAsync(
-            CommandWireProtocol<BsonDocument> isMasterProtocol,
+        private async Task<IsMasterResult> GetIsMasterResultAsync(
             IConnection connection,
+            CommandWireProtocol<BsonDocument> isMasterProtocol,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

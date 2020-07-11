@@ -34,12 +34,11 @@ namespace MongoDB.Driver.Core.Servers
     internal class RoundTripTimeMonitor : IRoundTripTimeMonitor
     {
         private readonly ExponentiallyWeightedMovingAverage _averageRoundTripTimeCalculator = new ExponentiallyWeightedMovingAverage(0.2);
-
         private readonly CancellationToken _cancellationToken;
         private readonly IConnectionFactory _connectionFactory;
         private bool _disposed;
         private readonly EndPoint _endPoint;
-        private readonly TimeSpan _heartbeatFrequency;
+        private readonly TimeSpan _heartbeatInterval;
         private readonly object _lock = new object();
         private IConnection _roundTripTimeConnection;
         private readonly ServerId _serverId;
@@ -48,14 +47,14 @@ namespace MongoDB.Driver.Core.Servers
             IConnectionFactory connectionFactory,
             ServerId serverId,
             EndPoint endpoint,
-            TimeSpan heartbeatFrequency,
+            TimeSpan heartbeatInterval,
             CancellationToken cancellationToken)
         {
-            _cancellationToken = cancellationToken;
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
-            _endPoint = Ensure.IsNotNull(endpoint, nameof(endpoint));
-            _heartbeatFrequency = heartbeatFrequency;
             _serverId = Ensure.IsNotNull(serverId, nameof(serverId));
+            _endPoint = Ensure.IsNotNull(endpoint, nameof(endpoint));
+            _heartbeatInterval = heartbeatInterval;
+            _cancellationToken = cancellationToken;
         }
 
         public TimeSpan Average
@@ -114,8 +113,12 @@ namespace MongoDB.Driver.Core.Servers
                         AddSample(stopwatch.Elapsed);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    if (ex is ObjectDisposedException)
+                    {
+                    }
+
                     IConnection toDispose;
                     lock (_lock)
                     {
@@ -125,7 +128,7 @@ namespace MongoDB.Driver.Core.Servers
                     toDispose?.Dispose();
                 }
 
-                await Task.Delay(_heartbeatFrequency).ConfigureAwait(false);
+                await Task.Delay(_heartbeatInterval, _cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -134,15 +137,27 @@ namespace MongoDB.Driver.Core.Servers
         {
             _cancellationToken.ThrowIfCancellationRequested();
 
+            var roundTripTimeConnection = _connectionFactory.CreateConnection(_serverId, _endPoint);
+
+            var stopwatch = Stopwatch.StartNew();
+            try
+            {
+                // if we are cancelling, it's because the server has
+                // been shut down and we really don't need to wait.
+                await roundTripTimeConnection.OpenAsync(_cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // dispose it here because the _connection is not initialized yet
+                try { roundTripTimeConnection.Dispose(); } catch { }
+                throw;
+            }
+            stopwatch.Stop();
+
             lock (_lock)
             {
-                _roundTripTimeConnection = _connectionFactory.CreateConnection(_serverId, _endPoint);
+                _roundTripTimeConnection = roundTripTimeConnection;
             }
-            // if we are cancelling, it's because the server has
-            // been shut down and we really don't need to wait.
-            var stopwatch = Stopwatch.StartNew();
-            await _roundTripTimeConnection.OpenAsync(_cancellationToken).ConfigureAwait(false);
-            stopwatch.Stop();
             AddSample(stopwatch.Elapsed);
         }
 

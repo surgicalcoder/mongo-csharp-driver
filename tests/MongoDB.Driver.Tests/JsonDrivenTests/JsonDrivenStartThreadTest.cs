@@ -21,18 +21,19 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
     public sealed class JsonDrivenStartThreadTest : JsonDrivenWithThreadTest
     {
-        public JsonDrivenStartThreadTest(JsonDrivenTestsContext testsContext, IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap) : base(testsContext, testRunner, objectMap)
+        public JsonDrivenStartThreadTest(JsonDrivenTestsStateHolder stateHolder, IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap)
+            : base(stateHolder, testRunner, objectMap)
         {
         }
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            _testContext.Tasks.TryAdd(_name, null);
+            _testState.Tasks.TryAdd(_name, null);
         }
 
         protected override Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            _testContext.Tasks.TryAdd(_name, null);
+            _testState.Tasks.TryAdd(_name, null);
             return Task.FromResult(true);
         }
 

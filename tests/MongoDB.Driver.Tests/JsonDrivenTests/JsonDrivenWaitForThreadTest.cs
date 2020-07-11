@@ -23,29 +23,29 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
     public sealed class JsonDrivenWaitForThreadTest : JsonDrivenWithThreadTest
     {
         public JsonDrivenWaitForThreadTest(
-            JsonDrivenTestsContext testsContext,
+            JsonDrivenTestsStateHolder stateHolder,
             IJsonDrivenTestRunner testRunner,
-            Dictionary<string, object> objectMap) : base(testsContext, testRunner, objectMap)
+            Dictionary<string, object> objectMap)
+            : base(stateHolder, testRunner, objectMap)
         {
         }
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            WaitTask();
+            GetWaitTask().GetAwaiter().GetResult();
         }
 
         protected override Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            WaitTask();
-            return Task.FromResult(true);
+            return GetWaitTask();
         }
 
         // private methods
-        private void WaitTask()
+        private Task GetWaitTask()
         {
-            if (_testContext.Tasks.TryGetValue(_name, out var task) && task != null)
+            if (_testState.Tasks.TryGetValue(_name, out var task) && task != null)
             {
-                task.GetAwaiter().GetResult();
+                return task;
             }
             else
             {

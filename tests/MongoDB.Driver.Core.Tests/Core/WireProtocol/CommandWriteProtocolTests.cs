@@ -255,9 +255,19 @@ namespace MongoDB.Driver.Core.WireProtocol
             return (IWireProtocol<BsonDocument>)Reflector.GetFieldValue(commandWireProtocol, nameof(_cachedWireProtocol));
         }
 
+        public static BsonDocument _command(this CommandWireProtocol<BsonDocument> commandWireProtocol)
+        {
+            return (BsonDocument)Reflector.GetFieldValue(commandWireProtocol, nameof(_command));
+        }
+
         public static void _responseHandling(this CommandWireProtocol<BsonDocument> commandWireProtocol, CommandResponseHandling commandResponseHandling)
         {
             Reflector.SetFieldValue(commandWireProtocol, nameof(_responseHandling), commandResponseHandling);
+        }
+
+        public static CommandResponseHandling _responseHandling(this CommandWireProtocol<BsonDocument> commandWireProtocol)
+        {
+            return (CommandResponseHandling)Reflector.GetFieldValue(commandWireProtocol, nameof(_responseHandling));
         }
     }
 }

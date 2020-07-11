@@ -21,7 +21,7 @@ using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public class JsonDrivenWithThreadContext
+    public class JsonDrivenWithThreadState
     {
         #region static
         public static string Key => nameof(Tasks);
@@ -33,15 +33,15 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
     public abstract class JsonDrivenWithThreadTest : JsonDrivenTestRunnerTest
     {
         protected string _name;
-        protected readonly JsonDrivenWithThreadContext _testContext;
+        protected readonly JsonDrivenWithThreadState _testState;
 
         public JsonDrivenWithThreadTest(
-            JsonDrivenTestsContext testsContext,
+            JsonDrivenTestsStateHolder stateHolder,
             IJsonDrivenTestRunner testRunner,
             Dictionary<string, object> objectMap) : base(testRunner, objectMap)
         {
-            _testContext = Ensure.IsNotNull(testsContext, nameof(testsContext)).GetTestContext<JsonDrivenWithThreadContext>(JsonDrivenWithThreadContext.Key);
-            Ensure.IsNotNull(_testContext.Tasks, nameof(_testContext.Tasks));
+            _testState = Ensure.IsNotNull(stateHolder, nameof(stateHolder)).GetTestState<JsonDrivenWithThreadState>(JsonDrivenWithThreadState.Key);
+            Ensure.IsNotNull(_testState.Tasks, nameof(_testState.Tasks));
         }
 
         protected override void SetArgument(string name, BsonValue value)

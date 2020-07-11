@@ -33,7 +33,8 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         private int _count;
         private string _event;
 
-        public JsonDrivenAssertEventsCountTest(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap, EventCapturer eventCapturer) : base(testRunner, objectMap)
+        public JsonDrivenAssertEventsCountTest(IJsonDrivenTestRunner testRunner, Dictionary<string, object> objectMap, EventCapturer eventCapturer)
+            : base(testRunner, objectMap)
         {
             _eventCapturer = Ensure.IsNotNull(eventCapturer, nameof(eventCapturer));
         }

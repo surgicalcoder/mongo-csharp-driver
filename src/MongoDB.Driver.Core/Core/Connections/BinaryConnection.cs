@@ -454,11 +454,12 @@ namespace MongoDB.Driver.Core.Connections
             CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(encoderSelector, nameof(encoderSelector));
-            ThrowIfDisposedOrNotOpen();
 
             var helper = new ReceiveMessageHelper(this, responseTo, messageEncoderSettings, _compressorSource);
             try
             {
+                ThrowIfDisposedOrNotOpen();
+
                 helper.ReceivingMessage();
                 using (var buffer = ReceiveBuffer(responseTo, cancellationToken))
                 {
@@ -470,8 +471,9 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                DisposeConnectionIfCancelled(ex);
-                throw;
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                DisposeConnectionIfCancelled(wrappedException, cancellationToken);
+                throw wrappedException;
             }
         }
 
@@ -482,11 +484,12 @@ namespace MongoDB.Driver.Core.Connections
             CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(encoderSelector, nameof(encoderSelector));
-            ThrowIfDisposedOrNotOpen();
 
             var helper = new ReceiveMessageHelper(this, responseTo, messageEncoderSettings, _compressorSource);
             try
             {
+                ThrowIfDisposedOrNotOpen();
+
                 helper.ReceivingMessage();
                 using (var buffer = await ReceiveBufferAsync(responseTo, cancellationToken).ConfigureAwait(false))
                 {
@@ -498,8 +501,9 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                DisposeConnectionIfCancelled(ex);
-                throw;
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                DisposeConnectionIfCancelled(wrappedException, cancellationToken);
+                throw wrappedException;
             }
         }
 
@@ -565,11 +569,12 @@ namespace MongoDB.Driver.Core.Connections
         public void SendMessages(IEnumerable<RequestMessage> messages, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(messages, nameof(messages));
-            ThrowIfDisposedOrNotOpen();
 
             var helper = new SendMessagesHelper(this, messages, messageEncoderSettings);
             try
             {
+                ThrowIfDisposedOrNotOpen();
+
                 helper.EncodingMessages();
                 using (var uncompressedBuffer = helper.EncodeMessages(cancellationToken, out var sentMessages))
                 {
@@ -594,19 +599,21 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                DisposeConnectionIfCancelled(ex);
-                throw;
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                DisposeConnectionIfCancelled(wrappedException, cancellationToken);
+                throw wrappedException;
             }
         }
 
         public async Task SendMessagesAsync(IEnumerable<RequestMessage> messages, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(messages, nameof(messages));
-            ThrowIfDisposedOrNotOpen();
 
             var helper = new SendMessagesHelper(this, messages, messageEncoderSettings);
             try
             {
+                ThrowIfDisposedOrNotOpen();
+
                 helper.EncodingMessages();
                 using (var uncompressedBuffer = helper.EncodeMessages(cancellationToken, out var sentMessages))
                 {
@@ -631,8 +638,9 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                DisposeConnectionIfCancelled(ex);
-                throw;
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                DisposeConnectionIfCancelled(wrappedException, cancellationToken);
+                throw wrappedException;
             }
         }
 
@@ -701,6 +709,33 @@ namespace MongoDB.Driver.Core.Connections
             compressedMessageEncoder.WriteMessage(compressedMessage);
         }
 
+        private void DisposeConnectionIfCancelled(Exception ex, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested && ex is OperationCanceledException)
+            {
+                Dispose();
+            }
+        }
+
+
+        private Exception WrapInOperationCanceledExceptionIfRequired(Exception exception, CancellationToken cancellationToken)
+        {
+            if (exception is ObjectDisposedException objectDisposedException
+                &&
+                (
+                    objectDisposedException.ObjectName == GetType().Name ||
+                    objectDisposedException.Message == "The semaphore has been disposed."
+                ))
+            {
+                return new OperationCanceledException($"The {nameof(BinaryConnection)} has been cancelled.", exception);
+            }
+            else
+            {
+                return exception;
+            }
+        }
+
+
         private void ThrowIfDisposed()
         {
             if (_state.Value == State.Disposed)
@@ -739,14 +774,6 @@ namespace MongoDB.Driver.Core.Connections
             {
                 var message = string.Format("An exception occurred while {0}.", action);
                 return new MongoConnectionException(_connectionId, message, ex);
-            }
-        }
-
-        private void DisposeConnectionIfCancelled(Exception exception)
-        {
-            if (exception is OperationCanceledException)
-            {
-                Dispose();
             }
         }
 

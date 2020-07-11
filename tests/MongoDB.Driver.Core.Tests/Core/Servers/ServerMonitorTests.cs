@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Core.Servers
         #region static
         private static readonly EndPoint __endPoint = new DnsEndPoint("localhost", 27017);
         private static readonly ServerId __serverId = new ServerId(new ClusterId(), __endPoint);
-        private static readonly ServerMonitorSettings __serverMonitorSettings = new ServerMonitorSettings(TimeSpan.FromSeconds(30), Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        private static readonly ServerMonitorSettings __serverMonitorSettings = new ServerMonitorSettings(TimeSpan.FromSeconds(30), Timeout.InfiniteTimeSpan);
         #endregion
 
         private CancellationTokenSource _cancellationTokenSource;
@@ -408,19 +408,6 @@ namespace MongoDB.Driver.Core.Servers
         public static CommandWireProtocol<BsonDocument> InitializeIsMasterProtocol(this ServerMonitor serverMonitor, IConnection connection)
         {
             return (CommandWireProtocol<BsonDocument>)Reflector.Invoke(serverMonitor, nameof(InitializeIsMasterProtocol), connection);
-        }
-    }
-
-    internal static class CommandWireProtocolReflector
-    {
-        public static BsonDocument _command(this CommandWireProtocol<BsonDocument> commandWireProtocol)
-        {
-            return (BsonDocument)Reflector.GetFieldValue(commandWireProtocol, nameof(_command));
-        }
-
-        public static CommandResponseHandling _responseHandling(this CommandWireProtocol<BsonDocument> commandWireProtocol)
-        {
-            return (CommandResponseHandling)Reflector.GetFieldValue(commandWireProtocol, nameof(_responseHandling));
         }
     }
 }

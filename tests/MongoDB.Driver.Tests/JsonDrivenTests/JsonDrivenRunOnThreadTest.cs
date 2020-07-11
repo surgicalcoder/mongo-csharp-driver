@@ -29,10 +29,11 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         private BsonDocument _operation;
 
         public JsonDrivenRunOnThreadTest(
-            JsonDrivenTestsContext testsContext,
+            JsonDrivenTestsStateHolder stateHolder,
             IJsonDrivenTestRunner testRunner,
             Dictionary<string, object> objectMap,
-            JsonDrivenTestFactory jsonDrivenTestFactory) : base(testsContext, testRunner, objectMap)
+            JsonDrivenTestFactory jsonDrivenTestFactory)
+            : base(stateHolder, testRunner, objectMap)
         {
             _jsonDrivenTestFactory = jsonDrivenTestFactory;
         }
@@ -63,16 +64,16 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         // private methods
         private void AssignTask(Action action)
         {
-            if (_testContext.Tasks.ContainsKey(_name))
+            if (_testState.Tasks.ContainsKey(_name))
             {
-                var taskAction = _testContext.Tasks[_name];
+                var taskAction = _testState.Tasks[_name];
                 if (taskAction != null)
                 {
                     throw new Exception($"Task {_name} must not be processed.");
                 }
                 else
                 {
-                    _testContext.Tasks[_name] = CreateTask(action);
+                    _testState.Tasks[_name] = CreateTask(action);
                 }
             }
             else
