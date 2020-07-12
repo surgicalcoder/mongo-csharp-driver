@@ -72,22 +72,7 @@ namespace MongoDB.Driver.Core.Servers
         public void Dispose()
         {
             _disposed = true;
-
-            IConnection toDispose;
-            lock (_lock)
-            {
-                toDispose = _roundTripTimeConnection;
-                _roundTripTimeConnection = null;
-            }
-
-            try
-            {
-                toDispose?.Dispose();
-            }
-            catch
-            {
-                // ignore
-            }
+            try { _roundTripTimeConnection?.Dispose(); } catch { }
         }
 
         public async Task RunAsync()
@@ -113,12 +98,8 @@ namespace MongoDB.Driver.Core.Servers
                         AddSample(stopwatch.Elapsed);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    if (ex is ObjectDisposedException)
-                    {
-                    }
-
                     IConnection toDispose;
                     lock (_lock)
                     {

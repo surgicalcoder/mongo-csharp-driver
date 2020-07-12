@@ -850,7 +850,7 @@ namespace MongoDB.Driver.Tests
 
             SpinWait.SpinUntil(() => subject.Cluster.Description.State == ClusterState.Connected, TimeSpan.FromSeconds(5)).Should().BeTrue();
 
-            Assert.True(socketConfiguratorWasCalled);
+            Assert.True(socketConfiguratorWasCalled, "socketConfigurator must be called.");
         }
 
         [Fact]

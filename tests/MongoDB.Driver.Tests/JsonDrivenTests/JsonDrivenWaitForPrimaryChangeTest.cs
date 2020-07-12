@@ -50,10 +50,9 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             }
         }
 
-        protected override Task CallMethodAsync(CancellationToken cancellationToken)
+        protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            CallMethod(cancellationToken); // we don't have async specific code here
-            return Task.FromResult(true);
+            await Task.Run(() => CallMethod(cancellationToken));
         }
 
         protected override void SetArgument(string name, BsonValue value)

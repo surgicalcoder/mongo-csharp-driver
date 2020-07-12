@@ -104,10 +104,10 @@ namespace MongoDB.Driver.Core.Servers
                 if (!_currentCheckCancellationTokenSource.IsCancellationRequested)
                 {
                     _currentCheckCancellationTokenSource.Cancel();
-                    _connection = null;
                     _currentCheckCancellationTokenSource.Dispose();
                     _currentCheckCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_monitorCancellationTokenSource.Token);
-                        // previous operation cancelation token is still cancelled
+                    // the previous isMaster cancelation token is still cancelled
+                    _connection = null;
                 }
             }
         }

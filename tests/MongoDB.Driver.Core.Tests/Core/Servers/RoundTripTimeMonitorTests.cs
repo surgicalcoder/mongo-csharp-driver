@@ -72,7 +72,6 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
             SpinWait.SpinUntil(() => subject._roundTripTimeConnection() != null, TimeSpan.FromSeconds(2)).Should().BeTrue();
 
             subject.Dispose();
-            subject._roundTripTimeConnection().Should().BeNull();
 
             mockConnection.Verify(c => c.Dispose(), Times.Once);
             subject._disposed().Should().BeTrue();
@@ -84,7 +83,6 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
             var frequency = TimeSpan.FromMilliseconds(10);
             var mockConnection = new Mock<IConnection>();
             var mockConnectionFactory = new Mock<IConnectionFactory>();
-            var taskCompletionSource = new TaskCompletionSource<bool>();
 
             ConcurrentQueue<(TimeSpan, IConnection)> steps = new ConcurrentQueue<(TimeSpan, IConnection)>();
 
@@ -122,10 +120,8 @@ namespace MongoDB.Driver.Core.Tests.Core.Servers
                             return Task.FromResult(CreateResponseMessage());
                         });
 
-                subject
-                    .RunAsync()
-                    .GetAwaiter()
-                    .GetResult();
+                var exception = Record.Exception(() => subject.RunAsync().GetAwaiter().GetResult());
+                exception.Should().BeOfType<TaskCanceledException>(); // Task.Delay has been cancelled
 
                 // initialize connection
                 steps.TryDequeue(out (TimeSpan Average, IConnection RttConnection) step).Should().BeTrue();

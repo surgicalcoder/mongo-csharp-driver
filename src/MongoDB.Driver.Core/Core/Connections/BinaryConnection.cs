@@ -230,7 +230,7 @@ namespace MongoDB.Driver.Core.Connections
 
         public void Open(CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ThrowIfDisposed(cancellationToken);
 
             TaskCompletionSource<bool> taskCompletionSource = null;
             var connecting = false;
@@ -267,7 +267,7 @@ namespace MongoDB.Driver.Core.Connections
 
         public Task OpenAsync(CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ThrowIfDisposed(cancellationToken);
 
             lock (_openLock)
             {
@@ -454,12 +454,11 @@ namespace MongoDB.Driver.Core.Connections
             CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(encoderSelector, nameof(encoderSelector));
+            ThrowIfDisposedOrNotOpen(cancellationToken);
 
             var helper = new ReceiveMessageHelper(this, responseTo, messageEncoderSettings, _compressorSource);
             try
             {
-                ThrowIfDisposedOrNotOpen();
-
                 helper.ReceivingMessage();
                 using (var buffer = ReceiveBuffer(responseTo, cancellationToken))
                 {
@@ -484,12 +483,11 @@ namespace MongoDB.Driver.Core.Connections
             CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(encoderSelector, nameof(encoderSelector));
+            ThrowIfDisposedOrNotOpen(cancellationToken);
 
             var helper = new ReceiveMessageHelper(this, responseTo, messageEncoderSettings, _compressorSource);
             try
             {
-                ThrowIfDisposedOrNotOpen();
-
                 helper.ReceivingMessage();
                 using (var buffer = await ReceiveBufferAsync(responseTo, cancellationToken).ConfigureAwait(false))
                 {
@@ -569,12 +567,11 @@ namespace MongoDB.Driver.Core.Connections
         public void SendMessages(IEnumerable<RequestMessage> messages, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(messages, nameof(messages));
+            ThrowIfDisposedOrNotOpen(cancellationToken);
 
             var helper = new SendMessagesHelper(this, messages, messageEncoderSettings);
             try
             {
-                ThrowIfDisposedOrNotOpen();
-
                 helper.EncodingMessages();
                 using (var uncompressedBuffer = helper.EncodeMessages(cancellationToken, out var sentMessages))
                 {
@@ -608,12 +605,11 @@ namespace MongoDB.Driver.Core.Connections
         public async Task SendMessagesAsync(IEnumerable<RequestMessage> messages, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(messages, nameof(messages));
+            ThrowIfDisposedOrNotOpen(cancellationToken);
 
             var helper = new SendMessagesHelper(this, messages, messageEncoderSettings);
             try
             {
-                ThrowIfDisposedOrNotOpen();
-
                 helper.EncodingMessages();
                 using (var uncompressedBuffer = helper.EncodeMessages(cancellationToken, out var sentMessages))
                 {
@@ -736,17 +732,19 @@ namespace MongoDB.Driver.Core.Connections
         }
 
 
-        private void ThrowIfDisposed()
+        private void ThrowIfDisposed(CancellationToken cancellationToken = default)
         {
             if (_state.Value == State.Disposed)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 throw new ObjectDisposedException(GetType().Name);
             }
         }
 
-        private void ThrowIfDisposedOrNotOpen()
+        private void ThrowIfDisposedOrNotOpen(CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ThrowIfDisposed(cancellationToken);
             if (_state.Value == State.Failed)
             {
                 throw new MongoConnectionClosedException(_connectionId);
