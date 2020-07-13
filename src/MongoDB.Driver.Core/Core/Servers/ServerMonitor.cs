@@ -164,7 +164,7 @@ namespace MongoDB.Driver.Core.Servers
             return IsMasterHelper.CreateProtocol(isMasterCommand, commandResponseHandling);
         }
 
-        private async Task<IsMasterResult> InitializeConnectionAsync(CancellationToken cancellationToken) // called setUpConnection in spec
+        private async Task<IConnection> InitializeConnectionAsync(CancellationToken cancellationToken) // called setUpConnection in spec
         {
             var connection = _connectionFactory.CreateConnection(_serverId, _endPoint);
 
@@ -183,13 +183,8 @@ namespace MongoDB.Driver.Core.Servers
             }
             stopwatch.Stop();
 
-            lock (_lock)
-            {
-                _handshakeBuildInfoResult = connection.Description.BuildInfoResult;
-                _roundTripTimeMonitor.AddSample(stopwatch.Elapsed);
-                _connection = connection;
-            }
-            return connection.Description.IsMasterResult;
+            _roundTripTimeMonitor.AddSample(stopwatch.Elapsed);
+            return connection;
         }
 
         private async Task MonitorServerAsync()
@@ -280,7 +275,13 @@ namespace MongoDB.Driver.Core.Servers
                 {
                     if (_connection == null)
                     {
-                        heartbeatIsMasterResult = await InitializeConnectionAsync(cancellationToken).ConfigureAwait(false);
+                        var initializedConnection = await InitializeConnectionAsync(cancellationToken).ConfigureAwait(false);
+                        lock (_lock)
+                        {
+                            _connection = initializedConnection;
+                            _handshakeBuildInfoResult = _connection.Description.BuildInfoResult;
+                            heartbeatIsMasterResult = _connection.Description.IsMasterResult;
+                        }
                     }
                     else
                     {
