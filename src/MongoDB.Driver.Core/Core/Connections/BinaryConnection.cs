@@ -517,7 +517,6 @@ namespace MongoDB.Driver.Core.Connections
 
                 try
                 {
-                    // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
                     _stream.WriteBytes(buffer, 0, buffer.Length, cancellationToken);
                     _lastUsedAtUtc = DateTime.UtcNow;
                 }
@@ -546,7 +545,6 @@ namespace MongoDB.Driver.Core.Connections
 
                 try
                 {
-                    // don't use the caller's cancellationToken because once we start writing a message we have to write the whole thing
                     var writeTimeout = _stream.CanTimeout ? TimeSpan.FromMilliseconds(_stream.WriteTimeout) : Timeout.InfiniteTimeSpan;
                     await _stream.WriteBytesAsync(buffer, 0, buffer.Length, writeTimeout, cancellationToken).ConfigureAwait(false);
                     _lastUsedAtUtc = DateTime.UtcNow;
