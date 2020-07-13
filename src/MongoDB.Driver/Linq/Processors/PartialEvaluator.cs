@@ -58,6 +58,28 @@ namespace MongoDB.Driver.Linq.Processors
             return evaluated;
         }
 
+        protected override Expression VisitBinary(BinaryExpression node)
+        {
+            if (node.NodeType == ExpressionType.OrElse)
+            {
+                var leftExpressionPartiallyEvaluated = PartialEvaluator.Evaluate(node.Left);
+                if (leftExpressionPartiallyEvaluated is ConstantExpression constantExpression)
+                {
+                    var leftValue = (bool)constantExpression.Value;
+                    if (leftValue)
+                    {
+                        return Expression.Constant(true);
+                    }
+                    else
+                    {
+                        return PartialEvaluator.Evaluate(node.Right);
+                    }
+                }
+            }
+
+            return base.VisitBinary(node);
+        }
+
         private Expression EvaluateSubtree(Expression subtree)
         {
             subtree = ReflectionEvaluator.Evaluate(subtree);
