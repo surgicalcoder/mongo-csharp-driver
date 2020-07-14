@@ -36,7 +36,6 @@ namespace MongoDB.Driver.Core.Servers
         private readonly EndPoint _endPoint;
         private BuildInfoResult _handshakeBuildInfoResult;
         private HeartbeatDelay _heartbeatDelay;
-        private readonly object _heartbeatDelayLock = new object();
         private readonly object _lock = new object();
         private readonly CancellationTokenSource _monitorCancellationTokenSource;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
@@ -138,7 +137,7 @@ namespace MongoDB.Driver.Core.Servers
         public void RequestHeartbeat()
         {
             ThrowIfNotOpen();
-            lock (_heartbeatDelayLock)
+            lock (_lock)
             {
                 _heartbeatDelay?.RequestHeartbeat();
             }
@@ -242,7 +241,7 @@ namespace MongoDB.Driver.Core.Servers
                     }
 
                     HeartbeatDelay newHeartbeatDelay;
-                    lock (_heartbeatDelayLock)
+                    lock (_lock)
                     {
                         newHeartbeatDelay = new HeartbeatDelay(metronome.GetNextTickDelay(), _serverMonitorSettings.MinHeartbeatInterval);
                         if (_heartbeatDelay != null)
@@ -273,11 +272,17 @@ namespace MongoDB.Driver.Core.Servers
 
                 try
                 {
-                    if (_connection == null)
+                    IConnection connection;
+                    lock (_lock)
+                    {
+                        connection = _connection;
+                    }
+                    if (connection == null)
                     {
                         var initializedConnection = await InitializeConnectionAsync(cancellationToken).ConfigureAwait(false);
                         lock (_lock)
                         {
+                            ThrowCancellationExceptionAndDisposeConnectionIfMonitorDisposed(initializedConnection);
                             _connection = initializedConnection;
                             _handshakeBuildInfoResult = _connection.Description.BuildInfoResult;
                             heartbeatIsMasterResult = _connection.Description.IsMasterResult;
@@ -285,8 +290,8 @@ namespace MongoDB.Driver.Core.Servers
                     }
                     else
                     {
-                        isMasterProtocol = isMasterProtocol ?? InitializeIsMasterProtocol(_connection);
-                        heartbeatIsMasterResult = await GetIsMasterResultAsync(_connection, isMasterProtocol, cancellationToken).ConfigureAwait(false);
+                        isMasterProtocol = isMasterProtocol ?? InitializeIsMasterProtocol(connection);
+                        heartbeatIsMasterResult = await GetIsMasterResultAsync(connection, isMasterProtocol, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -436,6 +441,15 @@ namespace MongoDB.Driver.Core.Servers
         {
             Interlocked.Exchange(ref _currentDescription, newDescription);
             OnDescriptionChanged(oldDescription, newDescription);
+        }
+
+        private void ThrowCancellationExceptionAndDisposeConnectionIfMonitorDisposed(IConnection connection)
+        {
+            if (_state.Value == State.Disposed)
+            {
+                try { connection.Dispose(); } catch { }
+                throw new OperationCanceledException("The serverMonitor has been disposed.");
+            }
         }
 
         private void ThrowIfDisposed()
