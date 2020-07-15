@@ -140,7 +140,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         }
     }
 
-    internal static class ServerReflector
+    internal static class ServerReflector // user ServerReflector in ServerTests.cs
     {
         public static IServerMonitor _monitor(this IServer server)
         {
@@ -148,7 +148,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring
         }
     }
 
-    internal static class ServerMonitorRelfector
+    internal static class ServerMonitorRelfector // use ServerMonitorReflector in ServerMonitorTests.cs
     { 
         public static IRoundTripTimeMonitor _roundTripTimeMonitor(this IServerMonitor serverMonitor)
         {

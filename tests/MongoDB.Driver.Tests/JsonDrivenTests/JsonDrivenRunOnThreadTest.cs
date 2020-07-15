@@ -116,7 +116,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         /// Originally this code was published here https://code.msdn.microsoft.com/Samples-for-Parallel-b4b76364/sourcecode?fileId=44488&pathId=2098696067
         /// Needs to call tasks as threads
         /// </summary>
-        private class ThreadPerTaskScheduler : TaskScheduler
+        private class ThreadPerTaskScheduler : TaskScheduler // this should not be necessary
         {
             /// <summary>Gets the tasks currently scheduled to this scheduler.</summary> 
             /// <remarks>This will always return an empty enumerable, as tasks are launched as soon as they're queued.</remarks> 

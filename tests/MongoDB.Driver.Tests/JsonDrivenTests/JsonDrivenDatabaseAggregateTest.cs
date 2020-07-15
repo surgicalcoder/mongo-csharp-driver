@@ -31,7 +31,8 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         private List<BsonDocument> _result;
         private IClientSessionHandle _session;
 
-        public JsonDrivenDatabaseAggregateTest(IMongoDatabase database, Dictionary<string, object> objectMap) : base(database, objectMap)
+        public JsonDrivenDatabaseAggregateTest(IMongoDatabase database, Dictionary<string, object> objectMap)
+            : base(database, objectMap)
         {
         }
 

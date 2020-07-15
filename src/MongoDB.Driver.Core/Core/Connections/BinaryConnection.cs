@@ -230,7 +230,7 @@ namespace MongoDB.Driver.Core.Connections
 
         public void Open(CancellationToken cancellationToken)
         {
-            ThrowIfDisposed(cancellationToken);
+            ThrowIfDisposed();
 
             TaskCompletionSource<bool> taskCompletionSource = null;
             var connecting = false;
@@ -267,7 +267,7 @@ namespace MongoDB.Driver.Core.Connections
 
         public Task OpenAsync(CancellationToken cancellationToken)
         {
-            ThrowIfDisposed(cancellationToken);
+            ThrowIfDisposed();
 
             lock (_openLock)
             {
@@ -454,7 +454,7 @@ namespace MongoDB.Driver.Core.Connections
             CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(encoderSelector, nameof(encoderSelector));
-            ThrowIfDisposedOrNotOpen(cancellationToken);
+            ThrowIfDisposedOrNotOpen();
 
             var helper = new ReceiveMessageHelper(this, responseTo, messageEncoderSettings, _compressorSource);
             try
@@ -470,7 +470,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken); // wrap at source?
                 DisposeConnectionIfCancelled(wrappedException, cancellationToken);
                 throw wrappedException;
             }
@@ -483,7 +483,7 @@ namespace MongoDB.Driver.Core.Connections
             CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(encoderSelector, nameof(encoderSelector));
-            ThrowIfDisposedOrNotOpen(cancellationToken);
+            ThrowIfDisposedOrNotOpen();
 
             var helper = new ReceiveMessageHelper(this, responseTo, messageEncoderSettings, _compressorSource);
             try
@@ -499,7 +499,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedReceivingMessage(ex);
-                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken); // wrap at source?
                 DisposeConnectionIfCancelled(wrappedException, cancellationToken);
                 throw wrappedException;
             }
@@ -565,7 +565,7 @@ namespace MongoDB.Driver.Core.Connections
         public void SendMessages(IEnumerable<RequestMessage> messages, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(messages, nameof(messages));
-            ThrowIfDisposedOrNotOpen(cancellationToken);
+            ThrowIfDisposedOrNotOpen();
 
             var helper = new SendMessagesHelper(this, messages, messageEncoderSettings);
             try
@@ -594,7 +594,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken); // wrap at source?
                 DisposeConnectionIfCancelled(wrappedException, cancellationToken);
                 throw wrappedException;
             }
@@ -603,7 +603,7 @@ namespace MongoDB.Driver.Core.Connections
         public async Task SendMessagesAsync(IEnumerable<RequestMessage> messages, MessageEncoderSettings messageEncoderSettings, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(messages, nameof(messages));
-            ThrowIfDisposedOrNotOpen(cancellationToken);
+            ThrowIfDisposedOrNotOpen();
 
             var helper = new SendMessagesHelper(this, messages, messageEncoderSettings);
             try
@@ -632,7 +632,7 @@ namespace MongoDB.Driver.Core.Connections
             catch (Exception ex)
             {
                 helper.FailedSendingMessages(ex);
-                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken);
+                var wrappedException = WrapInOperationCanceledExceptionIfRequired(ex, cancellationToken); // wrap at source?
                 DisposeConnectionIfCancelled(wrappedException, cancellationToken);
                 throw wrappedException;
             }
@@ -705,13 +705,13 @@ namespace MongoDB.Driver.Core.Connections
 
         private void DisposeConnectionIfCancelled(Exception ex, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested && ex is OperationCanceledException)
+            if (cancellationToken.IsCancellationRequested && ex is OperationCanceledException) // should be enough to just check exception
             {
                 Dispose();
             }
         }
 
-
+        // alphabetical order?
         private Exception WrapInOperationCanceledExceptionIfRequired(Exception exception, CancellationToken cancellationToken)
         {
             if (exception is ObjectDisposedException objectDisposedException
@@ -729,20 +729,17 @@ namespace MongoDB.Driver.Core.Connections
             }
         }
 
-
-        private void ThrowIfDisposed(CancellationToken cancellationToken = default)
+        private void ThrowIfDisposed()
         {
             if (_state.Value == State.Disposed)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 throw new ObjectDisposedException(GetType().Name);
             }
         }
 
-        private void ThrowIfDisposedOrNotOpen(CancellationToken cancellationToken)
+        private void ThrowIfDisposedOrNotOpen()
         {
-            ThrowIfDisposed(cancellationToken);
+            ThrowIfDisposed();
             if (_state.Value == State.Failed)
             {
                 throw new MongoConnectionClosedException(_connectionId);

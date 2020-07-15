@@ -85,7 +85,7 @@ namespace MongoDB.Driver.Core.Servers
                 {
                     if (_roundTripTimeConnection == null)
                     {
-                        await InitializeConnectionAsync().ConfigureAwait(false);
+                        await InitializeConnectionAsync().ConfigureAwait(false); // set _roundTripTimeConnection as a SIDE EFFECT
                     }
                     else
                     {
@@ -104,7 +104,7 @@ namespace MongoDB.Driver.Core.Servers
                     lock (_lock)
                     {
                         toDispose = _roundTripTimeConnection;
-                        _roundTripTimeConnection = null;
+                        _roundTripTimeConnection = null; // clears _roundTripTimeConection DIRECTLY, not as a side effect as in line 88
                     }
                     toDispose?.Dispose();
                 }
@@ -126,6 +126,7 @@ namespace MongoDB.Driver.Core.Servers
                 // if we are cancelling, it's because the server has
                 // been shut down and we really don't need to wait.
                 await roundTripTimeConnection.OpenAsync(_cancellationToken).ConfigureAwait(false);
+                _cancellationToken.ThrowIfCancellationRequested();
             }
             catch
             {
@@ -137,7 +138,7 @@ namespace MongoDB.Driver.Core.Servers
 
             lock (_lock)
             {
-                _roundTripTimeConnection = roundTripTimeConnection;
+                _roundTripTimeConnection = roundTripTimeConnection; // SIDE EFFECT
             }
             AddSample(stopwatch.Elapsed);
         }

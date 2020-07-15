@@ -39,7 +39,7 @@ namespace MongoDB.Driver.Core.Servers
         private readonly object _lock = new object();
         private readonly CancellationTokenSource _monitorCancellationTokenSource;
         private readonly IRoundTripTimeMonitor _roundTripTimeMonitor;
-        private readonly InterlockedInt32 _state;
+        private readonly InterlockedInt32 _state; // out of alphabetical order (use _lock instead of Interlocked?)
         private readonly ServerId _serverId;
         private readonly ServerMonitorSettings _serverMonitorSettings;
 
@@ -57,18 +57,18 @@ namespace MongoDB.Driver.Core.Servers
 
         public ServerMonitor(ServerId serverId, EndPoint endPoint, IConnectionFactory connectionFactory, ServerMonitorSettings serverMonitorSettings, IEventSubscriber eventSubscriber, CancellationTokenSource cancellationTokenSource)
             : this(
-                  serverId,
-                  endPoint,
-                  connectionFactory,
-                  serverMonitorSettings,
-                  eventSubscriber,
-                  roundTripTimeMonitor: new RoundTripTimeMonitor(
-                      connectionFactory,
-                      serverId,
-                      endPoint,
-                      Ensure.IsNotNull(serverMonitorSettings, nameof(serverMonitorSettings)).HeartbeatInterval,
-                      cancellationTokenSource.Token),
-                  cancellationTokenSource)
+                serverId,
+                endPoint,
+                connectionFactory,
+                serverMonitorSettings,
+                eventSubscriber,
+                roundTripTimeMonitor: new RoundTripTimeMonitor(
+                    connectionFactory,
+                    serverId,
+                    endPoint,
+                    Ensure.IsNotNull(serverMonitorSettings, nameof(serverMonitorSettings)).HeartbeatInterval,
+                    cancellationTokenSource.Token),
+                cancellationTokenSource)
         {
         }
 
@@ -91,7 +91,7 @@ namespace MongoDB.Driver.Core.Servers
             eventSubscriber.TryGetEventHandler(out _sdamInformationEventHandler);
         }
 
-        public ServerDescription Description => Interlocked.CompareExchange(ref _currentDescription, null, null);
+        public ServerDescription Description => Interlocked.CompareExchange(ref _currentDescription, null, null); // use _lock instead of Interlocked
 
         public object Lock => _lock;
 
@@ -282,7 +282,12 @@ namespace MongoDB.Driver.Core.Servers
                         var initializedConnection = await InitializeConnectionAsync(cancellationToken).ConfigureAwait(false);
                         lock (_lock)
                         {
-                            ThrowCancellationExceptionAndDisposeConnectionIfMonitorDisposed(initializedConnection);
+                            if (_state.Value == State.Disposed)
+                            {
+                                try { initializedConnection.Dispose(); } catch { }
+                                throw new OperationCanceledException("The ServerMonitor has been disposed.");
+                            }
+
                             _connection = initializedConnection;
                             _handshakeBuildInfoResult = _connection.Description.BuildInfoResult;
                             heartbeatIsMasterResult = _connection.Description.IsMasterResult;
@@ -441,15 +446,6 @@ namespace MongoDB.Driver.Core.Servers
         {
             Interlocked.Exchange(ref _currentDescription, newDescription);
             OnDescriptionChanged(oldDescription, newDescription);
-        }
-
-        private void ThrowCancellationExceptionAndDisposeConnectionIfMonitorDisposed(IConnection connection)
-        {
-            if (_state.Value == State.Disposed)
-            {
-                try { connection.Dispose(); } catch { }
-                throw new OperationCanceledException("The serverMonitor has been disposed.");
-            }
         }
 
         private void ThrowIfDisposed()

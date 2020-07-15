@@ -34,7 +34,8 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         public JsonDrivenWaitForEventTest(
             IJsonDrivenTestRunner testRunner,
             Dictionary<string, object> objectMap,
-            EventCapturer eventCapturer) : base(testRunner, objectMap)
+            EventCapturer eventCapturer)
+            : base(testRunner, objectMap)
         {
             _eventCapturer = eventCapturer;
         }

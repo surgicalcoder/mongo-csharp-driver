@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Core.Misc
 
             _disposeCancellationTokenSource = new CancellationTokenSource();
             _linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCancellationTokenSource.Token);
-            _task = semaphore.WaitAsync(_linkedCancellationTokenSource.Token);
+            _task = WaitAsync();
         }
 
         // public properties
@@ -79,6 +79,19 @@ namespace MongoDB.Driver.Core.Misc
 
             _disposeCancellationTokenSource.Dispose();
             _linkedCancellationTokenSource.Dispose();
+        }
+
+        // private methods
+        private async Task WaitAsync()
+        {
+            try
+            {
+                await _semaphore.WaitAsync(_linkedCancellationTokenSource.Token).ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException ex) when (ex.ObjectName == "SemaphoreSlim" && _linkedCancellationTokenSource.IsCancellationRequested)
+            {
+                throw new OperationCanceledException();
+            }
         }
     }
 }
