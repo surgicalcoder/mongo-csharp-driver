@@ -145,7 +145,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             switch (message.ResponseHandling)
             {
                 case CommandResponseHandling.Ignore:
-                    await IgnoreResponseAsync(connection, message, cancellationToken).ConfigureAwait(false);
+                    IgnoreResponse(connection, message, cancellationToken);
                     return default(TCommandResult);
                 default:
                     var encoderSelector = new ReplyMessageEncoderSelector<RawBsonDocument>(RawBsonDocumentSerializer.Instance);
@@ -222,27 +222,7 @@ namespace MongoDB.Driver.Core.WireProtocol
         private void IgnoreResponse(IConnection connection, QueryMessage message, CancellationToken cancellationToken)
         {
             var encoderSelector = new ReplyMessageEncoderSelector<IgnoredReply>(IgnoredReplySerializer.Instance);
-            try
-            {
-                connection.ReceiveMessage(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken);
-            }
-            catch
-            {
-                // ignored
-            }
-        }
-
-        private async Task IgnoreResponseAsync(IConnection connection, QueryMessage message, CancellationToken cancellationToken)
-        {
-            var encoderSelector = new ReplyMessageEncoderSelector<IgnoredReply>(IgnoredReplySerializer.Instance);
-            try
-            {
-                await connection.ReceiveMessageAsync(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken).ConfigureAwait(false);
-            }
-            catch
-            {
-                // ignored
-            }
+            connection.ReceiveMessageAsync(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken).IgnoreExceptions();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]

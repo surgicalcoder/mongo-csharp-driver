@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -47,6 +48,7 @@ namespace MongoDB.Driver.Core.Connections
         private readonly IConnectionInitializer _connectionInitializer;
         private EndPoint _endPoint;
         private ConnectionDescription _description;
+        private readonly Dropbox _dropbox = new Dropbox();
         private bool _failedEventHasBeenRaised;
         private DateTime _lastUsedAtUtc;
         private DateTime _openedAtUtc;
@@ -352,6 +354,43 @@ namespace MongoDB.Driver.Core.Connections
             }
         }
 
+        private IByteBuffer ReceiveBuffer(int responseTo, CancellationToken cancellationToken)
+        {
+            using (var receiveLockRequest = new SemaphoreSlimRequest(_receiveLock, cancellationToken))
+            {
+                var messageTask = _dropbox.GetMessageAsync(responseTo);
+                try
+                {
+                    Task.WaitAny(messageTask, receiveLockRequest.Task);
+                    if (messageTask.IsCompleted)
+                    {
+                        return _dropbox.RemoveMessage(responseTo);
+                    }
+
+                    receiveLockRequest.Task.GetAwaiter().GetResult(); // propagate exceptions
+                    while (true)
+                    {
+                        var buffer = ReceiveBuffer();
+                        _dropbox.AddMessage(buffer);
+
+                        if (messageTask.IsCompleted)
+                        {
+                            return _dropbox.RemoveMessage(responseTo);
+                        }
+
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+                }
+                catch
+                {
+                    messageTask.ContinueWith(
+                        t => { _dropbox.RemoveMessage(responseTo).Dispose(); },
+                        TaskContinuationOptions.OnlyOnRanToCompletion).Wait();
+                    throw;
+                }
+            }
+        }
+
         private async Task<IByteBuffer> ReceiveBufferAsync()
         {
             try
@@ -378,6 +417,43 @@ namespace MongoDB.Driver.Core.Connections
             }
         }
 
+        private async Task<IByteBuffer> ReceiveBufferAsync(int responseTo, CancellationToken cancellationToken)
+        {
+            using (var receiveLockRequest = new SemaphoreSlimRequest(_receiveLock, cancellationToken))
+            {
+                var messageTask = _dropbox.GetMessageAsync(responseTo);
+                try
+                {
+                    await Task.WhenAny(messageTask, receiveLockRequest.Task).ConfigureAwait(false);
+                    if (messageTask.IsCompleted)
+                    {
+                        return _dropbox.RemoveMessage(responseTo);
+                    }
+
+                    receiveLockRequest.Task.GetAwaiter().GetResult(); // propagate exceptions
+                    while (true)
+                    {
+                        var buffer = await ReceiveBufferAsync().ConfigureAwait(false);
+                        _dropbox.AddMessage(buffer);
+
+                        if (messageTask.IsCompleted)
+                        {
+                            return _dropbox.RemoveMessage(responseTo);
+                        }
+
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+                }
+                catch
+                {
+                    await messageTask.ContinueWith(
+                        t => { _dropbox.RemoveMessage(responseTo).Dispose(); },
+                        TaskContinuationOptions.OnlyOnRanToCompletion).ConfigureAwait(false);
+                    throw;
+                }
+            }
+        }
+
         public ResponseMessage ReceiveMessage(
             int responseTo,
             IMessageEncoderSelector encoderSelector,
@@ -391,13 +467,9 @@ namespace MongoDB.Driver.Core.Connections
             try
             {
                 helper.ReceivingMessage();
-                using (var buffer = ReceiveBuffer())
+                using (var buffer = ReceiveBuffer(responseTo, cancellationToken))
                 {
                     var message = helper.DecodeMessage(buffer, encoderSelector, cancellationToken);
-                    if (message.ResponseTo != responseTo)
-                    {
-                        throw new MongoConnectionException(_connectionId, $"ResponseTo is {message.ResponseTo} but expected {responseTo}.");
-                    }
                     helper.ReceivedMessage(buffer, message);
                     return message;
                 }
@@ -422,13 +494,9 @@ namespace MongoDB.Driver.Core.Connections
             try
             {
                 helper.ReceivingMessage();
-                using (var buffer = await ReceiveBufferAsync().ConfigureAwait(false))
+                using (var buffer = await ReceiveBufferAsync(responseTo, cancellationToken).ConfigureAwait(false))
                 {
                     var message = helper.DecodeMessage(buffer, encoderSelector, cancellationToken);
-                    if (message.ResponseTo != responseTo)
-                    {
-                        throw new MongoConnectionException(_connectionId, $"ResponseTo is {message.ResponseTo} but expected {responseTo}.");
-                    }
                     helper.ReceivedMessage(buffer, message);
                     return message;
                 }
@@ -671,6 +739,39 @@ namespace MongoDB.Driver.Core.Connections
         }
 
         // nested classes
+        private class Dropbox
+        {
+            private readonly ConcurrentDictionary<int, TaskCompletionSource<IByteBuffer>> _messages = new ConcurrentDictionary<int, TaskCompletionSource<IByteBuffer>>();
+
+            // public methods
+            public void AddMessage(IByteBuffer message)
+            {
+                var responseTo = GetResponseTo(message);
+                var tcs = _messages.GetOrAdd(responseTo, x => new TaskCompletionSource<IByteBuffer>());
+                tcs.TrySetResult(message);
+            }
+
+            public Task<IByteBuffer> GetMessageAsync(int responseTo)
+            {
+                var tcs = _messages.GetOrAdd(responseTo, _ => new TaskCompletionSource<IByteBuffer>());
+                return tcs.Task;
+            }
+
+            public IByteBuffer RemoveMessage(int responseTo)
+            {
+                TaskCompletionSource<IByteBuffer> tcs;
+                _messages.TryRemove(responseTo, out tcs);
+                return tcs.Task.GetAwaiter().GetResult(); // RemoveMessage is only called when Task is complete
+            }
+
+            // private methods
+            private int GetResponseTo(IByteBuffer message)
+            {
+                var backingBytes = message.AccessBackingBytes(8);
+                return BitConverter.ToInt32(backingBytes.Array, backingBytes.Offset);
+            }
+        }
+
         private class OpenConnectionHelper
         {
             private readonly BinaryConnection _connection;
