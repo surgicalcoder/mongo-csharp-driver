@@ -1,4 +1,4 @@
-/* Copyright 2013-present MongoDB Inc.
+﻿/* Copyright 2013-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ namespace MongoDB.Driver.Core.Misc
     /// <summary>
     /// Represents a semantic version number.
     /// </summary>
-    public class SemanticVersion : IEquatable<SemanticVersion>, IComparable<SemanticVersion>
+    public class ServerVersion : IEquatable<ServerVersion>, IComparable<ServerVersion>
     {
         // fields
         private readonly int _major;
@@ -32,24 +32,24 @@ namespace MongoDB.Driver.Core.Misc
 
         // constructors
         /// <summary>
-        /// Initializes a new instance of the <see cref="SemanticVersion"/> class.
+        /// Initializes a new instance of the <see cref="ServerVersion"/> class.
         /// </summary>
         /// <param name="major">The major version.</param>
         /// <param name="minor">The minor version.</param>
         /// <param name="patch">The patch version.</param>
-        public SemanticVersion(int major, int minor, int patch)
+        public ServerVersion(int major, int minor, int patch)
             : this(major, minor, patch, null)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SemanticVersion"/> class.
+        /// Initializes a new instance of the <see cref="ServerVersion"/> class.
         /// </summary>
         /// <param name="major">The major version.</param>
         /// <param name="minor">The minor version.</param>
         /// <param name="patch">The patch version.</param>
         /// <param name="preRelease">The pre release version.</param>
-        public SemanticVersion(int major, int minor, int patch, string preRelease)
+        public ServerVersion(int major, int minor, int patch, string preRelease)
         {
             _major = Ensure.IsGreaterThanOrEqualToZero(major, nameof(major));
             _minor = Ensure.IsGreaterThanOrEqualToZero(minor, nameof(minor));
@@ -103,26 +103,12 @@ namespace MongoDB.Driver.Core.Misc
         }
 
         // methods
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public ServerVersion AsServerVersion()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <inheritdoc/>
-        public int CompareTo(SemanticVersion other)
+        public int CompareTo(ServerVersion other)
         {
             if (other == null)
             {
                 return 1;
-            }
-
-            if (IsInternalServerBuild() || other.IsInternalServerBuild())
-            {
-                this.AsServerVersion().CompareTo(other.AsServerVersion());
             }
 
             var result = _major.CompareTo(other._major);
@@ -156,17 +142,17 @@ namespace MongoDB.Driver.Core.Misc
                 return -1;
             }
 
-            return _preRelease.CompareTo(other._preRelease);
+            throw new NotImplementedException(); // TODO: compare preRelease version using server rules
         }
 
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            return Equals(obj as SemanticVersion);
+            return Equals(obj as ServerVersion);
         }
 
         /// <inheritdoc/>
-        public bool Equals(SemanticVersion other)
+        public bool Equals(ServerVersion other)
         {
             return CompareTo(other) == 0;
         }
@@ -175,15 +161,6 @@ namespace MongoDB.Driver.Core.Misc
         public override int GetHashCode()
         {
             return ToString().GetHashCode();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public bool IsInternalServerBuild()
-        {
-            throw new NotImplementedException();
         }
 
         /// <inheritdoc/>
@@ -204,16 +181,16 @@ namespace MongoDB.Driver.Core.Misc
         /// </summary>
         /// <param name="value">The string value to parse.</param>
         /// <returns>A semantic version.</returns>
-        public static SemanticVersion Parse(string value)
+        public static ServerVersion Parse(string value)
         {
-            SemanticVersion result;
+            ServerVersion result;
             if (TryParse(value, out result))
             {
                 return result;
             }
 
             throw new FormatException(string.Format(
-                "Invalid SemanticVersion string: '{0}'.", value));
+                "Invalid ServerVersion string: '{0}'.", value));
         }
 
         /// <summary>
@@ -222,7 +199,7 @@ namespace MongoDB.Driver.Core.Misc
         /// <param name="value">The string value to parse.</param>
         /// <param name="result">The result.</param>
         /// <returns>True if the string representation was parsed successfully; otherwise false.</returns>
-        public static bool TryParse(string value, out SemanticVersion result)
+        public static bool TryParse(string value, out ServerVersion result)
         {
             if (!string.IsNullOrEmpty(value))
             {
@@ -235,7 +212,7 @@ namespace MongoDB.Driver.Core.Misc
                     var patch = match.Groups["patch"].Success ? int.Parse(match.Groups["patch"].Value) : 0;
                     var preRelease = match.Groups["preRelease"].Success ? match.Groups["preRelease"].Value : null;
 
-                    result = new SemanticVersion(major, minor, patch, preRelease);
+                    result = new ServerVersion(major, minor, patch, preRelease);
                     return true;
                 }
             }
@@ -252,7 +229,7 @@ namespace MongoDB.Driver.Core.Misc
         /// <returns>
         /// True if the value of a is the same as the value of b; otherwise false.
         /// </returns>
-        public static bool operator ==(SemanticVersion a, SemanticVersion b)
+        public static bool operator ==(ServerVersion a, ServerVersion b)
         {
             if (object.ReferenceEquals(a, null))
             {
@@ -270,20 +247,20 @@ namespace MongoDB.Driver.Core.Misc
         /// <returns>
         /// True if the value of a is different from the value of b; otherwise false.
         /// </returns>
-        public static bool operator !=(SemanticVersion a, SemanticVersion b)
+        public static bool operator !=(ServerVersion a, ServerVersion b)
         {
             return !(a == b);
         }
 
         /// <summary>
-        /// Determines whether the first specified SemanticVersion is greater than the second specified SemanticVersion.
+        /// Determines whether the first specified ServerVersion is greater than the second specified ServerVersion.
         /// </summary>
         /// <param name="a">The first semantic version to compare, or null.</param>
         /// <param name="b">The second semantic version to compare, or null.</param>
         /// <returns>
         /// True if the value of a is greater than b; otherwise false.
         /// </returns>
-        public static bool operator >(SemanticVersion a, SemanticVersion b)
+        public static bool operator >(ServerVersion a, ServerVersion b)
         {
             if (a == null)
             {
@@ -299,40 +276,40 @@ namespace MongoDB.Driver.Core.Misc
         }
 
         /// <summary>
-        /// Determines whether the first specified SemanticVersion is greater than or equal to the second specified SemanticVersion.
+        /// Determines whether the first specified ServerVersion is greater than or equal to the second specified ServerVersion.
         /// </summary>
         /// <param name="a">The first semantic version to compare, or null.</param>
         /// <param name="b">The second semantic version to compare, or null.</param>
         /// <returns>
         /// True if the value of a is greater than or equal to b; otherwise false.
         /// </returns>
-        public static bool operator >=(SemanticVersion a, SemanticVersion b)
+        public static bool operator >=(ServerVersion a, ServerVersion b)
         {
             return !(a < b);
         }
 
         /// <summary>
-        /// Determines whether the first specified SemanticVersion is less than the second specified SemanticVersion.
+        /// Determines whether the first specified ServerVersion is less than the second specified ServerVersion.
         /// </summary>
         /// <param name="a">The first semantic version to compare, or null.</param>
         /// <param name="b">The second semantic version to compare, or null.</param>
         /// <returns>
         /// True if the value of a is less than b; otherwise false.
         /// </returns>
-        public static bool operator <(SemanticVersion a, SemanticVersion b)
+        public static bool operator <(ServerVersion a, ServerVersion b)
         {
             return b > a;
         }
 
         /// <summary>
-        /// Determines whether the first specified SemanticVersion is less than or equal to the second specified SemanticVersion.
+        /// Determines whether the first specified ServerVersion is less than or equal to the second specified ServerVersion.
         /// </summary>
         /// <param name="a">The first semantic version to compare, or null.</param>
         /// <param name="b">The second semantic version to compare, or null.</param>
         /// <returns>
         /// True if the value of a is less than or equal to b; otherwise false.
         /// </returns>
-        public static bool operator <=(SemanticVersion a, SemanticVersion b)
+        public static bool operator <=(ServerVersion a, ServerVersion b)
         {
             return !(b < a);
         }
