@@ -383,9 +383,7 @@ namespace MongoDB.Driver.Core.Connections
                 }
                 catch
                 {
-                    messageTask.ContinueWith(
-                        t => { _dropbox.RemoveMessage(responseTo).Dispose(); },
-                        TaskContinuationOptions.OnlyOnRanToCompletion).Wait();
+                    _ = IgnoreResponseAsync(messageTask, responseTo); // don't wait for Task to finish
                     throw;
                 }
             }
@@ -446,9 +444,7 @@ namespace MongoDB.Driver.Core.Connections
                 }
                 catch
                 {
-                    await messageTask.ContinueWith(
-                        t => { _dropbox.RemoveMessage(responseTo).Dispose(); },
-                        TaskContinuationOptions.OnlyOnRanToCompletion).ConfigureAwait(false);
+                    _ = IgnoreResponseAsync(messageTask, responseTo); // don't wait for Task to finish
                     throw;
                 }
             }
@@ -696,6 +692,20 @@ namespace MongoDB.Driver.Core.Connections
             var compressedMessageEncoderFactory = new BinaryMessageEncoderFactory(compressedStream, messageEncoderSettings, _compressorSource);
             var compressedMessageEncoder = compressedMessageEncoderFactory.GetCompressedMessageEncoder(null);
             compressedMessageEncoder.WriteMessage(compressedMessage);
+        }
+
+        private async Task IgnoreResponseAsync(Task messageTask, int responseTo)
+        {
+            try
+            {
+                await messageTask.ConfigureAwait(false);
+                var buffer = _dropbox.RemoveMessage(responseTo);
+                buffer.Dispose();
+            }
+            catch
+            {
+                // ignore exceptions
+            }
         }
 
         private void ThrowIfDisposed()
