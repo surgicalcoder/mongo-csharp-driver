@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Core.Misc
         {
             if (preReleaseIn != null)
             {
-                var internalBuildPattern = @"^((?<preRelease>.+-)?(?<commitsAfterRelease>\d+)-g(?<commitHash>[0-9a-fA-F]{4,40})$";
+                var internalBuildPattern = @"^(?<preRelease>.+-)?(?<commitsAfterRelease>\d+)-g(?<commitHash>[0-9a-fA-F]{4,40})$";
                 var match = Regex.Match(preReleaseIn, internalBuildPattern);
                 if (match.Success)
                 {

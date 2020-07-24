@@ -118,7 +118,7 @@ namespace MongoDB.Driver.Core.Misc
 
             if (IsInternalServerBuild() || other.IsInternalServerBuild())
             {
-                this.AsServerVersion().CompareTo(other.AsServerVersion());
+                return this.AsServerVersion().CompareTo(other.AsServerVersion());
             }
 
             var result = _major.CompareTo(other._major);
@@ -177,7 +177,7 @@ namespace MongoDB.Driver.Core.Misc
         {
             if (_preRelease != null)
             {
-                var internalBuildPattern = @"^(.+-)\d+-g[0-0a-fA-F]{4,40}$";
+                var internalBuildPattern = @"^(.+-)?\d+-g[0-9a-fA-F]{4,40}$";
                 return Regex.IsMatch(_preRelease, internalBuildPattern);
             }
 
