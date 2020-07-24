@@ -103,13 +103,9 @@ namespace MongoDB.Driver.Core.Misc
         }
 
         // methods
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public ServerVersion AsServerVersion()
+        internal ServerVersion AsServerVersion()
         {
-            throw new NotImplementedException();
+            return new ServerVersion(_major, _minor, _patch, _preRelease);
         }
 
         /// <inheritdoc/>
@@ -177,13 +173,15 @@ namespace MongoDB.Driver.Core.Misc
             return ToString().GetHashCode();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public bool IsInternalServerBuild()
+        internal bool IsInternalServerBuild()
         {
-            throw new NotImplementedException();
+            if (_preRelease != null)
+            {
+                var internalBuildPattern = @"^(.+-)\d+-g[0-0a-fA-F]{4,40}$";
+                return Regex.IsMatch(_preRelease, internalBuildPattern);
+            }
+
+            return false;
         }
 
         /// <inheritdoc/>
