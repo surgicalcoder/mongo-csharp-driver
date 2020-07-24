@@ -25,6 +25,22 @@ namespace MongoDB.Driver.Core.Misc
     public class ServerVersion : IEquatable<ServerVersion>, IComparable<ServerVersion>
     {
         #region static
+        private static void LookForPreReleaseNumericSuffix(string preRelease, out string preReleasePrefix, out int? preReleaseNumericSuffix)
+        {
+            var pattern = @"^(?<prefix>.*[^\d])(?<numericSuffix>\d+)$";
+            var match = Regex.Match(preRelease, pattern);
+            if (match.Success)
+            {
+                preReleasePrefix = match.Groups["prefix"].Value;
+                preReleaseNumericSuffix = int.Parse(match.Groups["numericSuffix"].Value);
+            }
+            else
+            {
+                preReleasePrefix = preRelease;
+                preReleaseNumericSuffix = null;
+            }
+        }
+
         private static bool TryParseInternalPrelease(string preReleaseIn, out string preReleaseOut, out int? commitsAfterRelease, out string commitHash)
         {
             if (preReleaseIn != null)
@@ -55,6 +71,8 @@ namespace MongoDB.Driver.Core.Misc
         private readonly int _minor;
         private readonly int _patch;
         private readonly string _preRelease;
+        private readonly int? _preReleaseNumericSuffix;
+        private readonly string _preReleasePrefix;
 
         // constructors
         /// <summary>
@@ -81,9 +99,9 @@ namespace MongoDB.Driver.Core.Misc
             _minor = Ensure.IsGreaterThanOrEqualToZero(minor, nameof(minor));
             _patch = Ensure.IsGreaterThanOrEqualToZero(patch, nameof(patch));
 
-            if (TryParseInternalPrelease(preRelease, out preRelease, out var commitsAfterRelease, out var commitHash))
+            if (TryParseInternalPrelease(preRelease, out var preReleaseOut, out var commitsAfterRelease, out var commitHash))
             {
-                _preRelease = preRelease; // can be null
+                _preRelease = preReleaseOut; // can be null
                 _commitsAfterRelease = commitsAfterRelease;
                 _commitHash = commitHash;
             }
@@ -93,6 +111,8 @@ namespace MongoDB.Driver.Core.Misc
                 _commitsAfterRelease = null;
                 _commitHash = null;
             }
+
+            LookForPreReleaseNumericSuffix(_preRelease, out _preReleasePrefix, out _preReleaseNumericSuffix);
         }
 
         // properties
@@ -154,7 +174,7 @@ namespace MongoDB.Driver.Core.Misc
         /// <inheritdoc/>
         public int CompareTo(ServerVersion other)
         {
-            if (other == null)
+            if (object.ReferenceEquals(other, null))
             {
                 return 1;
             }
@@ -177,13 +197,13 @@ namespace MongoDB.Driver.Core.Misc
                 return result;
             }
 
-            result = ComparePreReleases(_preRelease, other._preRelease);
+            result = ComparePreReleases();
             if (result != 0)
             {
                 return result;
             }
 
-            result = CompareCommitsAfterRelease(_commitsAfterRelease, other._commitsAfterRelease);
+            result = CompareCommitsAfterRelease();
             if (result != 0)
             {
                 return result;
@@ -192,40 +212,59 @@ namespace MongoDB.Driver.Core.Misc
             // ignore _commitHash for comparison purposes
             return 0;
 
-            int ComparePreReleases(string x, string y)
+            int ComparePreReleases()
             {
-                if (x == null && y == null)
+                if (_preRelease == null && other._preRelease == null)
                 {
                     return 0;
                 }
-                else if (x == null)
+                else if (_preRelease == null)
                 {
                     return 1;
                 }
-                else if (y == null)
+                else if (other._preRelease == null)
                 {
                     return -1;
                 }
 
-                return x.CompareTo(y);
+                result = _preReleasePrefix.CompareTo(other._preReleasePrefix);
+                if (result != 0)
+                {
+                    return result;
+                }
+
+                if (_preReleaseNumericSuffix == null && other._preReleaseNumericSuffix == null)
+                {
+                    return 0;
+                }
+                else if (_preReleaseNumericSuffix == null)
+                {
+                    return -1;
+                }
+                else if (other._preReleaseNumericSuffix == null)
+                {
+                    return 1;
+                }
+
+                return _preReleaseNumericSuffix.Value.CompareTo(other._preReleaseNumericSuffix.Value);
             }
 
-            int CompareCommitsAfterRelease(int? x, int? y)
+            int CompareCommitsAfterRelease()
             {
-                if (x == null && y == null)
+                if (_commitsAfterRelease == null && other._commitsAfterRelease == null)
                 {
                     return 0;
                 }
-                else if (x == null)
+                else if (_commitsAfterRelease == null)
                 {
                     return -1;
                 }
-                else if (y == null)
+                else if (other._commitsAfterRelease == null)
                 {
                     return 1;
                 }
 
-                return x.Value.CompareTo(y.Value);
+                return _commitsAfterRelease.Value.CompareTo(other._commitsAfterRelease.Value);
             }
         }
 
@@ -360,13 +399,8 @@ namespace MongoDB.Driver.Core.Misc
         /// </returns>
         public static bool operator >(ServerVersion a, ServerVersion b)
         {
-            if (a == null)
+            if (object.ReferenceEquals(a, null))
             {
-                if (b == null)
-                {
-                    return true;
-                }
-
                 return false;
             }
 
