@@ -24,7 +24,6 @@ Other new additions and updates in this release include:
 * Support for Snappy compression on .NET Core on Windows (in addition
   to existing support on .NET Framework)
 * Support for Zstandard compression on Windows on 64-bit platforms
-* A new default of enabling certificate revocation checking.
 * A new URI option `tlsDisableCertificateRevocationCheck` to disable
   certificate revocation checking.
 * An expanded list of retryable write errors via the inclusion of
