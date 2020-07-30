@@ -54,8 +54,6 @@ default, setting [`CheckCertificateRevocation`]({{< apiref
 [here](https://docs.microsoft.com/en-us/dotnet/api/system.net.security.sslstream.authenticateasclient?view=netframework-4.7.2#System_Net_Security_SslStream_AuthenticateAsClient_System_String_)
 and .NET Standard documentation
 [here](https://docs.microsoft.com/en-us/dotnet/api/system.net.security.sslstream.authenticateasclient?view=netstandard-2.0#System_Net_Security_SslStream_AuthenticateAsClient_System_String_)).
-Applications relying on the intermediate default of `true` (introduced in beta driver releases 2.11.0-beta1 and 2.11.0-beta2) must
-explicitly set [`CheckCertificateRevocation`]({{< apiref
 "P_MongoDB_Driver_SslSettings_CheckCertificateRevocation">}}) to
 `true` in [`SslSettings`]({{< apiref "T_MongoDB_Driver_SslSettings"
 >}}) to enable certificate revocation checking. Alternatively,
