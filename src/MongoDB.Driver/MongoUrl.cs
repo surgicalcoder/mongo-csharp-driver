@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Configuration;
 
 namespace MongoDB.Driver
@@ -41,10 +42,16 @@ namespace MongoDB.Driver
         private readonly string _authenticationMechanism;
         private readonly IEnumerable<KeyValuePair<string, string>> _authenticationMechanismProperties;
         private readonly string _authenticationSource;
+#pragma warning disable CS0618
+        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
+#pragma warning restore CS0618
         private readonly IReadOnlyList<CompressorConfiguration> _compressors;
+#pragma warning disable CS0618
         private readonly ConnectionMode _connectionMode;
+#pragma warning restore CS0618
         private readonly TimeSpan _connectTimeout;
         private readonly string _databaseName;
+        private readonly bool? _directConnection;
         private readonly bool? _fsync;
         private readonly GuidRepresentation _guidRepresentation;
         private readonly TimeSpan _heartbeatInterval;
@@ -93,8 +100,20 @@ namespace MongoDB.Driver
             _authenticationMechanism = builder.AuthenticationMechanism;
             _authenticationMechanismProperties = builder.AuthenticationMechanismProperties;
             _authenticationSource = builder.AuthenticationSource;
+#pragma warning disable CS0618
+            _clusterConnectionModeSwitch = builder.ClusterConnectionModeSwitch;
+#pragma warning restore CS0618
             _compressors = builder.Compressors;
-            _connectionMode = builder.ConnectionMode;
+#pragma warning disable CS0618
+            if (builder.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            {
+                _connectionMode = builder.ConnectionMode;
+#pragma warning restore CS0618
+            }
+            else
+            {
+                _directConnection = builder.DirectConnection;
+            }
             _connectTimeout = builder.ConnectTimeout;
             _databaseName = builder.DatabaseName;
             _fsync = builder.FSync;
@@ -187,6 +206,15 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets the cluster conenctionMode switch.
+        /// </summary>
+        [Obsolete("Will be removed in a later version.")]
+        public ClusterConnectionModeSwitch ClusterConnectionModeSwitch
+        {
+            get { return _clusterConnectionModeSwitch; }
+        }
+
+        /// <summary>
         /// Gets the compressors.
         /// </summary>
         public IReadOnlyList<CompressorConfiguration> Compressors
@@ -216,9 +244,17 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the connection mode.
         /// </summary>
+        [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
         {
-            get { return _connectionMode; }
+            get
+            {
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    throw new InvalidOperationException();
+                }
+                return _connectionMode;
+            }
         }
 
         /// <summary>
@@ -235,6 +271,21 @@ namespace MongoDB.Driver
         public string DatabaseName
         {
             get { return _databaseName; }
+        }
+
+        /// <summary>
+        /// Gets the direct connection.
+        /// </summary>
+        public bool? DirectConnection
+        {
+            get
+            {
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+                {
+                    throw new InvalidOperationException();
+                }
+                return _directConnection;
+            }
         }
 
         /// <summary>

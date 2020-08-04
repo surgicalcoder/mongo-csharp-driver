@@ -26,8 +26,14 @@ namespace MongoDB.Driver.Core.TestHelpers
         public static ClusterDescription Parse(BsonDocument args)
         {
             var clusterId = new ClusterId(args.GetValue("clusterId", 1).ToInt32());
+#pragma warning disable CS0618
             var connectionMode = (ClusterConnectionMode)Enum.Parse(typeof(ClusterConnectionMode), args.GetValue("connectionMode", "Automatic").AsString);
+#pragma warning restore CS0618
             var clusterType = (ClusterType)Enum.Parse(typeof(ClusterType), args["clusterType"].AsString);
+            var directConnection = args.GetValue("directConnection", null).AsNullableBoolean;
+#pragma warning disable CS0618
+            var clusterConnectionModeSwitch = (ClusterConnectionModeSwitch)Enum.Parse(typeof(ClusterConnectionModeSwitch), args.GetValue("clusterConnectionModeSwitch", "NotSet").AsString);
+#pragma warning restore CS0618
 
             var numberOfServers = args["servers"].AsBsonArray.Count;
             var servers = new List<ServerDescription>(numberOfServers);
@@ -48,7 +54,7 @@ namespace MongoDB.Driver.Core.TestHelpers
                 servers.Add(server);
             }
 
-            return new ClusterDescription(clusterId, connectionMode, clusterType, servers);
+            return new ClusterDescription(clusterId, connectionMode, clusterConnectionModeSwitch, directConnection, clusterType, servers);
         }
 
         public static ClusterDescription Parse(string json)

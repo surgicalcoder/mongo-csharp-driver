@@ -33,13 +33,17 @@ namespace MongoDB.Driver
         public MongoIncompatibleDriverExceptionTests()
         {
             var clusterId = new ClusterId(1);
+#pragma warning disable CS0618
             var connectionMode = ClusterConnectionMode.Standalone;
+#pragma warning restore CS0618
             var clusterType = ClusterType.Standalone;
             var endPoint = new DnsEndPoint("localhost", 27017);
             var serverId = new ServerId(clusterId, endPoint);
             var server = new ServerDescription(serverId, endPoint, wireVersionRange: new Range<int>(0, 0), type: ServerType.Standalone);
             var servers = new[] { server };
+#pragma warning disable CS0618
             _clusterDescription = new ClusterDescription(clusterId, connectionMode, clusterType, servers);
+#pragma warning restore CS0618
         }
 
         [Fact]

@@ -20,6 +20,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using MongoDB.Bson;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Shared;
@@ -34,11 +35,17 @@ namespace MongoDB.Driver
         // private fields
         private bool _allowInsecureTls;
         private string _applicationName;
+#pragma warning disable CS0618
+        private ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
+#pragma warning restore CS0618
         private Action<ClusterBuilder> _clusterConfigurator;
         private IReadOnlyList<CompressorConfiguration> _compressors;
+#pragma warning disable CS0618
         private ConnectionMode _connectionMode;
+#pragma warning restore CS0618
         private TimeSpan _connectTimeout;
         private MongoCredentialStore _credentials;
+        private bool? _directConnection;
         private GuidRepresentation _guidRepresentation;
         private TimeSpan _heartbeatInterval;
         private TimeSpan _heartbeatTimeout;
@@ -80,10 +87,14 @@ namespace MongoDB.Driver
         {
             _allowInsecureTls = false;
             _applicationName = null;
+#pragma warning disable CS0618
+            _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet;
+#pragma warning restore CS0618
             _compressors = new CompressorConfiguration[0];
             _connectionMode = ConnectionMode.Automatic;
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _credentials = new MongoCredentialStore(new MongoCredential[0]);
+            _directConnection = null;
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
@@ -163,6 +174,13 @@ namespace MongoDB.Driver
             }
         }
 
+#pragma warning disable CS0618
+        internal ClusterConnectionModeSwitch ClusterConnectionModeSwitch
+#pragma warning restore CS0618
+        {
+            get { return _clusterConnectionModeSwitch;}
+        }
+
         /// <summary>
         /// Gets or sets the cluster configurator.
         /// </summary>
@@ -192,13 +210,27 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets or sets the connection mode.
         /// </summary>
+        [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
         {
-            get { return _connectionMode; }
+            get
+            {
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    throw new InvalidOperationException();
+                }
+                return _connectionMode;
+            }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    throw new InvalidOperationException();
+                }
+                _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
+                _directConnection = null;
             }
         }
 
@@ -250,6 +282,37 @@ namespace MongoDB.Driver
                     throw new ArgumentNullException("value");
                 }
                 _credentials = new MongoCredentialStore(value);
+            }
+        }
+
+        /// <summary>
+        /// Gets ot sets DirectConnection.
+        /// </summary>
+        public bool? DirectConnection
+        {
+            get
+            {
+#pragma warning disable CS0618
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
+                {
+                    throw new InvalidOperationException();
+                }
+                return _directConnection;
+            }
+            set
+            {
+                if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
+#pragma warning disable CS0618
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
+                {
+                    throw new InvalidOperationException();
+                }
+
+                _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseDirectConnection;
+                _directConnection = value;
+                _connectionMode = ConnectionMode.Automatic;
             }
         }
 
@@ -727,7 +790,17 @@ namespace MongoDB.Driver
             serverSettings.ApplicationName = clientSettings.ApplicationName;
             serverSettings.ClusterConfigurator = clientSettings.ClusterConfigurator;
             serverSettings.Compressors = clientSettings.Compressors;
-            serverSettings.ConnectionMode = clientSettings.ConnectionMode;
+#pragma warning disable CS0618
+            serverSettings._clusterConnectionModeSwitch = clientSettings.ClusterConnectionModeSwitch;
+            if (clientSettings.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            {
+                serverSettings.ConnectionMode = clientSettings.ConnectionMode;
+            }
+            else
+            {
+                serverSettings.DirectConnection = clientSettings.DirectConnection;
+            }
+#pragma warning restore CS0618
             serverSettings.ConnectTimeout = clientSettings.ConnectTimeout;
 #pragma warning disable 618
             serverSettings.Credentials = clientSettings.Credentials;
@@ -779,7 +852,6 @@ namespace MongoDB.Driver
             serverSettings.AllowInsecureTls = url.AllowInsecureTls;
             serverSettings.ApplicationName = url.ApplicationName;
             serverSettings.Compressors = url.Compressors;
-            serverSettings.ConnectionMode = url.ConnectionMode;
             serverSettings.ConnectTimeout = url.ConnectTimeout;
             if (credential != null)
             {
@@ -797,6 +869,15 @@ namespace MongoDB.Driver
                 serverSettings.Credential = credential;
             }
 #pragma warning disable 618
+            // serverSettings._clusterConnectionModeSwitch will be calculated automatically
+            if (url.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            {
+                serverSettings.ConnectionMode = url.ConnectionMode;
+            }
+            else
+            {
+                serverSettings.DirectConnection = url.DirectConnection;
+            }
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
                 serverSettings.GuidRepresentation = url.GuidRepresentation;
@@ -847,10 +928,12 @@ namespace MongoDB.Driver
             clone._allowInsecureTls = _allowInsecureTls;
             clone._applicationName = _applicationName;
             clone._clusterConfigurator = _clusterConfigurator;
+            clone._clusterConnectionModeSwitch = _clusterConnectionModeSwitch;
             clone._compressors = _compressors;
             clone._connectionMode = _connectionMode;
             clone._connectTimeout = _connectTimeout;
             clone._credentials = _credentials;
+            clone._directConnection = _directConnection;
             clone._guidRepresentation = _guidRepresentation;
             clone._heartbeatInterval = _heartbeatInterval;
             clone._heartbeatTimeout = _heartbeatTimeout;
@@ -912,6 +995,7 @@ namespace MongoDB.Driver
                _connectionMode == rhs._connectionMode &&
                _connectTimeout == rhs._connectTimeout &&
                _credentials == rhs._credentials &&
+               object.Equals(_directConnection, rhs._directConnection) &&
                _guidRepresentation == rhs._guidRepresentation &&
                _heartbeatInterval == rhs._heartbeatInterval &&
                _heartbeatTimeout == rhs._heartbeatTimeout &&
@@ -992,6 +1076,7 @@ namespace MongoDB.Driver
                 .Hash(_connectionMode)
                 .Hash(_connectTimeout)
                 .Hash(_credentials)
+                .Hash(_directConnection)
                 .Hash(_guidRepresentation)
                 .Hash(_heartbeatInterval)
                 .Hash(_heartbeatTimeout)
@@ -1047,6 +1132,7 @@ namespace MongoDB.Driver
             parts.Add(string.Format("ConnectionMode={0}", _connectionMode));
             parts.Add(string.Format("ConnectTimeout={0}", _connectTimeout));
             parts.Add(string.Format("Credentials={{{0}}}", _credentials));
+            parts.Add(string.Format("DirectConnection={0}", _directConnection));
             parts.Add(string.Format("GuidRepresentation={0}", _guidRepresentation));
             parts.Add(string.Format("HeartbeatInterval={0}", _heartbeatInterval));
             parts.Add(string.Format("HeartbeatTimeout={0}", _heartbeatTimeout));
@@ -1100,10 +1186,12 @@ namespace MongoDB.Driver
                 _allowInsecureTls,
                 _applicationName,
                 _clusterConfigurator,
+                _clusterConnectionModeSwitch,
                 _compressors,
                 _connectionMode,
                 _connectTimeout,
                 _credentials.ToList(),
+                _directConnection,
                 _heartbeatInterval,
                 _heartbeatTimeout,
                 _ipv6,

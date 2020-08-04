@@ -38,16 +38,31 @@ namespace MongoDB.Driver
     {
         #region static
         // private static methods
-        private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterConnectionMode connectionMode, IEnumerable<ServerDescription> servers)
+        private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
         {
             var connectedServers = servers.Where(s => s.State == ServerState.Connected);
-            if (connectionMode == ClusterConnectionMode.Direct)
+
+            if (IsDirectConnection())
             {
                 return connectedServers;
             }
             else
             {
                 return connectedServers.Where(s => s.IsDataBearing);
+            }
+
+            bool IsDirectConnection()
+            {
+#pragma warning disable CS0618
+                if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    return clusterDescription.DirectConnection.GetValueOrDefault();
+                }
+                else
+                {
+                    return clusterDescription.ConnectionMode == ClusterConnectionMode.Direct;
+                }
+#pragma warning restore CS0618
             }
         }
         #endregion
@@ -436,7 +451,7 @@ namespace MongoDB.Driver
             }
             else
             {
-                var selectedServers = SelectServersThatDetermineWhetherSessionsAreSupported(clusterDescription.ConnectionMode, clusterDescription.Servers).ToList();
+                var selectedServers = SelectServersThatDetermineWhetherSessionsAreSupported(clusterDescription, clusterDescription.Servers).ToList();
                 if (selectedServers.Count == 0)
                 {
                     return null;
@@ -632,10 +647,10 @@ namespace MongoDB.Driver
         {
             public ClusterDescription ClusterDescription;
 
-            public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
+            public IEnumerable<ServerDescription> SelectServers(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
             {
-                ClusterDescription = cluster;
-                return SelectServersThatDetermineWhetherSessionsAreSupported(cluster.ConnectionMode, servers);
+                ClusterDescription = clusterDescription;
+                return SelectServersThatDetermineWhetherSessionsAreSupported(clusterDescription, servers);
             }
         }
     }

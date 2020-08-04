@@ -20,6 +20,7 @@ using System.Security.Authentication;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Compression;
 using MongoDB.Driver.Core.Configuration;
 using Xunit;
@@ -49,6 +50,7 @@ namespace MongoDB.Driver.Tests
         [InlineData("ConnectionMode", true)]
         [InlineData("ConnectTimeout", true)]
         [InlineData("Credentials", false)]
+        [InlineData("DirectConnection", true)]
         [InlineData("HeartbeatInterval", true)]
         [InlineData("HeartbeatTimeout", true)]
         [InlineData("IPv6", true)]
@@ -124,17 +126,57 @@ namespace MongoDB.Driver.Tests
             subject1.Should().Be(subject2);
         }
 
+        [Theory]
+#pragma warning disable CS0618
+        [InlineData(ClusterConnectionModeSwitch.NotSet, "directConnection", false)]
+        [InlineData(ClusterConnectionModeSwitch.NotSet, "connect", false)]
+        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
+        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "connect", false)]
+        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "directConnection", false)]
+        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "connect", true)]
+        public void Property_getter_shoud_throw_when_clusterConnectionModeSwitch_is_unexpected(ClusterConnectionModeSwitch clusterConnectionModeSwitch, string property, bool shouldFail)
+#pragma warning restore CS0618
+        {
+            var subject = CreateSubjectWith(clusterConnectionModeSwitch: clusterConnectionModeSwitch);
+
+            Exception exception;
+            switch (property)
+            {
+#pragma warning disable CS0618
+                case "connect": exception = Record.Exception(() => subject.ConnectionMode); break;
+#pragma warning restore CS0618
+                case "directConnection": exception = Record.Exception(() => subject.DirectConnection); break;
+                default: throw new Exception($"Unexpected property {property}.");
+            }
+
+            if (shouldFail)
+            {
+                exception.Should().BeOfType<InvalidOperationException>();
+            }
+            else
+            {
+                exception.Should().BeNull();
+            }
+        }
+
+        // private methods
         private ClusterKey CreateSubject(string notEqualFieldName = null)
         {
             var allowInsecureTls = true;
             var applicationName = "app1";
             var clusterConfigurator = new Action<ClusterBuilder>(b => { });
+#pragma warning disable CS0618
+            var clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet;
+#pragma warning restore CS0618
             var compressors = new CompressorConfiguration[0];
+#pragma warning disable CS0618
             var connectionMode = ConnectionMode.Direct;
+#pragma warning restore CS0618
             var connectTimeout = TimeSpan.FromSeconds(1);
 #pragma warning disable 618
             var credentials = new List<MongoCredential> { MongoCredential.CreateMongoCRCredential("source", "username", "password") };
 #pragma warning restore 618
+            bool? directConnection = null;
             var heartbeatInterval = TimeSpan.FromSeconds(7);
             var heartbeatTimeout = TimeSpan.FromSeconds(8);
             var ipv6 = false;
@@ -170,11 +212,14 @@ namespace MongoDB.Driver.Tests
                     case "ApplicationName": applicationName = "app2"; break;
                     case "ClusterConfigurator": clusterConfigurator = new Action<ClusterBuilder>(b => { }); break;
                     case "Compressors": compressors = new[] { new CompressorConfiguration(CompressorType.Zlib) }; break;
+#pragma warning disable CS0618
                     case "ConnectionMode": connectionMode = ConnectionMode.ReplicaSet; break;
+#pragma warning restore CS0618
                     case "ConnectTimeout": connectTimeout = TimeSpan.FromSeconds(99); break;
 #pragma warning disable 618
                     case "Credentials": credentials = new List<MongoCredential> { MongoCredential.CreateMongoCRCredential("different", "different", "different") }; break;
 #pragma warning restore 618
+                    case "DirectConnection": directConnection = true; break;
                     case "HeartbeatInterval": heartbeatInterval = TimeSpan.FromSeconds(99); break;
                     case "HeartbeatTimeout": heartbeatTimeout = TimeSpan.FromSeconds(99); break;
                     case "IPv6": ipv6 = !ipv6; break;
@@ -205,10 +250,12 @@ namespace MongoDB.Driver.Tests
                 allowInsecureTls,
                 applicationName,
                 clusterConfigurator,
+                clusterConnectionModeSwitch,
                 compressors,
                 connectionMode,
                 connectTimeout,
                 credentials,
+                directConnection,
                 heartbeatInterval,
                 heartbeatTimeout,
                 ipv6,
@@ -235,17 +282,23 @@ namespace MongoDB.Driver.Tests
 
         internal ClusterKey CreateSubjectWith(
             Dictionary<string, IReadOnlyDictionary<string, object>> kmsProvidersValue = null,
-            Dictionary<string, BsonDocument> schemaMapValue = null)
+            Dictionary<string, BsonDocument> schemaMapValue = null,
+#pragma warning disable CS0618
+            ClusterConnectionModeSwitch clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet)
+#pragma warning restore CS0618
         {
             var allowInsecureTls = true;
             var applicationName = "app1";
             var clusterConfigurator = new Action<ClusterBuilder>(b => { });
             var compressors = new CompressorConfiguration[0];
+#pragma warning disable CS0618
             var connectionMode = ConnectionMode.Direct;
+#pragma warning restore CS0618
             var connectTimeout = TimeSpan.FromSeconds(1);
 #pragma warning disable 618
             var credentials = new List<MongoCredential> { MongoCredential.CreateMongoCRCredential("source", "username", "password") };
 #pragma warning restore 618
+            bool? directConnection = null;
             var heartbeatInterval = TimeSpan.FromSeconds(7);
             var heartbeatTimeout = TimeSpan.FromSeconds(8);
             var ipv6 = false;
@@ -277,10 +330,12 @@ namespace MongoDB.Driver.Tests
                 allowInsecureTls,
                 applicationName,
                 clusterConfigurator,
+                clusterConnectionModeSwitch,
                 compressors,
                 connectionMode,
                 connectTimeout,
                 credentials,
+                directConnection,
                 heartbeatInterval,
                 heartbeatTimeout,
                 ipv6,

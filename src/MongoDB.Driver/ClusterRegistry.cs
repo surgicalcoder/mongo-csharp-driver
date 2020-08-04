@@ -82,7 +82,10 @@ namespace MongoDB.Driver
         {
             var endPoints = clusterKey.Servers.Select(s => EndPointHelper.Parse(s.ToString()));
             return settings.With(
+#pragma warning disable CS0618
                 connectionMode: clusterKey.ConnectionMode.ToCore(),
+#pragma warning restore CS0618
+                directConnection: clusterKey.DirectConnection,
                 endPoints: Optional.Enumerable(endPoints),
                 kmsProviders: Optional.Create(clusterKey.KmsProviders),
                 localThreshold: clusterKey.LocalThreshold,

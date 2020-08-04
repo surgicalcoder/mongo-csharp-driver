@@ -90,7 +90,16 @@ namespace MongoDB.Driver.Core.Clusters
             _state = new InterlockedInt32(State.Initial);
 
             _clusterId = new ClusterId();
-            _description = ClusterDescription.CreateInitial(_clusterId, _settings.ConnectionMode);
+#pragma warning disable CS0618
+            if (_settings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            {
+                _description = ClusterDescription.CreateInitial(_clusterId, _settings.ClusterConnectionModeSwitch, _settings.DirectConnection);
+            }
+            else
+            {
+                _description = ClusterDescription.CreateInitial(_clusterId, _settings.ClusterConnectionModeSwitch, _settings.ConnectionMode);
+            }
+#pragma warning restore CS0618
             _descriptionChangedTaskCompletionSource = new TaskCompletionSource<bool>();
             _latencyLimitingServerSelector = new LatencyLimitingServerSelector(settings.LocalThreshold);
 
@@ -157,7 +166,11 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 var newClusterDescription = new ClusterDescription(
                     _clusterId,
+#pragma warning disable CS0618
                     _description.ConnectionMode,
+                    _description.ClusterConnectionModeSwitch,
+#pragma warning restore CS0618
+                    _description.DirectConnection,
                     ClusterType.Unknown,
                     Enumerable.Empty<ServerDescription>());
 

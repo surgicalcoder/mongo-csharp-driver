@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Encryption;
 using MongoDB.Shared;
@@ -29,10 +30,16 @@ namespace MongoDB.Driver
         private readonly bool _allowInsecureTls;
         private readonly string _applicationName;
         private readonly Action<ClusterBuilder> _clusterConfigurator;
+#pragma warning disable CS0618
+        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
+#pragma warning restore CS0618
         private readonly IReadOnlyList<CompressorConfiguration> _compressors;
+#pragma warning disable CS0618
         private readonly ConnectionMode _connectionMode;
+#pragma warning restore CS0618
         private readonly TimeSpan _connectTimeout;
         private readonly IReadOnlyList<MongoCredential> _credentials;
+        private readonly bool? _directConnection;
         private readonly int _hashCode;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
@@ -62,10 +69,16 @@ namespace MongoDB.Driver
             bool allowInsecureTls,
             string applicationName,
             Action<ClusterBuilder> clusterConfigurator,
+#pragma warning disable CS0618
+            ClusterConnectionModeSwitch clusterConnectionModeSwitch,
+#pragma warning restore CS0618
             IReadOnlyList<CompressorConfiguration> compressors,
+#pragma warning disable CS0618
             ConnectionMode connectionMode,
+#pragma warning restore CS0618
             TimeSpan connectTimeout,
             IReadOnlyList<MongoCredential> credentials,
+            bool? directConnection,
             TimeSpan heartbeatInterval,
             TimeSpan heartbeatTimeout,
             bool ipv6,
@@ -92,10 +105,12 @@ namespace MongoDB.Driver
             _allowInsecureTls = allowInsecureTls;
             _applicationName = applicationName;
             _clusterConfigurator = clusterConfigurator;
+            _clusterConnectionModeSwitch = clusterConnectionModeSwitch;
             _compressors = compressors;
             _connectionMode = connectionMode;
             _connectTimeout = connectTimeout;
             _credentials = credentials;
+            _directConnection = directConnection;
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
             _ipv6 = ipv6;
@@ -125,11 +140,39 @@ namespace MongoDB.Driver
         // properties
         public bool AllowInsecureTls => _allowInsecureTls;
         public string ApplicationName { get { return _applicationName; } }
+        [Obsolete("Will be removed in a later version.")]
+        public ClusterConnectionModeSwitch ClusterConnectionModeSwitch => _clusterConnectionModeSwitch;
         public Action<ClusterBuilder> ClusterConfigurator { get { return _clusterConfigurator; } }
         public IReadOnlyList<CompressorConfiguration> Compressors { get { return _compressors; } }
-        public ConnectionMode ConnectionMode { get { return _connectionMode; } }
+#pragma warning disable CS0618
+        [Obsolete("Use DirectConnection instead.")]
+        public ConnectionMode ConnectionMode
+        {
+            get
+            {
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    throw new InvalidOperationException();
+                }
+                return _connectionMode;
+            }
+        }
+#pragma warning restore CS0618
         public TimeSpan ConnectTimeout { get { return _connectTimeout; } }
         public IReadOnlyList<MongoCredential> Credentials { get { return _credentials; } }
+        public bool? DirectConnection
+        {
+            get
+            {
+#pragma warning disable CS0618
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
+                {
+                    throw new InvalidOperationException();
+                }
+                return _directConnection;
+            }
+        }
         public TimeSpan HeartbeatInterval { get { return _heartbeatInterval; } }
         public TimeSpan HeartbeatTimeout { get { return _heartbeatTimeout; } }
         public bool IPv6 { get { return _ipv6; } }
@@ -179,6 +222,7 @@ namespace MongoDB.Driver
                 _connectionMode == rhs._connectionMode &&
                 _connectTimeout == rhs._connectTimeout &&
                 _credentials.SequenceEqual(rhs._credentials) &&
+                object.Equals(_directConnection, rhs._directConnection) &&
                 _heartbeatInterval == rhs._heartbeatInterval &&
                 _heartbeatTimeout == rhs._heartbeatTimeout &&
                 _ipv6 == rhs._ipv6 &&

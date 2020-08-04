@@ -13,11 +13,14 @@
 * limitations under the License.
 */
 
+using System;
+
 namespace MongoDB.Driver.Core.Clusters
 {
     /// <summary>
     /// Represents the cluster connection mode.
     /// </summary>
+    [Obsolete("Use DirectConnection instead.")]
     public enum ClusterConnectionMode
     {
         /// <summary>
@@ -46,21 +49,23 @@ namespace MongoDB.Driver.Core.Clusters
         Sharded
     }
 
-    internal static class ClusterConnectionModeExtensionMethods
+    /// <summary>
+    /// Determine whether to use legacy ConnectMode or DirectConnection.
+    /// </summary>
+    [Obsolete("Will be removed in a later version.")]
+    public enum ClusterConnectionModeSwitch
     {
-        public static ClusterType ToClusterType(this ClusterConnectionMode connectionMode)
-        {
-            switch (connectionMode)
-            {
-                case ClusterConnectionMode.ReplicaSet:
-                    return ClusterType.ReplicaSet;
-                case ClusterConnectionMode.Sharded:
-                    return ClusterType.Sharded;
-                case ClusterConnectionMode.Standalone:
-                    return ClusterType.Standalone;
-                default:
-                    return ClusterType.Unknown;
-            }
-        }
+        /// <summary>
+        /// TODO
+        /// </summary>
+        NotSet,
+        /// <summary>
+        /// TODO
+        /// </summary>
+        UseConnectionMode,
+        /// <summary>
+        /// TODO
+        /// </summary>
+        UseDirectConnection
     }
 }

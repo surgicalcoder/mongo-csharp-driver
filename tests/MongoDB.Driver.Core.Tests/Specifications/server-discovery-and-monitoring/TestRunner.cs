@@ -21,6 +21,7 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
+using MongoDB.Bson.Tests.Jira.CSharp146;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Connections;
@@ -104,7 +105,29 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             switch (expectedType)
             {
                 case "Single":
-                    cluster.Should().BeOfType<SingleServerCluster>();
+                    if (cluster is SingleServerCluster singleServerCluster)
+                    {
+#pragma warning disable 618
+                        singleServerCluster.Description.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+                        singleServerCluster
+                           .Settings
+                           .Should()
+                           .Match<ClusterSettings>(m => !m.DirectConnection.HasValue || m.DirectConnection.Value);
+                    }
+                    else if (cluster is MultiServerCluster multiServerCluster)
+                    {
+                        multiServerCluster.Description.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+#pragma warning restore 618
+                        multiServerCluster.Description.Type.Should().Be(ClusterType.Standalone);
+                        multiServerCluster
+                            .Settings
+                            .Should()
+                            .Match<ClusterSettings>(m => !m.DirectConnection.HasValue || !m.DirectConnection.Value);
+                    }
+                    else
+                    {
+                        throw new Exception($"Unexpected cluster type {cluster.GetType().Name}.");
+                    }
                     break;
                 case "ReplicaSetWithPrimary":
                     cluster.Should().BeOfType<MultiServerCluster>();
@@ -261,9 +284,20 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
         {
             var connectionString = new ConnectionString((string)definition["uri"]);
             var settings = new ClusterSettings(
-                endPoints: Optional.Enumerable(connectionString.Hosts),
-                connectionMode: connectionString.Connect,
-                replicaSetName: connectionString.ReplicaSet);
+#pragma warning disable CS0618
+                clusterConnectionModeSwitch: connectionString.ClusterConnectionModeSwitch,
+                endPoints: Optional.Enumerable(connectionString.Hosts));
+            if (settings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
+            {
+                settings = settings.With(directConnection: connectionString.DirectConnection);
+            }
+            else
+            {
+#pragma warning disable CS0618
+                settings = settings.With(connectionMode: connectionString.Connect);
+#pragma warning restore CS0618
+            }
 
             _serverFactory = new MockClusterableServerFactory();
             _eventSubscriber = new Mock<IEventSubscriber>().Object;

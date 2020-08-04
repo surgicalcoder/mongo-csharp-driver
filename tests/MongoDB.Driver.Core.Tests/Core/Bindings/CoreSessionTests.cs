@@ -365,13 +365,17 @@ namespace MongoDB.Driver.Core.Bindings
         // private methods
         private ClusterDescription CreateClusterDescription(
             ClusterId clusterId = null,
+#pragma warning disable CS0618
             ClusterConnectionMode connectionMode = ClusterConnectionMode.Automatic,
+#pragma warning restore CS0618
             ClusterType type = ClusterType.Unknown,
             IEnumerable<ServerDescription> servers = null)
         {
             clusterId = clusterId ?? new ClusterId(1);
             servers = servers ?? new ServerDescription[0];
+#pragma warning disable CS0618
             return new ClusterDescription(clusterId, connectionMode, type, servers);
+#pragma warning restore CS0618
         }
 
         private ClusterDescription CreateClusterDescriptionWithDisconnectedServers(int numberOfDisconnectedServers)
@@ -395,7 +399,9 @@ namespace MongoDB.Driver.Core.Bindings
             var serverId = new ServerId(clusterId, endPoint);
             var version = Feature.Transactions.FirstSupportedVersion;
             var servers = new[] { new ServerDescription(serverId, endPoint, state: ServerState.Connected, type: ServerType.ReplicaSetPrimary, version: version) };
+#pragma warning disable CS0618
             var clusterDescription = new ClusterDescription(clusterId, ClusterConnectionMode.Automatic, ClusterType.ReplicaSet, servers);
+#pragma warning restore CS0618
             var mockCluster = new Mock<ICluster>();
             mockCluster.SetupGet(m => m.Description).Returns(clusterDescription);
             return mockCluster.Object;

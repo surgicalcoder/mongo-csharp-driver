@@ -242,7 +242,11 @@ namespace MongoDB.Driver.Core.Configuration
             var serverMonitorFactory = CreateServerMonitorFactory();
 
             return new ServerFactory(
+#pragma warning disable CS0618
+                _clusterSettings.ClusterConnectionModeSwitch,
                 _clusterSettings.ConnectionMode,
+#pragma warning restore CS0618
+                _clusterSettings.DirectConnection,
                 _serverSettings,
                 connectionPoolFactory,
                 serverMonitorFactory,
