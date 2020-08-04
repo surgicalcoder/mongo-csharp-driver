@@ -115,7 +115,7 @@ namespace MongoDB.Driver.Core.Clusters
                 var stopwatch = Stopwatch.StartNew();
                 _server = CreateServer(Settings.EndPoints[0]);
                 var newClusterDescription = Description
-                    .WithType(Settings.ConnectionMode.ToClusterType())
+                    .WithType(Settings.GetClusterType())
                     .WithServerDescription(_server.Description);
                 if (_addingServerEventHandler != null)
                 {
@@ -140,7 +140,7 @@ namespace MongoDB.Driver.Core.Clusters
             }
         }
 
-        private bool IsServerValidForCluster(ClusterType clusterType, ClusterConnectionMode connectionMode, ServerType serverType)
+        private bool IsServerValidForCluster(ClusterType clusterType, ClusterSettings clusterSettings, ServerType serverType)
         {
             switch (clusterType)
             {
@@ -154,18 +154,32 @@ namespace MongoDB.Driver.Core.Clusters
                     return serverType == ServerType.Standalone;
 
                 case ClusterType.Unknown:
-                    switch (connectionMode)
+                    if (IsUnknownServerValidForSingleServerCluster())
                     {
-                        case ClusterConnectionMode.Automatic:
-                        case ClusterConnectionMode.Direct:
-                            return true;
-
-                        default:
-                            throw new MongoInternalException("Unexpected connection mode.");
+                        return true;
                     }
-
+                    else
+                    {
+                        throw new MongoInternalException("Unexpected connection mode.");
+                    }
                 default:
                     throw new MongoInternalException("Unexpected cluster type.");
+            }
+
+            bool IsUnknownServerValidForSingleServerCluster()
+            {
+#pragma warning disable CS0618
+                if (clusterSettings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
+                {
+                    var connectMode = clusterSettings.ConnectionMode;
+                    return connectMode == ClusterConnectionMode.Automatic ||
+                           connectMode == ClusterConnectionMode.Direct;
+                }
+#pragma warning restore CS0618
+                else
+                {
+                    return clusterSettings.DirectConnection.GetValueOrDefault();
+                }
             }
         }
 
@@ -195,7 +209,7 @@ namespace MongoDB.Driver.Core.Clusters
             }
             else
             {
-                if (IsServerValidForCluster(newClusterDescription.Type, Settings.ConnectionMode, newServerDescription.Type))
+                if (IsServerValidForCluster(newClusterDescription.Type, Settings, newServerDescription.Type))
                 {
                     if (newClusterDescription.Type == ClusterType.Unknown)
                     {

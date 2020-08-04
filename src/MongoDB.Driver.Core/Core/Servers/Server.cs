@@ -57,8 +57,12 @@ namespace MongoDB.Driver.Core.Servers
 
         // fields
         private readonly IClusterClock _clusterClock;
+#pragma warning disable CS0618
         private readonly ClusterConnectionMode _clusterConnectionMode;
+        private readonly ConnectionModeSwitch _connectionModeSwitch;
+#pragma warning restore CS0618
         private IConnectionPool _connectionPool;
+        private readonly bool? _directConnection;
         private readonly EndPoint _endPoint;
         private readonly IServerMonitor _monitor;
         private readonly ServerId _serverId;
@@ -75,11 +79,25 @@ namespace MongoDB.Driver.Core.Servers
         public event EventHandler<ServerDescriptionChangedEventArgs> DescriptionChanged;
 
         // constructors
-        public Server(ClusterId clusterId, IClusterClock clusterClock, ClusterConnectionMode clusterConnectionMode, ServerSettings settings, EndPoint endPoint, IConnectionPoolFactory connectionPoolFactory, IServerMonitorFactory serverMonitorFactory, IEventSubscriber eventSubscriber)
+        public Server(
+            ClusterId clusterId,
+            IClusterClock clusterClock,
+#pragma warning disable CS0618
+            ClusterConnectionMode clusterConnectionMode,
+            ConnectionModeSwitch connectionModeSwitch,
+#pragma warning restore CS0618
+            bool? directConnection,
+            ServerSettings settings,
+            EndPoint endPoint,
+            IConnectionPoolFactory connectionPoolFactory,
+            IServerMonitorFactory serverMonitorFactory,
+            IEventSubscriber eventSubscriber)
         {
             Ensure.IsNotNull(clusterId, nameof(clusterId));
             _clusterClock = Ensure.IsNotNull(clusterClock, nameof(clusterClock));
             _clusterConnectionMode = clusterConnectionMode;
+            _connectionModeSwitch = connectionModeSwitch;
+            _directConnection = directConnection;
             _settings = Ensure.IsNotNull(settings, nameof(settings));
             _endPoint = Ensure.IsNotNull(endPoint, nameof(endPoint));
             Ensure.IsNotNull(connectionPoolFactory, nameof(connectionPoolFactory));
@@ -1103,7 +1121,7 @@ namespace MongoDB.Driver.Core.Servers
 
             private ReadPreference GetEffectiveReadPreference(bool slaveOk, ReadPreference readPreference)
             {
-                if (_server._clusterConnectionMode == ClusterConnectionMode.Direct && _server.Description.Type != ServerType.ShardRouter)
+                if (IsDirectConnection() && _server.Description.Type != ServerType.ShardRouter)
                 {
                     return ReadPreference.PrimaryPreferred;
                 }
@@ -1124,12 +1142,26 @@ namespace MongoDB.Driver.Core.Servers
 
             private bool GetEffectiveSlaveOk(bool slaveOk)
             {
-                if (_server._clusterConnectionMode == ClusterConnectionMode.Direct && _server.Description.Type != ServerType.ShardRouter)
+                if (IsDirectConnection() && _server.Description.Type != ServerType.ShardRouter)
                 {
                     return true;
                 }
 
                 return slaveOk;
+            }
+
+            private bool IsDirectConnection()
+            {
+#pragma warning disable CS0618
+                if (_server._connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+                {
+                    return _server._directConnection.GetValueOrDefault();
+                }
+                else
+                {
+                    return _server._clusterConnectionMode == ClusterConnectionMode.Direct;
+                }
+#pragma warning restore CS0618
             }
 
             private void MarkSessionDirtyIfNeeded(ICoreSession session, Exception ex)

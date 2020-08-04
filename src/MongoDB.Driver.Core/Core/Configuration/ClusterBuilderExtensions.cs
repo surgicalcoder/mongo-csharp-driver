@@ -60,8 +60,21 @@ namespace MongoDB.Driver.Core.Configuration
 
             if (!connectionString.IsResolved)
             {
-                var connectionMode = connectionString.Connect;
-                var resolveHosts = connectionMode == ClusterConnectionMode.Direct || connectionMode == ClusterConnectionMode.Standalone;
+                bool resolveHosts;
+#pragma warning disable CS0618
+                if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
+                {
+                    resolveHosts = connectionString.DirectConnection.GetValueOrDefault();
+                }
+                else
+                {
+#pragma warning disable CS0618
+                    var connectionMode = connectionString.Connect;
+                    resolveHosts = connectionMode == ClusterConnectionMode.Direct || connectionMode == ClusterConnectionMode.Standalone;
+#pragma warning restore CS0618
+                }
+
                 connectionString = connectionString.Resolve(resolveHosts);
             }
 
@@ -161,16 +174,26 @@ namespace MongoDB.Driver.Core.Configuration
             // Server
 
             // Cluster
-            builder = builder.ConfigureCluster(s => s.With(connectionMode: connectionString.Connect));
+#pragma warning disable CS0618
+            builder = builder.ConfigureCluster(s =>
+            {
+                if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+                {
+                    return s.With(directConnection: connectionString.DirectConnection);
+                }
+                else
+                {
+                    return s.With(connectionMode: connectionString.Connect);
+                }
+            });
+#pragma warning restore CS0618
             if (connectionString.Hosts.Count > 0)
             {
                 builder = builder.ConfigureCluster(s => s.With(endPoints: Optional.Enumerable(connectionString.Hosts)));
             }
             if (connectionString.ReplicaSet != null)
             {
-                builder = builder.ConfigureCluster(s => s.With(
-                    connectionMode: ClusterConnectionMode.ReplicaSet,
-                    replicaSetName: connectionString.ReplicaSet));
+                builder = builder.ConfigureCluster(s => s.With(replicaSetName: connectionString.ReplicaSet));
             }
             if (connectionString.ServerSelectionTimeout != null)
             {

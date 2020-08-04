@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Servers;
@@ -26,7 +27,46 @@ namespace MongoDB.Driver.Core.TestHelpers
         public static ClusterDescription Parse(BsonDocument args)
         {
             var clusterId = new ClusterId(args.GetValue("clusterId", 1).ToInt32());
-            var connectionMode = (ClusterConnectionMode)Enum.Parse(typeof(ClusterConnectionMode), args.GetValue("connectionMode", "Automatic").AsString);
+
+#pragma warning disable CS0618
+            ConnectionModeSwitch? connectionModeSwitch = null;
+            if (args.TryGetValue("connectionModeSwitch", out var connectionModeSwitchBson))
+            {
+                connectionModeSwitch = (ConnectionModeSwitch)Enum.Parse(typeof(ConnectionModeSwitch), connectionModeSwitchBson.AsString);
+            }
+
+            ClusterConnectionMode connectionMode;
+            if (args.TryGetValue("connectionMode", out var connectionModeBson))
+            {
+                connectionMode = (ClusterConnectionMode)Enum.Parse(typeof(ClusterConnectionMode), connectionModeBson.AsString);
+                if (!connectionModeSwitch.HasValue)
+                {
+                    // set if there is no explicit value
+                    connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
+                }
+            }
+            else
+            {
+                connectionMode = ClusterConnectionMode.Automatic; // default and won't be used
+            }
+#pragma warning restore CS0618
+            bool? directConnection = null;
+            if (args.TryGetValue("directConnection", out var directConnectionBson))
+            {
+                directConnection = (bool?)directConnectionBson;
+                if (!connectionModeSwitch.HasValue)
+                {
+#pragma warning disable CS0618
+                    // set if there is no explicit value
+                    connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
+                }
+                else if (connectionModeSwitch.Value == ConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
+                {
+                    throw new Exception("Both UseDirectConnection and UseConnectionMode most not be specified.");
+                }
+            }
+
             var clusterType = (ClusterType)Enum.Parse(typeof(ClusterType), args["clusterType"].AsString);
 
             var numberOfServers = args["servers"].AsBsonArray.Count;
@@ -48,7 +88,25 @@ namespace MongoDB.Driver.Core.TestHelpers
                 servers.Add(server);
             }
 
-            return new ClusterDescription(clusterId, connectionMode, clusterType, servers);
+#pragma warning disable CS0618
+            if (connectionModeSwitch.GetValueOrDefault(ConnectionModeSwitch.NotSet) == ConnectionModeSwitch.UseDirectConnection)
+            {
+                connectionMode.Should().Be(ClusterConnectionMode.Automatic);
+#pragma warning restore CS0618
+                return new ClusterDescription(clusterId, directConnection, clusterType, servers);
+            }
+            else
+            {
+                directConnection.Should().NotHaveValue();
+#pragma warning disable CS0618
+                return new ClusterDescription(
+                    clusterId,
+                    connectionMode,
+                    clusterType,
+                    servers,
+                    connectionModeSwitch.GetValueOrDefault(ConnectionModeSwitch.NotSet));
+#pragma warning restore CS0618
+            }
         }
 
         public static ClusterDescription Parse(string json)

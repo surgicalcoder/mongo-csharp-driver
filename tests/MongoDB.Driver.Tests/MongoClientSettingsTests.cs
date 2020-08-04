@@ -108,6 +108,25 @@ namespace MongoDB.Driver.Tests
         }
 
         [Fact]
+        public void TestCloneDirectConnection()
+        {
+            // set everything to non default values to test that all settings are cloned
+            var connectionString =
+                "mongodb://user1:password1@somehost/?directConnection=false";
+            var builder = new MongoUrlBuilder(connectionString);
+            var url = builder.ToMongoUrl();
+            var settings = MongoClientSettings.FromUrl(url);
+
+            // a few settings can only be made in code
+#pragma warning disable 618
+            settings.DirectConnection.Should().BeFalse();
+#pragma warning restore 618
+
+            var cloned = settings.Clone();
+            cloned.Should().Be(settings);
+        }
+
+        [Fact]
         public void TestCompressors()
         {
             var settings = new MongoClientSettings();
@@ -122,20 +141,24 @@ namespace MongoDB.Driver.Tests
             Assert.Throws<InvalidOperationException>(() => { settings.Compressors = compressors; });
         }
 
+#pragma warning disable 618
         [Fact]
         public void TestConnectionMode()
         {
             var settings = new MongoClientSettings();
             Assert.Equal(ConnectionMode.Automatic, settings.ConnectionMode);
+            Assert.Equal(ConnectionModeSwitch.NotSet, settings.ConnectionModeSwitch);
 
             var connectionMode = ConnectionMode.Direct;
             settings.ConnectionMode = connectionMode;
             Assert.Equal(connectionMode, settings.ConnectionMode);
+            Assert.Equal(ConnectionModeSwitch.UseConnectionMode, settings.ConnectionModeSwitch);
 
             settings.Freeze();
             Assert.Equal(connectionMode, settings.ConnectionMode);
             Assert.Throws<InvalidOperationException>(() => { settings.ConnectionMode = connectionMode; });
         }
+#pragma warning restore 618
 
         [Fact]
         public void TestConnectTimeout()
@@ -168,10 +191,14 @@ namespace MongoDB.Driver.Tests
             Assert.Equal(false, settings.AllowInsecureTls);
             Assert.Equal(null, settings.ApplicationName);
             Assert.Equal(Enumerable.Empty<CompressorConfiguration>(), settings.Compressors);
+#pragma warning disable 618
             Assert.Equal(ConnectionMode.Automatic, settings.ConnectionMode);
+            Assert.Equal(ConnectionModeSwitch.NotSet, settings.ConnectionModeSwitch);
+#pragma warning restore 618
             Assert.Equal(MongoDefaults.ConnectTimeout, settings.ConnectTimeout);
 #pragma warning disable 618
             Assert.Equal(0, settings.Credentials.Count());
+            Assert.Equal(null, settings.DirectConnection);
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
                 Assert.Equal(MongoDefaults.GuidRepresentation, settings.GuidRepresentation);
@@ -212,6 +239,101 @@ namespace MongoDB.Driver.Tests
         }
 
         [Fact]
+        public void TestDirectConnection()
+        {
+            var settings = new MongoClientSettings();
+            settings.DirectConnection.Should().NotHaveValue();
+
+            var directConnection = true;
+            settings.DirectConnection = directConnection;
+            settings.DirectConnection.Should().Be(directConnection);
+
+            settings.Freeze();
+            settings.DirectConnection.Should().Be(directConnection);
+            var exception = Record.Exception(() => settings.DirectConnection = false);
+            exception.Should().BeOfType<InvalidOperationException>();
+        }
+
+        [Theory]
+#pragma warning disable CS0618
+        [InlineData("connect", ConnectionMode.Automatic, "directConnection", true, true)]
+        [InlineData("connect", ConnectionMode.Direct, "directConnection", false, true)]
+        [InlineData("connect", ConnectionMode.Direct, "directConnection", null, true)]
+        [InlineData("connect", ConnectionMode.ReplicaSet, "connect", ConnectionMode.ReplicaSet, false)]
+        [InlineData("directConnection", false, "connect", ConnectionMode.Automatic, true)]
+        [InlineData("directConnection", true, "connect", ConnectionMode.Direct, true)]
+        [InlineData("directConnection", null, "connect", ConnectionMode.ReplicaSet, true)]
+        [InlineData("directConnection", null, "directConnection", null, false)]
+        [InlineData("directConnection", true, "directConnection", true, false)]
+#pragma warning restore CS0618
+        public void TestThatUsingPropertyPairsWorksAsExpected(string property1, object value1, string property2, object value2, bool shouldFailOnSecondAttempt)
+        {
+            var settings = new MongoClientSettings();
+#pragma warning disable CS0618
+            settings.ConnectionMode.Should().Be(ConnectionMode.Automatic);
+            settings.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.NotSet);
+#pragma warning restore CS0618
+            settings.DirectConnection.Should().NotHaveValue();
+
+            var testSteps = new (string Property, object Value, bool ShouldFail)[]
+            {
+                (property1, value1, false),
+                (property2, value2, shouldFailOnSecondAttempt)
+            };
+
+#pragma warning disable CS0618
+            ConnectionModeSwitch? firstConnectionModeSwitch = null;
+#pragma warning restore CS0618
+
+            foreach (var propertySet in testSteps)
+            {
+                switch (propertySet.Property)
+                {
+#pragma warning disable CS0618
+                    case "connect":
+                        {
+                            // get
+                            AssertException(Record.Exception(() => _ = settings.ConnectionMode), propertySet.ShouldFail);
+                            // set
+                            AssertException(Record.Exception(() => settings.ConnectionMode = (ConnectionMode)propertySet.Value), propertySet.ShouldFail);
+                        }
+                        break;
+#pragma warning restore CS0618
+                    case "directConnection":
+                        {
+                            // get
+                            AssertException(Record.Exception(() => _ = settings.DirectConnection), propertySet.ShouldFail);
+                            // set
+                            AssertException(Record.Exception(() => settings.DirectConnection = (bool?)propertySet.Value), propertySet.ShouldFail);
+                        }
+                        break;
+                    default: throw new Exception($"Unexpected property {propertySet.Property}.");
+                }
+
+#pragma warning disable CS0618
+                if (!firstConnectionModeSwitch.HasValue)
+                {
+                    firstConnectionModeSwitch = settings.ConnectionModeSwitch;
+                }
+                settings.ConnectionModeSwitch.Should().Be(firstConnectionModeSwitch); // the exception won't change it
+#pragma warning restore CS0618
+            }
+
+            void AssertException(Exception ex, bool shouldFail)
+            {
+                if (shouldFail)
+                {
+                    ex.Should().BeOfType<InvalidOperationException>();
+                }
+                else
+                {
+                    ex.Should().BeNull();
+                }
+            }
+        }
+#pragma warning restore CS0618
+
+        [Fact]
         public void TestEquals()
         {
             var settings = new MongoClientSettings();
@@ -231,7 +353,9 @@ namespace MongoDB.Driver.Tests
             Assert.False(clone.Equals(settings));
 
             clone = settings.Clone();
+#pragma warning disable 618
             clone.ConnectionMode = ConnectionMode.Direct;
+#pragma warning restore 618
             Assert.False(clone.Equals(settings));
 
             clone = settings.Clone();
@@ -248,6 +372,10 @@ namespace MongoDB.Driver.Tests
 #pragma warning disable 618
             clone.Credential = MongoCredential.CreateMongoCRCredential("db", "user2", "password2");
 #pragma warning restore 618
+            Assert.False(clone.Equals(settings));
+
+            clone = settings.Clone();
+            clone.DirectConnection = false;
             Assert.False(clone.Equals(settings));
 
 #pragma warning disable 618
@@ -392,6 +520,23 @@ namespace MongoDB.Driver.Tests
             var exception = Record.Exception(() => settings.Freeze());
 
             exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+            settings.Scheme = ConnectionStringScheme.MongoDBPlusSrv;
+
+            exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+            var endpoint = "test5.test.build.10gen.cc:53";
+            settings.Servers = new[] { MongoServerAddress.Parse(endpoint), MongoServerAddress.Parse(endpoint) };
+
+            exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
         }
 
         [Fact]
@@ -418,7 +563,9 @@ namespace MongoDB.Driver.Tests
             Assert.Equal(url.AllowInsecureTls, settings.AllowInsecureTls);
             Assert.Equal(url.ApplicationName, settings.ApplicationName);
             Assert.Equal(url.Compressors, settings.Compressors);
+#pragma warning disable CS0618
             Assert.Equal(url.ConnectionMode, settings.ConnectionMode);
+#pragma warning restore CS0618
             Assert.Equal(url.ConnectTimeout, settings.ConnectTimeout);
 #pragma warning disable 618
             Assert.Equal(1, settings.Credentials.Count());
@@ -1014,7 +1161,9 @@ namespace MongoDB.Driver.Tests
                 AllowInsecureTls = false,
                 ApplicationName = "app",
                 ClusterConfigurator = clusterConfigurator,
+#pragma warning disable CS0618
                 ConnectionMode = ConnectionMode.Direct,
+#pragma warning restore CS0618
                 ConnectTimeout = TimeSpan.FromSeconds(1),
                 Credential = credential,
                 HeartbeatInterval = TimeSpan.FromSeconds(7),
@@ -1050,7 +1199,9 @@ namespace MongoDB.Driver.Tests
             result.AllowInsecureTls.Should().Be(subject.AllowInsecureTls);
             result.ApplicationName.Should().Be(subject.ApplicationName);
             result.ClusterConfigurator.Should().BeSameAs(clusterConfigurator);
+#pragma warning disable CS0618
             result.ConnectionMode.Should().Be(subject.ConnectionMode);
+#pragma warning restore CS0618
             result.ConnectTimeout.Should().Be(subject.ConnectTimeout);
 #pragma warning disable 618
             result.Credentials.Should().Equal(subject.Credentials);

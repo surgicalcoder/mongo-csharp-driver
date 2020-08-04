@@ -81,8 +81,7 @@ namespace MongoDB.Driver
         private ClusterSettings ConfigureCluster(ClusterSettings settings, ClusterKey clusterKey)
         {
             var endPoints = clusterKey.Servers.Select(s => EndPointHelper.Parse(s.ToString()));
-            return settings.With(
-                connectionMode: clusterKey.ConnectionMode.ToCore(),
+            settings = settings.With(
                 endPoints: Optional.Enumerable(endPoints),
                 kmsProviders: Optional.Create(clusterKey.KmsProviders),
                 localThreshold: clusterKey.LocalThreshold,
@@ -91,6 +90,19 @@ namespace MongoDB.Driver
                 serverSelectionTimeout: clusterKey.ServerSelectionTimeout,
                 schemaMap: Optional.Create(clusterKey.SchemaMap),
                 scheme: clusterKey.Scheme);
+#pragma warning disable CS0618
+            if (clusterKey.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
+            {
+                return settings.With(directConnection: clusterKey.DirectConnection);
+            }
+            else
+            {
+                return settings.With(
+#pragma warning disable CS0618
+                connectionMode: clusterKey.ConnectionMode.ToCore());
+#pragma warning restore CS0618
+            }
         }
 
         private ConnectionPoolSettings ConfigureConnectionPool(ConnectionPoolSettings settings, ClusterKey clusterKey)

@@ -29,6 +29,7 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
         public CompositeServerSelectorTests()
         {
             var clusterId = new ClusterId();
+#pragma warning disable CS0618
             _description = new ClusterDescription(
                 clusterId,
                 ClusterConnectionMode.Automatic,
@@ -39,6 +40,7 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
                     ServerDescriptionHelper.Connected(clusterId, new DnsEndPoint("localhost", 27018)),
                     ServerDescriptionHelper.Connected(clusterId, new DnsEndPoint("localhost", 27019)),
                 });
+#pragma warning restore CS0618
         }
 
         [Fact]

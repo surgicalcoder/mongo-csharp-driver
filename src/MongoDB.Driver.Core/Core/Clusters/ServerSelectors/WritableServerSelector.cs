@@ -48,11 +48,25 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
 
         // methods
         /// <inheritdoc/>
-        public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<Servers.ServerDescription> servers)
+        public IEnumerable<ServerDescription> SelectServers(ClusterDescription clusterDescription, IEnumerable<Servers.ServerDescription> servers)
         {
-            if (cluster.ConnectionMode == ClusterConnectionMode.Direct)
+#pragma warning disable CS0618
+            if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
             {
-                return servers;
+                if (clusterDescription.DirectConnection.GetValueOrDefault())
+                {
+                    return servers;
+                }
+            }
+            else
+            {
+#pragma warning disable CS0618
+                if (clusterDescription.ConnectionMode == ClusterConnectionMode.Direct)
+#pragma warning restore CS0618
+                {
+                    return servers;
+                }
             }
 
             return servers.Where(x =>
