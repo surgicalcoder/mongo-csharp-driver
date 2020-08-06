@@ -89,10 +89,11 @@ namespace MongoDB.Driver.Core.Clusters
         [InlineData(ClusterConnectionMode.Direct)]
         [InlineData(ClusterConnectionMode.Standalone)]
         public void Constructor_should_throw_if_cluster_connection_mode_is_not_supported(ClusterConnectionMode mode)
-#pragma warning restore CS0618
         {
             var settings = new ClusterSettings(
                 endPoints: new[] { new DnsEndPoint("localhost", 27017) },
+                clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode,
+#pragma warning restore CS0618
                 connectionMode: mode);
             Action act = () => new MultiServerCluster(settings, _serverFactory, _capturedEvents);
 

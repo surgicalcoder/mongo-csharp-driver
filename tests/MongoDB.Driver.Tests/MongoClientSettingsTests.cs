@@ -520,6 +520,23 @@ namespace MongoDB.Driver.Tests
             var exception = Record.Exception(() => settings.Freeze());
 
             exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+            settings.Scheme = ConnectionStringScheme.MongoDBPlusSrv;
+
+            exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
+
+            settings = new MongoClientSettings();
+            settings.DirectConnection = true;
+            var endpoint = "test5.test.build.10gen.cc:53";
+            settings.Servers = new[] { MongoServerAddress.Parse(endpoint), MongoServerAddress.Parse(endpoint) };
+
+            exception = Record.Exception(() => settings.Freeze());
+
+            exception.Should().BeOfType<InvalidOperationException>();
         }
 
         [Fact]

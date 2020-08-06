@@ -226,7 +226,7 @@ namespace MongoDB.Driver
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoClientSettings.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
 
                 return _connectionMode;
@@ -237,7 +237,7 @@ namespace MongoDB.Driver
 
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoClientSettings.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
                 _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseConnectionMode;
 
@@ -310,7 +310,7 @@ namespace MongoDB.Driver
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
 #pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoClientSettings.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
 
                 return _directConnection;
@@ -321,7 +321,7 @@ namespace MongoDB.Driver
 
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoClientSettings.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
                 _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseDirectConnection;
 
@@ -1189,35 +1189,35 @@ namespace MongoDB.Driver
                 _waitQueueTimeout);
         }
 
-        private bool IsDirectConnection()
-        {
-            if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
-            {
-                return _directConnection.GetValueOrDefault();
-            }
-            else
-            {
-                return _connectionMode == ConnectionMode.Direct || _connectionMode == ConnectionMode.Standalone;
-            }
-        }
-
         private void ThrowIfSettingsAreInvalid()
         {
-            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && IsDirectConnection())
-            {
-                throw new InvalidOperationException("DirectConnection cannot be used with SRV.");
-            }
-
-            if (_servers.Count > 1 && IsDirectConnection())
-            {
-                throw new InvalidOperationException("DirectConnection cannot be used with multiple host names.");
-            }
- 
             if (_allowInsecureTls && _sslSettings != null && _sslSettings.CheckCertificateRevocation)
             {
                 throw new InvalidOperationException(
                         $"{nameof(AllowInsecureTls)} and {nameof(SslSettings)}" +
                         $".{nameof(_sslSettings.CheckCertificateRevocation)} cannot both be true.");
+            }
+
+            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && IsDirectConnection())
+            {
+                throw new InvalidOperationException($"{nameof(DirectConnection)} mode cannot be used with SRV.");
+            }
+
+            if (_servers.Count > 1 && IsDirectConnection())
+            {
+                throw new InvalidOperationException($"{nameof(DirectConnection)} mode cannot be used with multiple host names.");
+            }
+
+            bool IsDirectConnection()
+            {
+                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    return _directConnection.GetValueOrDefault();
+                }
+                else
+                {
+                    return _connectionMode == ConnectionMode.Direct;
+                }
             }
         }
     }

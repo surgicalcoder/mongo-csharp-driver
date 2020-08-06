@@ -250,7 +250,7 @@ namespace MongoDB.Driver
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoUrlBuilder.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
                 return _connectionMode;
             }
@@ -258,7 +258,7 @@ namespace MongoDB.Driver
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoUrlBuilder.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
                 _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
@@ -300,7 +300,7 @@ namespace MongoDB.Driver
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoUrlBuilder.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
                 return _directConnection;
             }
@@ -308,7 +308,7 @@ namespace MongoDB.Driver
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("MongoUrlBuilder.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
                 _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseDirectConnection;
                 _directConnection = value;

@@ -87,8 +87,18 @@ namespace MongoDB.Driver.Core.Configuration
         {
             _clusterConnectionModeSwitch = clusterConnectionModeSwitch.WithDefault(ClusterConnectionModeSwitch.NotSet);
 #pragma warning disable CS0618
+            if (connectionMode.HasValue && !clusterConnectionModeSwitch.HasValue)
+            {
+                // the ClusterConnectionModeSwitch value has not been provided
+                throw new InvalidOperationException("ClusterSettings.ConnectionMode must be used only with ClusterConnectionModeSwitch.");
+            }
             _connectionMode = connectionMode.WithDefault(ClusterConnectionMode.Automatic);
 #pragma warning restore CS0618
+            if (directConnection.HasValue && !clusterConnectionModeSwitch.HasValue)
+            {
+                // the ClusterConnectionModeSwitch value has not been provided
+                throw new InvalidOperationException("ClusterSettings.DirectConnection must be used only with ClusterConnectionModeSwitch.");
+            }
             _directConnection = directConnection.WithDefault(null);
             _endPoints = Ensure.IsNotNull(endPoints.WithDefault(__defaultEndPoints), "endPoints").ToList();
             _kmsProviders = kmsProviders.WithDefault(null);
@@ -125,7 +135,7 @@ namespace MongoDB.Driver.Core.Configuration
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("ClusterSettings.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
                 return _connectionMode;
             }
@@ -140,7 +150,7 @@ namespace MongoDB.Driver.Core.Configuration
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("ClusterSettings.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
                 return _directConnection;
             }

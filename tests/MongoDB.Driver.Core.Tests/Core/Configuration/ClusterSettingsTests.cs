@@ -83,11 +83,7 @@ namespace MongoDB.Driver.Core.Configuration
         {
 #pragma warning disable CS0618
             var connectionMode = ClusterConnectionMode.ReplicaSet;
-#pragma warning restore CS0618
-
-            var subject = new ClusterSettings(connectionMode: connectionMode);
-
-#pragma warning disable CS0618
+            var subject = new ClusterSettings(clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode, connectionMode: connectionMode);
             subject.ConnectionMode.Should().Be(connectionMode);
 #pragma warning restore CS0618
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
@@ -103,9 +99,9 @@ namespace MongoDB.Driver.Core.Configuration
         {
             var directConnection = false;
 
-            var subject = new ClusterSettings(directConnection: directConnection);
-
 #pragma warning disable CS0618
+            var subject = new ClusterSettings(clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseDirectConnection, directConnection: directConnection);
+
             subject.DirectConnection.Should().Be(directConnection);
 #pragma warning restore CS0618
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
@@ -262,8 +258,8 @@ namespace MongoDB.Driver.Core.Configuration
 #pragma warning disable CS0618
             var oldConnectionMode = ClusterConnectionMode.Automatic;
             var newConnectionMode = ClusterConnectionMode.ReplicaSet;
+            var subject = new ClusterSettings(clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode, connectionMode: oldConnectionMode);
 #pragma warning restore CS0618
-            var subject = new ClusterSettings(connectionMode: oldConnectionMode);
 
             var result = subject.With(connectionMode: newConnectionMode);
 

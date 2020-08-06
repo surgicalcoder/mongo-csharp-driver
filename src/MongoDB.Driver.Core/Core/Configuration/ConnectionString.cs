@@ -224,7 +224,7 @@ namespace MongoDB.Driver.Core.Configuration
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("ConnectionString.Connect cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
 
                 return _connect.GetValueOrDefault();
@@ -256,7 +256,7 @@ namespace MongoDB.Driver.Core.Configuration
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("ConnectionString.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
 
                 return _directConnection;

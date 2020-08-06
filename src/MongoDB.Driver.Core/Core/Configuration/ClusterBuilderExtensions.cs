@@ -175,7 +175,17 @@ namespace MongoDB.Driver.Core.Configuration
 
             // Cluster
 #pragma warning disable CS0618
-            builder = builder.ConfigureCluster(s => s.With(connectionMode: connectionString.Connect, directConnection: connectionString.DirectConnection));
+            builder = builder.ConfigureCluster(s =>
+            {
+                if (connectionString.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                {
+                    return s.With(directConnection: connectionString.DirectConnection);
+                }
+                else
+                {
+                    return s.With(connectionMode: connectionString.Connect);
+                }
+            });
 #pragma warning restore CS0618
             if (connectionString.Hosts.Count > 0)
             {

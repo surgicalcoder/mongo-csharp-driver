@@ -269,7 +269,7 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("ClusterDescription.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
                 }
                 return _connectionMode;
             }
@@ -293,7 +293,7 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("ClusterDescription.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
                 }
                 return _directConnection;
             }
