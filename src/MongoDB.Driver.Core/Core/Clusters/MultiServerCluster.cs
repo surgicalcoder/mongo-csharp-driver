@@ -333,6 +333,7 @@ namespace MongoDB.Driver.Core.Clusters
                                 break;
 
                             case ClusterType.ReplicaSet:
+                            case ClusterType.Unknown when newServerDescription.Type == ServerType.ReplicaSetGhost: // update serverDescription in clusterDescription
                                 newClusterDescription = ProcessReplicaSetChange(newClusterDescription, args, newServers);
                                 break;
 

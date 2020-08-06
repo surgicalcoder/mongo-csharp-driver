@@ -71,9 +71,7 @@ namespace MongoDB.Driver
             Action<ClusterBuilder> clusterConfigurator,
 #pragma warning disable CS0618
             ClusterConnectionModeSwitch clusterConnectionModeSwitch,
-#pragma warning restore CS0618
             IReadOnlyList<CompressorConfiguration> compressors,
-#pragma warning disable CS0618
             ConnectionMode connectionMode,
 #pragma warning restore CS0618
             TimeSpan connectTimeout,

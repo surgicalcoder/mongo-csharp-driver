@@ -260,9 +260,9 @@ namespace MongoDB.Driver.Core.Configuration
         /// <summary>
         /// Returns a new ClusterSettings instance with some settings changed.
         /// </summary>
-        /// <param name="clusterConnectionModeSwitch">TODO</param>
+        /// <param name="clusterConnectionModeSwitch">The cluster connectionMode switch.</param>
         /// <param name="connectionMode">The connection mode.</param>
-        /// <param name="directConnection">TODO</param>
+        /// <param name="directConnection">The directConnection.</param>
         /// <param name="endPoints">The end points.</param>
         /// <param name="kmsProviders">The kms providers.</param>
         /// <param name="localThreshold">The local threshold.</param>

@@ -102,27 +102,41 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
 
         private void VerifyTopology(ICluster cluster, string expectedType)
         {
+            var clusterDescription = cluster.Description;
             switch (expectedType)
             {
                 case "Single":
                     if (cluster is SingleServerCluster singleServerCluster)
                     {
 #pragma warning disable 618
-                        singleServerCluster.Description.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
-                        singleServerCluster
-                           .Settings
-                           .Should()
-                           .Match<ClusterSettings>(m => !m.DirectConnection.HasValue || m.DirectConnection.Value);
+
+                        if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                        {
+                            singleServerCluster
+                               .Settings
+                               .Should()
+                               .Match<ClusterSettings>(m => !m.DirectConnection.HasValue || m.DirectConnection.Value);
+                        }
+                        else
+                        {
+                            singleServerCluster.Description.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+                        }
                     }
                     else if (cluster is MultiServerCluster multiServerCluster)
                     {
-                        multiServerCluster.Description.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+                        if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                        {
+                            multiServerCluster
+                                .Settings
+                                .Should()
+                                .Match<ClusterSettings>(m => !m.DirectConnection.HasValue || !m.DirectConnection.Value);
+                        }
+                        else
+                        {
+                            multiServerCluster.Description.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+                        }
 #pragma warning restore 618
                         multiServerCluster.Description.Type.Should().Be(ClusterType.Standalone);
-                        multiServerCluster
-                            .Settings
-                            .Should()
-                            .Match<ClusterSettings>(m => !m.DirectConnection.HasValue || !m.DirectConnection.Value);
                     }
                     else
                     {
@@ -286,7 +300,8 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             var settings = new ClusterSettings(
 #pragma warning disable CS0618
                 clusterConnectionModeSwitch: connectionString.ClusterConnectionModeSwitch,
-                endPoints: Optional.Enumerable(connectionString.Hosts));
+                endPoints: Optional.Enumerable(connectionString.Hosts),
+                replicaSetName: connectionString.ReplicaSet);
             if (settings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {

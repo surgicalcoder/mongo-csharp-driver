@@ -792,11 +792,11 @@ namespace MongoDB.Driver
             serverSettings.Compressors = clientSettings.Compressors;
 #pragma warning disable CS0618
             serverSettings._clusterConnectionModeSwitch = clientSettings.ClusterConnectionModeSwitch;
-            if (clientSettings.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (clientSettings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
             {
                 serverSettings.ConnectionMode = clientSettings.ConnectionMode;
             }
-            else
+            else if (clientSettings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
             {
                 serverSettings.DirectConnection = clientSettings.DirectConnection;
             }
@@ -870,11 +870,11 @@ namespace MongoDB.Driver
             }
 #pragma warning disable 618
             // serverSettings._clusterConnectionModeSwitch will be calculated automatically
-            if (url.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (url.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
             {
                 serverSettings.ConnectionMode = url.ConnectionMode;
             }
-            else
+            else if (url.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
             {
                 serverSettings.DirectConnection = url.DirectConnection;
             }

@@ -105,12 +105,12 @@ namespace MongoDB.Driver
 #pragma warning restore CS0618
             _compressors = builder.Compressors;
 #pragma warning disable CS0618
-            if (builder.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (builder.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
             {
                 _connectionMode = builder.ConnectionMode;
-#pragma warning restore CS0618
             }
-            else
+            else if (builder.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
             {
                 _directConnection = builder.DirectConnection;
             }

@@ -57,7 +57,11 @@ namespace MongoDB.Driver.Core.Clusters
                 useSingleServerCluster =
                     connectionMode == ClusterConnectionMode.Direct ||
                     connectionMode == ClusterConnectionMode.Standalone ||
-                    clusterSettings.EndPoints.Count == 1 && clusterSettings.Scheme != ConnectionStringScheme.MongoDBPlusSrv;
+                    (
+                        connectionMode == ClusterConnectionMode.Automatic &&
+                        clusterSettings.EndPoints.Count == 1 &&
+                        clusterSettings.Scheme != ConnectionStringScheme.MongoDBPlusSrv
+                    );
             }
             else
             {

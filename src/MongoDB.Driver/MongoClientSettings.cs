@@ -841,12 +841,12 @@ namespace MongoDB.Driver
                 clientSettings.Credential = credential;
             }
 #pragma warning disable CS0618
-            if (url.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (url.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
             {
                 clientSettings.ConnectionMode = url.ConnectionMode;
-#pragma warning restore CS0618
             }
-            else
+            else if (url.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
             {
                 clientSettings.DirectConnection = url.DirectConnection;
             }

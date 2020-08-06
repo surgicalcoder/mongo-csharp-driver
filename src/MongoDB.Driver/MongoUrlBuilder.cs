@@ -768,7 +768,7 @@ namespace MongoDB.Driver
 #pragma warning restore CS0618
             _compressors = connectionString.Compressors;
 #pragma warning disable CS0618
-            if (_clusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
             {
                 switch (connectionString.Connect)
                 {
@@ -791,7 +791,7 @@ namespace MongoDB.Driver
                 _directConnection = null; // reset
             }
 #pragma warning restore CS0618
-            else
+            else if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
             {
                 _directConnection = connectionString.DirectConnection;
                 _connectionMode = ConnectionMode.Automatic; // reset
@@ -997,7 +997,7 @@ namespace MongoDB.Driver
                 }
             }
 #pragma warning disable CS0618
-            if (_clusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
             {
                 if (_connectionMode != ConnectionMode.Automatic)
                 {
@@ -1005,7 +1005,7 @@ namespace MongoDB.Driver
                 }
             }
 #pragma warning restore CS0618
-            else
+            else if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
             {
                 if (_directConnection.HasValue)
                 {

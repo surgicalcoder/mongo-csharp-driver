@@ -56,15 +56,15 @@ namespace MongoDB.Driver.Core.Clusters
     public enum ClusterConnectionModeSwitch
     {
         /// <summary>
-        /// TODO
+        /// The connectionMode is not specified.
         /// </summary>
         NotSet,
         /// <summary>
-        /// TODO
+        /// The legacy connectionMode.
         /// </summary>
         UseConnectionMode,
         /// <summary>
-        /// TODO
+        /// The connectionMode based on directConnection.
         /// </summary>
         UseDirectConnection
     }

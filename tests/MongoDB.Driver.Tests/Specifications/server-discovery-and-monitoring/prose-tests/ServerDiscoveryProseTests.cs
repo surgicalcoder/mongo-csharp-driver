@@ -51,7 +51,6 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring.pr
             }
 
             var dnsEndpoint = (DnsEndPoint)secondary.EndPoint;
-            // TODO: use common way
             using (var client = new DisposableMongoClient(new MongoClient(CreateConnectionString(dnsEndpoint, directConnection))))
             {
                 var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
