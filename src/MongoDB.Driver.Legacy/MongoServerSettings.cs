@@ -35,13 +35,11 @@ namespace MongoDB.Driver
         // private fields
         private bool _allowInsecureTls;
         private string _applicationName;
-#pragma warning disable CS0618
-        private ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
-#pragma warning restore CS0618
         private Action<ClusterBuilder> _clusterConfigurator;
         private IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable CS0618
         private ConnectionMode _connectionMode;
+        private ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private TimeSpan _connectTimeout;
         private MongoCredentialStore _credentials;
@@ -87,11 +85,11 @@ namespace MongoDB.Driver
         {
             _allowInsecureTls = false;
             _applicationName = null;
-#pragma warning disable CS0618
-            _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet;
-#pragma warning restore CS0618
             _compressors = new CompressorConfiguration[0];
+#pragma warning disable CS0618
             _connectionMode = ConnectionMode.Automatic;
+            _connectionModeSwitch = ConnectionModeSwitch.NotSet;
+#pragma warning restore CS0618
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _credentials = new MongoCredentialStore(new MongoCredential[0]);
             _directConnection = null;
@@ -174,13 +172,6 @@ namespace MongoDB.Driver
             }
         }
 
-#pragma warning disable CS0618
-        internal ClusterConnectionModeSwitch ClusterConnectionModeSwitch
-#pragma warning restore CS0618
-        {
-            get { return _clusterConnectionModeSwitch;}
-        }
-
         /// <summary>
         /// Gets or sets the cluster configurator.
         /// </summary>
@@ -215,23 +206,30 @@ namespace MongoDB.Driver
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("MongoServerSettings.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 return _connectionMode;
             }
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("MongoServerSettings.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
-                _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseConnectionMode;
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
                 _directConnection = null;
             }
+        }
+
+#pragma warning disable CS0618
+        internal ConnectionModeSwitch ConnectionModeSwitch
+#pragma warning restore CS0618
+        {
+            get { return _connectionModeSwitch; }
         }
 
         /// <summary>
@@ -293,10 +291,10 @@ namespace MongoDB.Driver
             get
             {
 #pragma warning disable CS0618
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
 #pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException("MongoServerSettings.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
                 return _directConnection;
             }
@@ -304,13 +302,13 @@ namespace MongoDB.Driver
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
 #pragma warning disable CS0618
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
 #pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException("MongoServerSettings.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
 
-                _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseDirectConnection;
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
                 _directConnection = value;
                 _connectionMode = ConnectionMode.Automatic;
             }
@@ -791,12 +789,12 @@ namespace MongoDB.Driver
             serverSettings.ClusterConfigurator = clientSettings.ClusterConfigurator;
             serverSettings.Compressors = clientSettings.Compressors;
 #pragma warning disable CS0618
-            serverSettings._clusterConnectionModeSwitch = clientSettings.ClusterConnectionModeSwitch;
-            if (clientSettings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+            serverSettings._connectionModeSwitch = clientSettings.ConnectionModeSwitch;
+            if (clientSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 serverSettings.ConnectionMode = clientSettings.ConnectionMode;
             }
-            else if (clientSettings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            else if (clientSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
                 serverSettings.DirectConnection = clientSettings.DirectConnection;
             }
@@ -870,11 +868,11 @@ namespace MongoDB.Driver
             }
 #pragma warning disable 618
             // serverSettings._clusterConnectionModeSwitch will be calculated automatically
-            if (url.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 serverSettings.ConnectionMode = url.ConnectionMode;
             }
-            else if (url.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            else if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
                 serverSettings.DirectConnection = url.DirectConnection;
             }
@@ -928,7 +926,7 @@ namespace MongoDB.Driver
             clone._allowInsecureTls = _allowInsecureTls;
             clone._applicationName = _applicationName;
             clone._clusterConfigurator = _clusterConfigurator;
-            clone._clusterConnectionModeSwitch = _clusterConnectionModeSwitch;
+            clone._connectionModeSwitch = _connectionModeSwitch;
             clone._compressors = _compressors;
             clone._connectionMode = _connectionMode;
             clone._connectTimeout = _connectTimeout;
@@ -1186,9 +1184,9 @@ namespace MongoDB.Driver
                 _allowInsecureTls,
                 _applicationName,
                 _clusterConfigurator,
-                _clusterConnectionModeSwitch,
                 _compressors,
                 _connectionMode,
+                _connectionModeSwitch,
                 _connectTimeout,
                 _credentials.ToList(),
                 _directConnection,
@@ -1244,7 +1242,7 @@ namespace MongoDB.Driver
 
             bool IsDirectConnection()
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     return _directConnection.GetValueOrDefault();
                 }

@@ -92,7 +92,7 @@ namespace MongoDB.Driver.Core.Clusters
         {
             var settings = new ClusterSettings(
                 endPoints: new[] { new DnsEndPoint("localhost", 27017) },
-                clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode,
+                connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode,
 #pragma warning restore CS0618
                 connectionMode: mode);
             Action act = () => new MultiServerCluster(settings, _serverFactory, _capturedEvents);
@@ -344,7 +344,7 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 var clusterSettings = new ClusterSettings(
 #pragma warning disable CS0618
-                    clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode,
+                    connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode,
 #pragma warning restore CS0618
                     connectionMode: connectionMode);
                 var result = subject.IsServerValidForCluster(clusterType, clusterSettings, serverType);
@@ -364,7 +364,7 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 var clusterSettings = new ClusterSettings(
 #pragma warning disable CS0618
-                    clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode,
+                    connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode,
 #pragma warning restore CS0618
                     connectionMode: connectionMode);
                 var exception = Record.Exception(() => subject.IsServerValidForCluster(clusterType, clusterSettings, ServerType.Unknown));

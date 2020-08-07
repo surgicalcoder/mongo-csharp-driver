@@ -91,7 +91,7 @@ namespace MongoDB.Driver
                 schemaMap: Optional.Create(clusterKey.SchemaMap),
                 scheme: clusterKey.Scheme);
 #pragma warning disable CS0618
-            if (clusterKey.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            if (clusterKey.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {
                 return settings.With(directConnection: clusterKey.DirectConnection);

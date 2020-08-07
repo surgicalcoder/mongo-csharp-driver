@@ -91,13 +91,13 @@ namespace MongoDB.Driver.Core.Clusters
 
             _clusterId = new ClusterId();
 #pragma warning disable CS0618
-            if (_settings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            if (_settings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
                 _description = ClusterDescription.CreateInitial(_clusterId, _settings.DirectConnection);
             }
             else
             {
-                _description = ClusterDescription.CreateInitial(_clusterId, _settings.ClusterConnectionModeSwitch, _settings.ConnectionMode);
+                _description = ClusterDescription.CreateInitial(_clusterId, _settings.ConnectionModeSwitch, _settings.ConnectionMode);
             }
 #pragma warning restore CS0618
             _descriptionChangedTaskCompletionSource = new TaskCompletionSource<bool>();
@@ -166,7 +166,7 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 ClusterDescription newClusterDescription;
 #pragma warning disable CS0618
-                if (_description.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_description.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
                 {
                     newClusterDescription = new ClusterDescription(

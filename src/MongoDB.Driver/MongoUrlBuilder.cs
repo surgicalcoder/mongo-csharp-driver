@@ -43,12 +43,10 @@ namespace MongoDB.Driver
         private string _authenticationMechanism;
         private Dictionary<string, string> _authenticationMechanismProperties;
         private string _authenticationSource;
-#pragma warning disable CS0618
-        private ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
-#pragma warning restore CS0618
         private IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable CS0618
         private ConnectionMode _connectionMode;
+        private ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private TimeSpan _connectTimeout;
         private string _databaseName;
@@ -94,11 +92,11 @@ namespace MongoDB.Driver
             _authenticationMechanism = MongoDefaults.AuthenticationMechanism;
             _authenticationMechanismProperties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _authenticationSource = null;
-#pragma warning disable CS0618
-            _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet;
-#pragma warning restore CS0618
             _compressors = new CompressorConfiguration[0];
             _connectionMode = ConnectionMode.Automatic;
+#pragma warning disable CS0618
+            _connectionModeSwitch = ConnectionModeSwitch.NotSet;
+#pragma warning restore CS0618
             _connectTimeout = MongoDefaults.ConnectTimeout;
             _databaseName = null;
             _directConnection = null;
@@ -204,15 +202,6 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the cluster connectionMode switch.
-        /// </summary>
-        [Obsolete("Will be removed in a later version.")]
-        public ClusterConnectionModeSwitch ClusterConnectionModeSwitch
-        {
-            get { return _clusterConnectionModeSwitch; }
-        }
-
-        /// <summary>
         /// Gets or sets the compressors.
         /// </summary>
         public IReadOnlyList<CompressorConfiguration> Compressors
@@ -248,22 +237,31 @@ namespace MongoDB.Driver
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("MongoUrlBuilder.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 return _connectionMode;
             }
             set
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("MongoUrlBuilder.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
-                _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseConnectionMode;
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
                 _directConnection = null;
             }
+        }
+
+        /// <summary>
+        /// Gets the connectionMode switch.
+        /// </summary>
+        [Obsolete("Will be removed in a later version.")]
+        public ConnectionModeSwitch ConnectionModeSwitch
+        {
+            get { return _connectionModeSwitch; }
         }
 
         /// <summary>
@@ -298,19 +296,23 @@ namespace MongoDB.Driver
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning disable CS0618
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException("MongoUrlBuilder.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
                 return _directConnection;
             }
             set
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning disable CS0618
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
                 {
-                    throw new InvalidOperationException("MongoUrlBuilder.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
-                _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseDirectConnection;
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
+#pragma warning restore CS0618
                 _directConnection = value;
                 _connectionMode = ConnectionMode.Automatic;
             }
@@ -763,12 +765,10 @@ namespace MongoDB.Driver
             _authenticationMechanism = connectionString.AuthMechanism;
             _authenticationMechanismProperties = connectionString.AuthMechanismProperties.ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
             _authenticationSource = connectionString.AuthSource;
-#pragma warning disable CS0618
-            _clusterConnectionModeSwitch = connectionString.ClusterConnectionModeSwitch;
-#pragma warning restore CS0618
             _compressors = connectionString.Compressors;
 #pragma warning disable CS0618
-            if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+            _connectionModeSwitch = connectionString.ConnectionModeSwitch;
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 switch (connectionString.Connect)
                 {
@@ -790,8 +790,8 @@ namespace MongoDB.Driver
                 }
                 _directConnection = null; // reset
             }
+            else if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
-            else if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
             {
                 _directConnection = connectionString.DirectConnection;
                 _connectionMode = ConnectionMode.Automatic; // reset
@@ -997,15 +997,15 @@ namespace MongoDB.Driver
                 }
             }
 #pragma warning disable CS0618
-            if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 if (_connectionMode != ConnectionMode.Automatic)
                 {
                     query.AppendFormat("connect={0};", MongoUtils.ToCamelCase(_connectionMode.ToString()));
                 }
             }
+            else if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
-            else if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
             {
                 if (_directConnection.HasValue)
                 {

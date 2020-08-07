@@ -128,16 +128,16 @@ namespace MongoDB.Driver.Tests
 
         [Theory]
 #pragma warning disable CS0618
-        [InlineData(ClusterConnectionModeSwitch.NotSet, "directConnection", false)]
-        [InlineData(ClusterConnectionModeSwitch.NotSet, "connect", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
-        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "connect", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "directConnection", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "connect", true)]
-        public void Property_getter_shoud_throw_when_clusterConnectionModeSwitch_is_unexpected(ClusterConnectionModeSwitch clusterConnectionModeSwitch, string property, bool shouldFail)
+        [InlineData(ConnectionModeSwitch.NotSet, "directConnection", false)]
+        [InlineData(ConnectionModeSwitch.NotSet, "connect", false)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, "connect", false)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, "directConnection", false)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, "connect", true)]
+        public void Property_getter_shoud_throw_when_connectionModeSwitch_is_unexpected(ConnectionModeSwitch connectionModeSwitch, string property, bool shouldFail)
 #pragma warning restore CS0618
         {
-            var subject = CreateSubjectWith(clusterConnectionModeSwitch: clusterConnectionModeSwitch);
+            var subject = CreateSubjectWith(connectionModeSwitch: connectionModeSwitch);
 
             Exception exception;
             switch (property)
@@ -166,7 +166,7 @@ namespace MongoDB.Driver.Tests
             var applicationName = "app1";
             var clusterConfigurator = new Action<ClusterBuilder>(b => { });
 #pragma warning disable CS0618
-            var clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet;
+            var connectionModeSwitch = ConnectionModeSwitch.NotSet;
 #pragma warning restore CS0618
             var compressors = new CompressorConfiguration[0];
 #pragma warning disable CS0618
@@ -250,9 +250,9 @@ namespace MongoDB.Driver.Tests
                 allowInsecureTls,
                 applicationName,
                 clusterConfigurator,
-                clusterConnectionModeSwitch,
                 compressors,
                 connectionMode,
+                connectionModeSwitch,
                 connectTimeout,
                 credentials,
                 directConnection,
@@ -284,7 +284,7 @@ namespace MongoDB.Driver.Tests
             Dictionary<string, IReadOnlyDictionary<string, object>> kmsProvidersValue = null,
             Dictionary<string, BsonDocument> schemaMapValue = null,
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet)
+            ConnectionModeSwitch connectionModeSwitch = ConnectionModeSwitch.NotSet)
 #pragma warning restore CS0618
         {
             var allowInsecureTls = true;
@@ -330,9 +330,9 @@ namespace MongoDB.Driver.Tests
                 allowInsecureTls,
                 applicationName,
                 clusterConfigurator,
-                clusterConnectionModeSwitch,
                 compressors,
                 connectionMode,
+                connectionModeSwitch,
                 connectTimeout,
                 credentials,
                 directConnection,

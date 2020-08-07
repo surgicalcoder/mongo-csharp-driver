@@ -268,12 +268,10 @@ namespace MongoDB.Driver.Core.Configuration
             subject.ApplicationName.Should().BeNull();
             subject.AuthMechanism.Should().BeNull();
             subject.AuthSource.Should().BeNull();
-#pragma warning disable CS0618
-            subject.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.NotSet);
-#pragma warning restore CS0618
             subject.Compressors.Should().BeEmpty();
 #pragma warning disable CS0618
             subject.Connect.Should().Be(ClusterConnectionMode.Automatic);
+            subject.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
             subject.ConnectTimeout.Should().Be(null);
             subject.DatabaseName.Should().BeNull();
@@ -360,8 +358,8 @@ namespace MongoDB.Driver.Core.Configuration
             subject.Compressors.Select(x => x.Type).Should().Equal(expectedCompressorTypes);
             subject.Compressors.Single(x => x.Type == CompressorType.Zlib).Properties["Level"].Should().Be(4);
 #pragma warning disable CS0618
-            subject.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.UseConnectionMode);
             subject.Connect.Should().Be(ClusterConnectionMode.ReplicaSet);
+            subject.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.UseConnectionMode);
 #pragma warning restore CS0618
             subject.ConnectTimeout.Should().Be(TimeSpan.FromMilliseconds(15));
             subject.DatabaseName.Should().Be("test");
@@ -498,7 +496,7 @@ namespace MongoDB.Driver.Core.Configuration
             var subject = new ConnectionString(connectionString);
 
             subject.Connect.Should().Be(connect);
-            subject.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.UseConnectionMode);
+            subject.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.UseConnectionMode);
         }
 #pragma warning restore CS0618
 
@@ -546,8 +544,8 @@ namespace MongoDB.Driver.Core.Configuration
             var subject = new ConnectionString(connectionString);
 
 #pragma warning disable CS0618
+            subject.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.UseDirectConnection);
             subject.DirectConnection.Should().Be(directConnection);
-            subject.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.UseDirectConnection);
 #pragma warning restore CS0618
         }
 

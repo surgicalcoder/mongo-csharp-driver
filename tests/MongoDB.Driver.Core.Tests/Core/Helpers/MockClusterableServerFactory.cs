@@ -81,8 +81,8 @@ namespace MongoDB.Driver.Core.Helpers
                             clusterId,
                             clusterClock,
 #pragma warning disable CS0618
-                            ClusterConnectionModeSwitch.UseConnectionMode,
                             ClusterConnectionMode.Automatic,
+                            ConnectionModeSwitch.UseConnectionMode,
 #pragma warning restore CS0618
                             directConnection: null,
                             new ServerSettings(),

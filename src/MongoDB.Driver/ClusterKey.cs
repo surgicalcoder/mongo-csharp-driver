@@ -30,12 +30,10 @@ namespace MongoDB.Driver
         private readonly bool _allowInsecureTls;
         private readonly string _applicationName;
         private readonly Action<ClusterBuilder> _clusterConfigurator;
-#pragma warning disable CS0618
-        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
-#pragma warning restore CS0618
         private readonly IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable CS0618
         private readonly ConnectionMode _connectionMode;
+        private readonly ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private readonly TimeSpan _connectTimeout;
         private readonly IReadOnlyList<MongoCredential> _credentials;
@@ -69,10 +67,10 @@ namespace MongoDB.Driver
             bool allowInsecureTls,
             string applicationName,
             Action<ClusterBuilder> clusterConfigurator,
-#pragma warning disable CS0618
-            ClusterConnectionModeSwitch clusterConnectionModeSwitch,
             IReadOnlyList<CompressorConfiguration> compressors,
+#pragma warning disable CS0618
             ConnectionMode connectionMode,
+            ConnectionModeSwitch connectionModeSwitch,
 #pragma warning restore CS0618
             TimeSpan connectTimeout,
             IReadOnlyList<MongoCredential> credentials,
@@ -103,9 +101,9 @@ namespace MongoDB.Driver
             _allowInsecureTls = allowInsecureTls;
             _applicationName = applicationName;
             _clusterConfigurator = clusterConfigurator;
-            _clusterConnectionModeSwitch = clusterConnectionModeSwitch;
             _compressors = compressors;
             _connectionMode = connectionMode;
+            _connectionModeSwitch = connectionModeSwitch;
             _connectTimeout = connectTimeout;
             _credentials = credentials;
             _directConnection = directConnection;
@@ -138,24 +136,22 @@ namespace MongoDB.Driver
         // properties
         public bool AllowInsecureTls => _allowInsecureTls;
         public string ApplicationName { get { return _applicationName; } }
-        [Obsolete("Will be removed in a later version.")]
-        public ClusterConnectionModeSwitch ClusterConnectionModeSwitch => _clusterConnectionModeSwitch;
         public Action<ClusterBuilder> ClusterConfigurator { get { return _clusterConfigurator; } }
         public IReadOnlyList<CompressorConfiguration> Compressors { get { return _compressors; } }
-#pragma warning disable CS0618
         [Obsolete("Use DirectConnection instead.")]
         public ConnectionMode ConnectionMode
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("ClusterKey.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 return _connectionMode;
             }
         }
-#pragma warning restore CS0618
+        [Obsolete("Will be removed in a later version.")]
+        public ConnectionModeSwitch ConnectionModeSwitch => _connectionModeSwitch;
         public TimeSpan ConnectTimeout { get { return _connectTimeout; } }
         public IReadOnlyList<MongoCredential> Credentials { get { return _credentials; } }
         public bool? DirectConnection
@@ -163,10 +159,10 @@ namespace MongoDB.Driver
             get
             {
 #pragma warning disable CS0618
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
 #pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException("ClusterKey.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
                 return _directConnection;
             }

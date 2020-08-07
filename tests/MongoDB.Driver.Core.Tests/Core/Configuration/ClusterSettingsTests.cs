@@ -33,8 +33,8 @@ namespace MongoDB.Driver.Core.Configuration
             var subject = new ClusterSettings();
 
 #pragma warning disable CS0618
-            subject.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.NotSet);
             subject.ConnectionMode.Should().Be(ClusterConnectionMode.Automatic);
+            subject.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
             subject.DirectConnection.Should().Be(null);
             subject.EndPoints.Should().EqualUsing(new[] { new DnsEndPoint("localhost", 27017) }, EndPointHelper.EndPointEqualityComparer);
@@ -83,7 +83,7 @@ namespace MongoDB.Driver.Core.Configuration
         {
 #pragma warning disable CS0618
             var connectionMode = ClusterConnectionMode.ReplicaSet;
-            var subject = new ClusterSettings(clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode, connectionMode: connectionMode);
+            var subject = new ClusterSettings(connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode, connectionMode: connectionMode);
             subject.ConnectionMode.Should().Be(connectionMode);
 #pragma warning restore CS0618
             subject.EndPoints.Should().EqualUsing(__defaults.EndPoints, EndPointHelper.EndPointEqualityComparer);
@@ -100,7 +100,7 @@ namespace MongoDB.Driver.Core.Configuration
             var directConnection = false;
 
 #pragma warning disable CS0618
-            var subject = new ClusterSettings(clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseDirectConnection, directConnection: directConnection);
+            var subject = new ClusterSettings(connectionModeSwitch: ConnectionModeSwitch.UseDirectConnection, directConnection: directConnection);
 
             subject.DirectConnection.Should().Be(directConnection);
 #pragma warning restore CS0618
@@ -221,16 +221,16 @@ namespace MongoDB.Driver.Core.Configuration
 
         [Theory]
 #pragma warning disable CS0618
-        [InlineData(ClusterConnectionModeSwitch.NotSet, "directConnection", false)]
-        [InlineData(ClusterConnectionModeSwitch.NotSet, "connect", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
-        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "connect", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "directConnection", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "connect", true)]
-        public void Property_getter_shoud_throw_when_clusterConnectionModeSwitch_is_unexpected(ClusterConnectionModeSwitch clusterConnectionModeSwitch, string property, bool shouldFail)
+        [InlineData(ConnectionModeSwitch.NotSet, "directConnection", false)]
+        [InlineData(ConnectionModeSwitch.NotSet, "connect", false)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, "connect", false)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, "directConnection", false)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, "connect", true)]
+        public void Property_getter_shoud_throw_when_connectionModeSwitch_is_unexpected(ConnectionModeSwitch connectionModeSwitch, string property, bool shouldFail)
 #pragma warning restore CS0618
         {
-            var subject = new ClusterSettings(clusterConnectionModeSwitch: clusterConnectionModeSwitch);
+            var subject = new ClusterSettings(connectionModeSwitch: connectionModeSwitch);
 
             Exception exception;
             switch (property)
@@ -258,7 +258,7 @@ namespace MongoDB.Driver.Core.Configuration
 #pragma warning disable CS0618
             var oldConnectionMode = ClusterConnectionMode.Automatic;
             var newConnectionMode = ClusterConnectionMode.ReplicaSet;
-            var subject = new ClusterSettings(clusterConnectionModeSwitch: ClusterConnectionModeSwitch.UseConnectionMode, connectionMode: oldConnectionMode);
+            var subject = new ClusterSettings(connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode, connectionMode: oldConnectionMode);
 #pragma warning restore CS0618
 
             var result = subject.With(connectionMode: newConnectionMode);

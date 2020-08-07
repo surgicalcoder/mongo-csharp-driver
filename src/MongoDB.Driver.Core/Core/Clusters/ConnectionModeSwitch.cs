@@ -1,4 +1,4 @@
-/* Copyright 2013-present MongoDB Inc.
+﻿/* Copyright 2020-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -18,34 +18,22 @@ using System;
 namespace MongoDB.Driver.Core.Clusters
 {
     /// <summary>
-    /// Represents the cluster connection mode.
+    /// Determine whether to use legacy ConnectMode or DirectConnection.
     /// </summary>
-    [Obsolete("Use DirectConnection instead.")]
-    public enum ClusterConnectionMode
+    [Obsolete("Will be removed in a later version.")]
+    public enum ConnectionModeSwitch
     {
         /// <summary>
-        /// Determine the cluster type automatically.
+        /// The connectionMode is not specified.
         /// </summary>
-        Automatic,
-
+        NotSet,
         /// <summary>
-        /// Connect directly to a single server of any type.
+        /// The legacy connectionMode.
         /// </summary>
-        Direct,
-
+        UseConnectionMode,
         /// <summary>
-        /// Connect directly to a Standalone server.
+        /// The connectionMode based on directConnection.
         /// </summary>
-        Standalone,
-
-        /// <summary>
-        /// Connect to a replica set.
-        /// </summary>
-        ReplicaSet,
-
-        /// <summary>
-        /// Connect to one or more shard routers.
-        /// </summary>
-        Sharded
+        UseDirectConnection
     }
 }

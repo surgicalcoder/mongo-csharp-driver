@@ -54,7 +54,7 @@ namespace MongoDB.Driver
             bool IsDirectConnection()
             {
 #pragma warning disable CS0618
-                if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     return clusterDescription.DirectConnection.GetValueOrDefault();
                 }

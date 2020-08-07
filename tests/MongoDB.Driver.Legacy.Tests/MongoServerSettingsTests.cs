@@ -248,8 +248,8 @@ namespace MongoDB.Driver.Tests
         {
             var settings = new MongoServerSettings();
 #pragma warning disable CS0618
-            settings.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.NotSet);
             settings.ConnectionMode.Should().Be(ConnectionMode.Automatic);
+            settings.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
             settings.DirectConnection.Should().NotHaveValue();
 
@@ -260,7 +260,7 @@ namespace MongoDB.Driver.Tests
             };
 
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch? firstClusterConnectionModeSwitch = null;
+            ConnectionModeSwitch? firstConnectionModeSwitch = null;
 #pragma warning restore CS0618
 
             foreach (var propertySet in testSteps)
@@ -289,11 +289,11 @@ namespace MongoDB.Driver.Tests
                 }
 
 #pragma warning disable CS0618
-                if (!firstClusterConnectionModeSwitch.HasValue)
+                if (!firstConnectionModeSwitch.HasValue)
                 {
-                    firstClusterConnectionModeSwitch = settings.ClusterConnectionModeSwitch;
+                    firstConnectionModeSwitch = settings.ConnectionModeSwitch;
                 }
-                settings.ClusterConnectionModeSwitch.Should().Be(firstClusterConnectionModeSwitch); // the exception won't change it
+                settings.ConnectionModeSwitch.Should().Be(firstConnectionModeSwitch); // the exception won't change it
 #pragma warning restore CS0618
             }
 

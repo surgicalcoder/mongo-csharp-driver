@@ -42,12 +42,10 @@ namespace MongoDB.Driver
         private readonly string _authenticationMechanism;
         private readonly IEnumerable<KeyValuePair<string, string>> _authenticationMechanismProperties;
         private readonly string _authenticationSource;
-#pragma warning disable CS0618
-        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
-#pragma warning restore CS0618
         private readonly IReadOnlyList<CompressorConfiguration> _compressors;
 #pragma warning disable CS0618
         private readonly ConnectionMode _connectionMode;
+        private readonly ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private readonly TimeSpan _connectTimeout;
         private readonly string _databaseName;
@@ -100,16 +98,14 @@ namespace MongoDB.Driver
             _authenticationMechanism = builder.AuthenticationMechanism;
             _authenticationMechanismProperties = builder.AuthenticationMechanismProperties;
             _authenticationSource = builder.AuthenticationSource;
-#pragma warning disable CS0618
-            _clusterConnectionModeSwitch = builder.ClusterConnectionModeSwitch;
-#pragma warning restore CS0618
             _compressors = builder.Compressors;
 #pragma warning disable CS0618
-            if (builder.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+            _connectionModeSwitch = builder.ConnectionModeSwitch;
+            if (builder.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 _connectionMode = builder.ConnectionMode;
             }
-            else if (builder.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            else if (builder.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {
                 _directConnection = builder.DirectConnection;
@@ -206,15 +202,6 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the cluster conenctionMode switch.
-        /// </summary>
-        [Obsolete("Will be removed in a later version.")]
-        public ClusterConnectionModeSwitch ClusterConnectionModeSwitch
-        {
-            get { return _clusterConnectionModeSwitch; }
-        }
-
-        /// <summary>
         /// Gets the compressors.
         /// </summary>
         public IReadOnlyList<CompressorConfiguration> Compressors
@@ -249,12 +236,21 @@ namespace MongoDB.Driver
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("MongoUrl.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 return _connectionMode;
             }
+        }
+
+        /// <summary>
+        /// Gets the connectionMode switch.
+        /// </summary>
+        [Obsolete("Will be removed in a later version.")]
+        public ConnectionModeSwitch ConnectionModeSwitch
+        {
+            get { return _connectionModeSwitch; }
         }
 
         /// <summary>
@@ -280,9 +276,11 @@ namespace MongoDB.Driver
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning disable CS0618
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException("MongoUrl.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
                 return _directConnection;
             }

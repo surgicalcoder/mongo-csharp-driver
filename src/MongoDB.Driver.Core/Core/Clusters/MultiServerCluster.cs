@@ -19,8 +19,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
-using MongoDB.Driver.Core.Async;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
@@ -66,7 +64,7 @@ namespace MongoDB.Driver.Core.Clusters
             Ensure.IsGreaterThanZero(settings.EndPoints.Count, "settings.EndPoints.Count");
 
 #pragma warning disable CS0618
-            if (settings.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (settings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
             {
                 if (settings.ConnectionMode == ClusterConnectionMode.Standalone)
 #pragma warning restore CS0618
@@ -213,7 +211,7 @@ namespace MongoDB.Driver.Core.Clusters
 
                 case ClusterType.Unknown:
 #pragma warning disable CS0618
-                    if (clusterSettings.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+                    if (clusterSettings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
                     {
                         switch (clusterSettings.ConnectionMode)
                         {

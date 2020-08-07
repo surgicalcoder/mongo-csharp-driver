@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Shared;
@@ -44,7 +43,7 @@ namespace MongoDB.Driver.Core.Clusters
 
 #pragma warning disable CS0618
         [Obsolete("Use the overload with DirectConnection isntead.")]
-        internal static ClusterDescription CreateInitial(ClusterId clusterId, ClusterConnectionModeSwitch clusterConnectionModeSwitch, ClusterConnectionMode connectionMode)
+        internal static ClusterDescription CreateInitial(ClusterId clusterId, ConnectionModeSwitch connectionModeSwitch, ClusterConnectionMode connectionMode)
 #pragma warning restore CS0618
         {
             return new ClusterDescription(
@@ -52,7 +51,7 @@ namespace MongoDB.Driver.Core.Clusters
                 connectionMode,
                 ClusterType.Unknown,
                 Enumerable.Empty<ServerDescription>(),
-                clusterConnectionModeSwitch);
+                connectionModeSwitch);
         }
 
         // private static methods
@@ -91,7 +90,7 @@ namespace MongoDB.Driver.Core.Clusters
             bool IsDirectConnection()
             {
 #pragma warning disable CS0618
-                if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     return clusterDescription.DirectConnection.GetValueOrDefault();
                 }
@@ -107,8 +106,8 @@ namespace MongoDB.Driver.Core.Clusters
         // fields
         private readonly ClusterId _clusterId;
 #pragma warning disable CS0618
-        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
         private readonly ClusterConnectionMode _connectionMode;
+        private readonly ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private readonly bool? _directConnection;
         private readonly Exception _dnsMonitorException;
@@ -121,24 +120,24 @@ namespace MongoDB.Driver.Core.Clusters
         /// Initializes a new instance of the <see cref="ClusterDescription" /> class.
         /// </summary>
         /// <param name="clusterId">The cluster identifier.</param>
-        /// <param name="clusterConnectionModeSwitch">The cluster connectionMode switch.</param>
         /// <param name="connectionMode">The connection mode.</param>
         /// <param name="type">The type.</param>
         /// <param name="servers">The servers.</param>
+        /// <param name="connectionModeSwitch">The connectionMode switch.</param>
         [Obsolete("Use the overload with DirectConnection.")]
         public ClusterDescription(
             ClusterId clusterId,
             ClusterConnectionMode connectionMode,
             ClusterType type,
             IEnumerable<ServerDescription> servers,
-            ClusterConnectionModeSwitch clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet)
+            ConnectionModeSwitch connectionModeSwitch = ConnectionModeSwitch.NotSet)
             : this(
                   clusterId,
                   connectionMode,
                   dnsMonitorException: null,
                   type,
                   servers,
-                  clusterConnectionModeSwitch)
+                  connectionModeSwitch)
         {
         }
 
@@ -168,10 +167,10 @@ namespace MongoDB.Driver.Core.Clusters
         /// </summary>
         /// <param name="clusterId">The cluster identifier.</param>
         /// <param name="connectionMode">The connection mode.</param>
-        /// <param name="clusterConnectionModeSwitch">The cluster connectionMode switch.</param>
         /// <param name="dnsMonitorException">The last DNS monitor exception (null if there was none).</param>
         /// <param name="type">The type.</param>
         /// <param name="servers">The servers.</param>
+        /// <param name="connectionModeSwitch">The connectionMode switch.</param>
         [Obsolete("Use the overload with DirectConnection.")]
         public ClusterDescription(
             ClusterId clusterId,
@@ -182,7 +181,7 @@ namespace MongoDB.Driver.Core.Clusters
             ClusterType type,
             IEnumerable<ServerDescription> servers,
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch clusterConnectionModeSwitch = ClusterConnectionModeSwitch.NotSet)
+            ConnectionModeSwitch connectionModeSwitch = ConnectionModeSwitch.NotSet)
             : this(
                   clusterId: clusterId,
                   connectionMode,
@@ -190,7 +189,7 @@ namespace MongoDB.Driver.Core.Clusters
                   dnsMonitorException,
                   type,
                   servers,
-                  clusterConnectionModeSwitch)
+                  connectionModeSwitch)
 #pragma warning restore CS0618
         {
         }
@@ -217,7 +216,7 @@ namespace MongoDB.Driver.Core.Clusters
                   dnsMonitorException: dnsMonitorException,
                   type: type,
                   servers: servers,
-                  ClusterConnectionModeSwitch.UseDirectConnection)
+                  ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
         {
         }
@@ -231,12 +230,14 @@ namespace MongoDB.Driver.Core.Clusters
             ClusterType type,
             IEnumerable<ServerDescription> servers,
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch clusterConnectionModeSwitch)
+            ConnectionModeSwitch connectionModeSwitch)
 #pragma warning restore CS0618
         {
             _clusterId = Ensure.IsNotNull(clusterId, nameof(clusterId));
-            _clusterConnectionModeSwitch = clusterConnectionModeSwitch;
-            if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            _connectionModeSwitch = connectionModeSwitch;
+#pragma warning disable CS0618
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
             {
                 _directConnection = directConnection; // can be null
             }
@@ -267,21 +268,21 @@ namespace MongoDB.Driver.Core.Clusters
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    throw new InvalidOperationException("ClusterDescription.ConnectionMode cannot be used when ClusterConnectionModeSwitch.UseDirectConnection.");
+                    throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 return _connectionMode;
             }
         }
 
         /// <summary>
-        /// Gets the cluster connectionMode switch.
+        /// Gets the connectionMode switch.
         /// </summary>
         [Obsolete("Will be removed in a later version.")]
-        public ClusterConnectionModeSwitch ClusterConnectionModeSwitch
+        public ConnectionModeSwitch ConnectionModeSwitch
         {
-            get { return _clusterConnectionModeSwitch; }
+            get { return _connectionModeSwitch; }
         }
 
         /// <summary>
@@ -291,9 +292,11 @@ namespace MongoDB.Driver.Core.Clusters
         {
             get
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+#pragma warning disable CS0618
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
                 {
-                    throw new InvalidOperationException("ClusterDescription.DirectConnection cannot be used when ClusterConnectionModeSwitch.UseConnectionMode.");
+                    throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
                 return _directConnection;
             }
@@ -410,11 +413,13 @@ namespace MongoDB.Driver.Core.Clusters
 
             string GetConnectionMode()
             {
-                if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+#pragma warning disable CS0618
+                if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     return _directConnection.HasValue ? $"DirectConnection : \"{_directConnection}\", " : string.Empty;
                 }
-                else if (_clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseConnectionMode)
+                else if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+#pragma warning restore CS0618
                 {
                     return $"ConnectionMode : \"{_connectionMode}\", ";
                 }
@@ -441,7 +446,7 @@ namespace MongoDB.Driver.Core.Clusters
                     value,
                     _type,
                     _servers,
-                    _clusterConnectionModeSwitch);
+                    _connectionModeSwitch);
             }
 
             return this;
@@ -480,7 +485,7 @@ namespace MongoDB.Driver.Core.Clusters
                 _dnsMonitorException,
                 _type,
                 replacementServers,
-                _clusterConnectionModeSwitch);
+                _connectionModeSwitch);
         }
 
         /// <summary>
@@ -503,7 +508,7 @@ namespace MongoDB.Driver.Core.Clusters
                 _dnsMonitorException,
                 _type,
                 _servers.Where(s => !EndPointHelper.Equals(s.EndPoint, endPoint)),
-                _clusterConnectionModeSwitch);
+                _connectionModeSwitch);
         }
 
         /// <summary>
@@ -513,7 +518,7 @@ namespace MongoDB.Driver.Core.Clusters
         /// <returns>A ClusterDescription.</returns>
         public ClusterDescription WithType(ClusterType value)
         {
-            return _type == value ? this : new ClusterDescription(_clusterId, _connectionMode, _directConnection, _dnsMonitorException, value, _servers, _clusterConnectionModeSwitch);
+            return _type == value ? this : new ClusterDescription(_clusterId, _connectionMode, _directConnection, _dnsMonitorException, value, _servers, _connectionModeSwitch);
         }
     }
 }

@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Core.Clusters
 
             bool useSingleServerCluster;
 #pragma warning disable CS0618
-            if (_settings.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+            if (_settings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
             {
                 var connectionMode = _settings.ConnectionMode;
                 if (_settings.ConnectionMode == ClusterConnectionMode.Automatic)

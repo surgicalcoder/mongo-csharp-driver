@@ -150,8 +150,8 @@ namespace MongoDB.Driver.Tests
                     builder.Compressors,
                     x => x.Type == CompressorType.Zlib && x.Properties.ContainsKey("Level") && (int)x.Properties["Level"] == 4);
 #pragma warning disable CS0618
-                Assert.Equal(ClusterConnectionModeSwitch.UseConnectionMode, builder.ClusterConnectionModeSwitch);
                 Assert.Equal(ConnectionMode.ReplicaSet, builder.ConnectionMode);
+                Assert.Equal(ConnectionModeSwitch.UseConnectionMode, builder.ConnectionModeSwitch);
 #pragma warning restore CS0618
                 Assert.Equal(TimeSpan.FromSeconds(1), builder.ConnectTimeout);
                 Assert.Equal("database", builder.DatabaseName);
@@ -373,7 +373,7 @@ namespace MongoDB.Driver.Tests
             {
                 var builder = builderInfo.Builder;
                 Assert.Equal(connectionMode ?? ConnectionMode.Automatic, builder.ConnectionMode);
-                Assert.Equal(connectionMode.HasValue && builderInfo.Value != string.Empty ? ClusterConnectionModeSwitch.UseConnectionMode : ClusterConnectionModeSwitch.NotSet, builder.ClusterConnectionModeSwitch);
+                Assert.Equal(connectionMode.HasValue && builderInfo.Value != string.Empty ? ConnectionModeSwitch.UseConnectionMode : ConnectionModeSwitch.NotSet, builder.ConnectionModeSwitch);
                 Assert.Equal(canonicalConnectionString, builder.ToString());
             }
         }
@@ -456,12 +456,12 @@ namespace MongoDB.Driver.Tests
                 Assert.Equal(0, builder.AuthenticationMechanismProperties.Count());
                 Assert.Equal(null, builder.AuthenticationSource);
 #pragma warning disable CS0618
-                Assert.Equal(ClusterConnectionModeSwitch.NotSet, builder.ClusterConnectionModeSwitch);
 #pragma warning restore CS0618
                 Assert.Equal(new CompressorConfiguration[0], builder.Compressors);
 #pragma warning disable 618
                 Assert.Equal(MongoDefaults.ComputedWaitQueueSize, builder.ComputedWaitQueueSize);
                 Assert.Equal(ConnectionMode.Automatic, builder.ConnectionMode);
+                Assert.Equal(ConnectionModeSwitch.NotSet, builder.ConnectionModeSwitch);
 #pragma warning restore 618
                 Assert.Equal(MongoDefaults.ConnectTimeout, builder.ConnectTimeout);
                 Assert.Equal(null, builder.DatabaseName);
@@ -517,10 +517,10 @@ namespace MongoDB.Driver.Tests
         {
             var built = new MongoUrlBuilder { Server = _localhost, DirectConnection = directConnection };
 
-            directConnection.Should().Be(built.DirectConnection);
 #pragma warning disable CS0618
-            built.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.UseDirectConnection);
+            built.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.UseDirectConnection);
 #pragma warning restore CS0618
+            directConnection.Should().Be(built.DirectConnection);
             built.ToString().Should().Be(connectionString);
         }
 
@@ -541,7 +541,7 @@ namespace MongoDB.Driver.Tests
             var built = new MongoUrlBuilder { Server = _localhost };
 
 #pragma warning disable CS0618
-            built.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.NotSet);
+            built.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
 
             var testSteps = new (string Property, object Value, bool ShouldFail)[]
@@ -551,7 +551,7 @@ namespace MongoDB.Driver.Tests
             };
 
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch? firstClusterConnectionModeSwitch = null;
+            ConnectionModeSwitch? firstConnectionModeSwitch = null;
 #pragma warning restore CS0618
 
             foreach (var propertySet in testSteps)
@@ -580,11 +580,11 @@ namespace MongoDB.Driver.Tests
                 }
 
 #pragma warning disable CS0618
-                if (!firstClusterConnectionModeSwitch.HasValue)
+                if (!firstConnectionModeSwitch.HasValue)
                 {
-                    firstClusterConnectionModeSwitch = built.ClusterConnectionModeSwitch;
+                    firstConnectionModeSwitch = built.ConnectionModeSwitch;
                 }
-                built.ClusterConnectionModeSwitch.Should().Be(firstClusterConnectionModeSwitch); // the exception won't change it
+                built.ConnectionModeSwitch.Should().Be(firstConnectionModeSwitch); // the exception won't change it
 #pragma warning restore CS0618
             }
 

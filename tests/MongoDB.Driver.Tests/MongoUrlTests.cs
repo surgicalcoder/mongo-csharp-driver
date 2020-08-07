@@ -217,7 +217,7 @@ namespace MongoDB.Driver.Tests
                 Assert.Equal(authMechanismProperties, url.AuthenticationMechanismProperties);
                 Assert.Equal("db", url.AuthenticationSource);
 #pragma warning disable CS0618
-                Assert.Equal(ClusterConnectionModeSwitch.UseConnectionMode, url.ClusterConnectionModeSwitch);
+                Assert.Equal(ConnectionModeSwitch.UseConnectionMode, url.ConnectionModeSwitch);
 #pragma warning restore CS0618
                 Assert.Contains(url.Compressors, x => x.Type == CompressorType.Zlib);
 #pragma warning disable 618
@@ -294,21 +294,21 @@ namespace MongoDB.Driver.Tests
 
             url.DirectConnection.Should().Be(directConnection);
 #pragma warning disable CS0618
-            url.ClusterConnectionModeSwitch.Should().Be(directConnectionString != string.Empty ? ClusterConnectionModeSwitch.UseDirectConnection : ClusterConnectionModeSwitch.NotSet);
+            url.ConnectionModeSwitch.Should().Be(directConnectionString != string.Empty ? ConnectionModeSwitch.UseDirectConnection : ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
         }
 
         [Theory]
 #pragma warning disable CS0618
-        [InlineData(ClusterConnectionModeSwitch.NotSet, "directConnection", false)]
-        [InlineData(ClusterConnectionModeSwitch.NotSet, "connect", false)]
-        [InlineData(ClusterConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
-        [InlineData(ClusterConnectionModeSwitch.UseDirectConnection, "connect", true)]
-        public void TestThatNotExpectedPropertyCallThrow(ClusterConnectionModeSwitch clusterConnectionModeSwitch, string property, bool shouldFail)
+        [InlineData(ConnectionModeSwitch.NotSet, "directConnection", false)]
+        [InlineData(ConnectionModeSwitch.NotSet, "connect", false)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, "directConnection", true)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, "connect", true)]
+        public void TestThatNotExpectedPropertyCallThrow(ConnectionModeSwitch connectionModeSwitch, string property, bool shouldFail)
         {
             var connectionString = $"mongodb://localhost";
             var url = new MongoUrl(connectionString);
-            url._clusterConnectionModeSwitch(clusterConnectionModeSwitch);
+            url._connectionModeSwitch(connectionModeSwitch);
             Exception exception;
             switch (property)
             {
@@ -409,10 +409,10 @@ namespace MongoDB.Driver.Tests
     internal static class MongoUrlReflector
     {
 #pragma warning disable CS0618
-        public static void _clusterConnectionModeSwitch(this MongoUrl url, ClusterConnectionModeSwitch clusterConnectionModeSwitch)
+        public static void _connectionModeSwitch(this MongoUrl url, ConnectionModeSwitch connectionModeSwitch)
 #pragma warning restore CS0618
         {
-            Reflector.SetFieldValue(url, nameof(_clusterConnectionModeSwitch), clusterConnectionModeSwitch);
+            Reflector.SetFieldValue(url, nameof(_connectionModeSwitch), connectionModeSwitch);
         }
     }
 }

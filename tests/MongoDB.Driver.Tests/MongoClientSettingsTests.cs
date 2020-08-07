@@ -147,12 +147,12 @@ namespace MongoDB.Driver.Tests
         {
             var settings = new MongoClientSettings();
             Assert.Equal(ConnectionMode.Automatic, settings.ConnectionMode);
-            Assert.Equal(ClusterConnectionModeSwitch.NotSet, settings.ClusterConnectionModeSwitch);
+            Assert.Equal(ConnectionModeSwitch.NotSet, settings.ConnectionModeSwitch);
 
             var connectionMode = ConnectionMode.Direct;
             settings.ConnectionMode = connectionMode;
             Assert.Equal(connectionMode, settings.ConnectionMode);
-            Assert.Equal(ClusterConnectionModeSwitch.UseConnectionMode, settings.ClusterConnectionModeSwitch);
+            Assert.Equal(ConnectionModeSwitch.UseConnectionMode, settings.ConnectionModeSwitch);
 
             settings.Freeze();
             Assert.Equal(connectionMode, settings.ConnectionMode);
@@ -192,8 +192,8 @@ namespace MongoDB.Driver.Tests
             Assert.Equal(null, settings.ApplicationName);
             Assert.Equal(Enumerable.Empty<CompressorConfiguration>(), settings.Compressors);
 #pragma warning disable 618
-            Assert.Equal(ClusterConnectionModeSwitch.NotSet, settings.ClusterConnectionModeSwitch);
             Assert.Equal(ConnectionMode.Automatic, settings.ConnectionMode);
+            Assert.Equal(ConnectionModeSwitch.NotSet, settings.ConnectionModeSwitch);
 #pragma warning restore 618
             Assert.Equal(MongoDefaults.ConnectTimeout, settings.ConnectTimeout);
 #pragma warning disable 618
@@ -270,8 +270,8 @@ namespace MongoDB.Driver.Tests
         {
             var settings = new MongoClientSettings();
 #pragma warning disable CS0618
-            settings.ClusterConnectionModeSwitch.Should().Be(ClusterConnectionModeSwitch.NotSet);
             settings.ConnectionMode.Should().Be(ConnectionMode.Automatic);
+            settings.ConnectionModeSwitch.Should().Be(ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
             settings.DirectConnection.Should().NotHaveValue();
 
@@ -282,7 +282,7 @@ namespace MongoDB.Driver.Tests
             };
 
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch? firstClusterConnectionModeSwitch = null;
+            ConnectionModeSwitch? firstConnectionModeSwitch = null;
 #pragma warning restore CS0618
 
             foreach (var propertySet in testSteps)
@@ -311,11 +311,11 @@ namespace MongoDB.Driver.Tests
                 }
 
 #pragma warning disable CS0618
-                if (!firstClusterConnectionModeSwitch.HasValue)
+                if (!firstConnectionModeSwitch.HasValue)
                 {
-                    firstClusterConnectionModeSwitch = settings.ClusterConnectionModeSwitch;
+                    firstConnectionModeSwitch = settings.ConnectionModeSwitch;
                 }
-                settings.ClusterConnectionModeSwitch.Should().Be(firstClusterConnectionModeSwitch); // the exception won't change it
+                settings.ConnectionModeSwitch.Should().Be(firstConnectionModeSwitch); // the exception won't change it
 #pragma warning restore CS0618
             }
 

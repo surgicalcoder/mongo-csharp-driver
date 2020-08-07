@@ -447,7 +447,7 @@ namespace MongoDB.Driver.Tests
 
         [Theory]
         [InlineData("{ connectionMode : 'Direct', clusterType : 'ReplicaSet', servers : [ { state : 'Connected', type : 'ReplicaSetArbiter' } ]}")]
-        [InlineData("{ directConnection : true, clusterConnectionModeSwitch : 'UseDirectConnection', clusterType : 'ReplicaSet', servers : [ { state : 'Connected', type : 'ReplicaSetArbiter' } ]}")]
+        [InlineData("{ directConnection : true, connectionModeSwitch : 'UseDirectConnection', clusterType : 'ReplicaSet', servers : [ { state : 'Connected', type : 'ReplicaSetArbiter' } ]}")]
         public void SelectServers_should_return_all_servers_when_connection_mode_is_direct(string clusterDescriptionJson)
         {
             var subject = CreateSubject();
@@ -461,7 +461,7 @@ namespace MongoDB.Driver.Tests
 
         [Theory]
         [InlineData("{ clusterType : 'ReplicaSet', servers : [ { state : 'Connected', type : 'ReplicaSetArbiter' }, { state : 'Connected', type : 'ReplicaSetPrimary' } ]}")]
-        [InlineData("{ directConnection : false, clusterConnectionModeSwitch : 'UseDirectConnection', clusterType : 'ReplicaSet', servers : [ { state : 'Connected', type : 'ReplicaSetArbiter' }, { state : 'Connected', type : 'ReplicaSetPrimary' } ]}")]
+        [InlineData("{ directConnection : false, connectionModeSwitch : 'UseDirectConnection', clusterType : 'ReplicaSet', servers : [ { state : 'Connected', type : 'ReplicaSetArbiter' }, { state : 'Connected', type : 'ReplicaSetPrimary' } ]}")]
         public void SelectServers_should_return_data_bearing_servers_when_connection_mode_is__not_direct(string clusterDescriptionJson)
         {
             var subject = CreateSubject();

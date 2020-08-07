@@ -65,12 +65,10 @@ namespace MongoDB.Driver.Tests
                 allowInsecureTls: false,
                 applicationName: "app1",
                 clusterConfigurator: clusterConfigurator,
-#pragma warning disable CS0618
-                clusterConnectionModeSwitch: ClusterConnectionModeSwitch.NotSet,
-#pragma warning restore CS0618
                 compressors: new[] { new CompressorConfiguration(CompressorType.Zlib) },
 #pragma warning disable CS0618
                 connectionMode: ConnectionMode.ReplicaSet,
+                connectionModeSwitch: ConnectionModeSwitch.NotSet,
 #pragma warning restore CS0618
                 connectTimeout: TimeSpan.FromSeconds(1),
                 credentials: credentials,

@@ -58,8 +58,8 @@ namespace MongoDB.Driver.Core.Servers
         // fields
         private readonly IClusterClock _clusterClock;
 #pragma warning disable CS0618
-        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
         private readonly ClusterConnectionMode _clusterConnectionMode;
+        private readonly ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private IConnectionPool _connectionPool;
         private readonly bool? _directConnection;
@@ -83,8 +83,8 @@ namespace MongoDB.Driver.Core.Servers
             ClusterId clusterId,
             IClusterClock clusterClock,
 #pragma warning disable CS0618
-            ClusterConnectionModeSwitch clusterConnectionModeSwitch,
             ClusterConnectionMode clusterConnectionMode,
+            ConnectionModeSwitch connectionModeSwitch,
 #pragma warning restore CS0618
             bool? directConnection,
             ServerSettings settings,
@@ -95,8 +95,8 @@ namespace MongoDB.Driver.Core.Servers
         {
             Ensure.IsNotNull(clusterId, nameof(clusterId));
             _clusterClock = Ensure.IsNotNull(clusterClock, nameof(clusterClock));
-            _clusterConnectionModeSwitch = clusterConnectionModeSwitch;
             _clusterConnectionMode = clusterConnectionMode;
+            _connectionModeSwitch = connectionModeSwitch;
             _directConnection = directConnection;
             _settings = Ensure.IsNotNull(settings, nameof(settings));
             _endPoint = Ensure.IsNotNull(endPoint, nameof(endPoint));
@@ -1153,7 +1153,7 @@ namespace MongoDB.Driver.Core.Servers
             private bool IsDirectConnection()
             {
 #pragma warning disable CS0618
-                if (_server._clusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                if (_server._connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     return _server._directConnection.GetValueOrDefault();
                 }

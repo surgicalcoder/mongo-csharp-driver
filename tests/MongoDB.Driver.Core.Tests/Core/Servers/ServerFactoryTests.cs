@@ -29,8 +29,8 @@ namespace MongoDB.Driver.Core.Servers
     {
         private ClusterId _clusterId;
 #pragma warning disable CS0618
-        private ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
         private ClusterConnectionMode _clusterConnectionMode;
+        private ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private IConnectionPoolFactory _connectionPoolFactory;
         private bool? _directConnection;
@@ -43,8 +43,8 @@ namespace MongoDB.Driver.Core.Servers
         {
             _clusterId = new ClusterId();
 #pragma warning disable CS0618
-            _clusterConnectionModeSwitch = ClusterConnectionModeSwitch.UseConnectionMode;
             _clusterConnectionMode = ClusterConnectionMode.Standalone;
+            _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
 #pragma warning restore CS0618
             _connectionPoolFactory = new Mock<IConnectionPoolFactory>().Object;
             _directConnection = null;
@@ -57,7 +57,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_settings_is_null()
         {
-            Action act = () => new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, null, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
+            Action act = () => new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, null, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_connectionPoolFactory_is_null()
         {
-            Action act = () => new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, null, _serverMonitorFactory, _eventSubscriber);
+            Action act = () => new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, null, _serverMonitorFactory, _eventSubscriber);
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -73,7 +73,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_heartbeatConnectionFactory_is_null()
         {
-            Action act = () => new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, null, _eventSubscriber);
+            Action act = () => new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, null, _eventSubscriber);
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -81,7 +81,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void Constructor_should_throw_when_eventSubscriber_is_null()
         {
-            Action act = () => new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, null);
+            Action act = () => new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, null);
 
             act.ShouldThrow<ArgumentNullException>();
         }
@@ -89,7 +89,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void CreateServer_should_throw_if_clusterId_is_null()
         {
-            var subject = new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
+            var subject = new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
             var clusterClock = new Mock<IClusterClock>().Object;
 
             Action act = () => subject.CreateServer(null, clusterClock, _endPoint);
@@ -100,7 +100,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void CreateServer_should_throw_if_clusterClock_is_null()
         {
-            var subject = new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
+            var subject = new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
             var clusterId = new ClusterId();
 
             Action act = () => subject.CreateServer(clusterId, null, _endPoint);
@@ -111,7 +111,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void CreateServer_should_throw_if_endPoint_is_null()
         {
-            var subject = new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
+            var subject = new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
             var clusterClock = new Mock<IClusterClock>().Object;
 
             Action act = () => subject.CreateServer(_clusterId, clusterClock, null);
@@ -122,7 +122,7 @@ namespace MongoDB.Driver.Core.Servers
         [Fact]
         public void CreateServer_should_return_Server()
         {
-            var subject = new ServerFactory(_clusterConnectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
+            var subject = new ServerFactory(_connectionModeSwitch, _clusterConnectionMode, _directConnection, _settings, _connectionPoolFactory, _serverMonitorFactory, _eventSubscriber);
             var clusterClock = new Mock<IClusterClock>().Object;
 
             var result = subject.CreateServer(_clusterId, clusterClock, _endPoint);

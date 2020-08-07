@@ -110,7 +110,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                     {
 #pragma warning disable 618
 
-                        if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                        if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                         {
                             singleServerCluster
                                .Settings
@@ -124,7 +124,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                     }
                     else if (cluster is MultiServerCluster multiServerCluster)
                     {
-                        if (clusterDescription.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+                        if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                         {
                             multiServerCluster
                                 .Settings
@@ -299,10 +299,10 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
             var connectionString = new ConnectionString((string)definition["uri"]);
             var settings = new ClusterSettings(
 #pragma warning disable CS0618
-                clusterConnectionModeSwitch: connectionString.ClusterConnectionModeSwitch,
+                connectionModeSwitch: connectionString.ConnectionModeSwitch,
                 endPoints: Optional.Enumerable(connectionString.Hosts),
                 replicaSetName: connectionString.ReplicaSet);
-            if (settings.ClusterConnectionModeSwitch == ClusterConnectionModeSwitch.UseDirectConnection)
+            if (settings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {
                 settings = settings.With(directConnection: connectionString.DirectConnection);

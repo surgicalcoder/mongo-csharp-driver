@@ -27,7 +27,7 @@ namespace MongoDB.Driver.Core.Servers
         // fields
 #pragma warning disable CS0618
         private readonly ClusterConnectionMode _clusterConnectionMode;
-        private readonly ClusterConnectionModeSwitch _clusterConnectionModeSwitch;
+        private readonly ConnectionModeSwitch _connectionModeSwitch;
 #pragma warning restore CS0618
         private readonly IConnectionPoolFactory _connectionPoolFactory;
         private readonly bool? _directConnection;
@@ -37,11 +37,11 @@ namespace MongoDB.Driver.Core.Servers
 
         // constructors
 #pragma warning disable CS0618
-        public ServerFactory(ClusterConnectionModeSwitch clusterConnectionModeSwitch, ClusterConnectionMode clusterConnectionMode, bool? directConnection, ServerSettings settings, IConnectionPoolFactory connectionPoolFactory, IServerMonitorFactory serverMonitoryFactory, IEventSubscriber eventSubscriber)
+        public ServerFactory(ConnectionModeSwitch connectionModeSwitch, ClusterConnectionMode clusterConnectionMode, bool? directConnection, ServerSettings settings, IConnectionPoolFactory connectionPoolFactory, IServerMonitorFactory serverMonitoryFactory, IEventSubscriber eventSubscriber)
 #pragma warning restore CS0618
         {
             _clusterConnectionMode = clusterConnectionMode;
-            _clusterConnectionModeSwitch = clusterConnectionModeSwitch;
+            _connectionModeSwitch = connectionModeSwitch;
             _directConnection = directConnection;
             _settings = Ensure.IsNotNull(settings, nameof(settings));
             _connectionPoolFactory = Ensure.IsNotNull(connectionPoolFactory, nameof(connectionPoolFactory));
@@ -56,8 +56,8 @@ namespace MongoDB.Driver.Core.Servers
             return new Server(
                 clusterId,
                 clusterClock,
-                _clusterConnectionModeSwitch,
                 _clusterConnectionMode,
+                _connectionModeSwitch,
                 _directConnection,
                 _settings,
                 endPoint,

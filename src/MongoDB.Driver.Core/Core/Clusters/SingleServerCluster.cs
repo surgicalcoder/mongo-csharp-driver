@@ -169,7 +169,7 @@ namespace MongoDB.Driver.Core.Clusters
             bool IsUnknownServerValidForSingleServerCluster()
             {
 #pragma warning disable CS0618
-                if (clusterSettings.ClusterConnectionModeSwitch != ClusterConnectionModeSwitch.UseDirectConnection)
+                if (clusterSettings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
                 {
                     var connectMode = clusterSettings.ConnectionMode;
                     return connectMode == ClusterConnectionMode.Automatic ||
