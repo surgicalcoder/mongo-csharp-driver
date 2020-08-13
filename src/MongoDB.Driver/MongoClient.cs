@@ -42,27 +42,13 @@ namespace MongoDB.Driver
         {
             var connectedServers = servers.Where(s => s.State == ServerState.Connected);
 
-            if (IsDirectConnection())
+            if (clusterDescription.IsDirectConnection)
             {
                 return connectedServers;
             }
             else
             {
                 return connectedServers.Where(s => s.IsDataBearing);
-            }
-
-            bool IsDirectConnection()
-            {
-#pragma warning disable CS0618
-                if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-                {
-                    return clusterDescription.DirectConnection.GetValueOrDefault();
-                }
-                else
-                {
-                    return clusterDescription.ConnectionMode == ClusterConnectionMode.Direct;
-                }
-#pragma warning restore CS0618
             }
         }
         #endregion

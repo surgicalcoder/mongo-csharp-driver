@@ -38,44 +38,44 @@ namespace MongoDB.Driver.Core.Clusters
         // methods
         public ICluster CreateCluster()
         {
-            ClusterSettings clusterSettings = _settings;
+            var settings = _settings;
 
-            bool useSingleServerCluster;
+            bool createSingleServerCluster;
 #pragma warning disable CS0618
-            if (_settings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
+            if (settings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
-                var connectionMode = _settings.ConnectionMode;
-                if (_settings.ConnectionMode == ClusterConnectionMode.Automatic)
+                createSingleServerCluster = settings.DirectConnection.GetValueOrDefault();
+            }
+            else
+            {
+                var connectionMode = settings.ConnectionMode;
+                if (connectionMode == ClusterConnectionMode.Automatic)
                 {
-                    if (_settings.ReplicaSetName != null)
+                    if (settings.ReplicaSetName != null)
                     {
                         connectionMode = ClusterConnectionMode.ReplicaSet;
+                        settings = settings.With(connectionMode: connectionMode, connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode); // update connectionMode
                     }
                 }
-                clusterSettings = _settings.With(connectionMode: connectionMode); // update connectionMode
 
-                useSingleServerCluster =
+                createSingleServerCluster =
                     connectionMode == ClusterConnectionMode.Direct ||
                     connectionMode == ClusterConnectionMode.Standalone ||
                     (
                         connectionMode == ClusterConnectionMode.Automatic &&
-                        clusterSettings.EndPoints.Count == 1 &&
-                        clusterSettings.Scheme != ConnectionStringScheme.MongoDBPlusSrv
+                        settings.EndPoints.Count == 1 &&
+                        settings.Scheme != ConnectionStringScheme.MongoDBPlusSrv
                     );
-            }
-            else
-            {
-                useSingleServerCluster = _settings.DirectConnection.GetValueOrDefault();
             }
 #pragma warning restore CS0618
 
-            if (useSingleServerCluster)
+            if (createSingleServerCluster)
             {
-                return CreateSingleServerCluster(clusterSettings);
+                return CreateSingleServerCluster(settings);
             }
             else
             {
-                return CreateMultiServerCluster(clusterSettings);
+                return CreateMultiServerCluster(settings);
             }
         }
 

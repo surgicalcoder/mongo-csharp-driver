@@ -99,19 +99,21 @@ namespace MongoDB.Driver
             _authenticationMechanismProperties = builder.AuthenticationMechanismProperties;
             _authenticationSource = builder.AuthenticationSource;
             _compressors = builder.Compressors;
-#pragma warning disable CS0618
-            _connectionModeSwitch = builder.ConnectionModeSwitch;
+#pragma warning disable 618
             if (builder.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 _connectionMode = builder.ConnectionMode;
             }
-            else if (builder.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-#pragma warning restore CS0618
+            _connectionModeSwitch = builder.ConnectionModeSwitch;
+#pragma warning restore 618
+            _connectTimeout = builder.ConnectTimeout;
+            _databaseName = builder.DatabaseName;
+#pragma warning disable 618
+            if (builder.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
                 _directConnection = builder.DirectConnection;
             }
-            _connectTimeout = builder.ConnectTimeout;
-            _databaseName = builder.DatabaseName;
+#pragma warning restore 618
             _fsync = builder.FSync;
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)

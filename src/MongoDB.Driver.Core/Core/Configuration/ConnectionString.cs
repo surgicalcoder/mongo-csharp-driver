@@ -63,7 +63,7 @@ namespace MongoDB.Driver.Core.Configuration
         private readonly CompressorsOptions _compressorsOptions;
         private readonly IDnsResolver _dnsResolver;
 
-        // these are all readonly, but since they are not assigned 
+        // these are all readonly, but since they are not assigned
         // from the ctor, they cannot be marked as such.
         private string _applicationName;
         private string _authMechanism;

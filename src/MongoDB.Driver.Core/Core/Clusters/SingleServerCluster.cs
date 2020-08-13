@@ -115,7 +115,7 @@ namespace MongoDB.Driver.Core.Clusters
                 var stopwatch = Stopwatch.StartNew();
                 _server = CreateServer(Settings.EndPoints[0]);
                 var newClusterDescription = Description
-                    .WithType(Settings.GetClusterType())
+                    .WithType(Settings.GetInitialClusterType())
                     .WithServerDescription(_server.Description);
                 if (_addingServerEventHandler != null)
                 {
@@ -169,17 +169,18 @@ namespace MongoDB.Driver.Core.Clusters
             bool IsUnknownServerValidForSingleServerCluster()
             {
 #pragma warning disable CS0618
-                if (clusterSettings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
-                {
-                    var connectMode = clusterSettings.ConnectionMode;
-                    return connectMode == ClusterConnectionMode.Automatic ||
-                           connectMode == ClusterConnectionMode.Direct;
-                }
-#pragma warning restore CS0618
-                else
+                if (clusterSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     return clusterSettings.DirectConnection.GetValueOrDefault();
                 }
+                else
+                {
+                    var connectionMode = clusterSettings.ConnectionMode;
+                    return
+                        connectionMode == ClusterConnectionMode.Automatic ||
+                        connectionMode == ClusterConnectionMode.Direct;
+                }
+#pragma warning restore CS0618
             }
         }
 

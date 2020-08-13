@@ -98,6 +98,8 @@ namespace MongoDB.Driver
             int waitQueueSize,
             TimeSpan waitQueueTimeout)
         {
+            ConnectionModeHelper.EnsureConnectionModeValuesAreValid(connectionMode, connectionModeSwitch, directConnection);
+
             _allowInsecureTls = allowInsecureTls;
             _applicationName = applicationName;
             _clusterConfigurator = clusterConfigurator;
@@ -160,10 +162,10 @@ namespace MongoDB.Driver
             {
 #pragma warning disable CS0618
                 if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
-#pragma warning restore CS0618
                 {
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
+#pragma warning restore CS0618
                 return _directConnection;
             }
         }
@@ -214,9 +216,10 @@ namespace MongoDB.Driver
                 object.ReferenceEquals(_clusterConfigurator, rhs._clusterConfigurator) &&
                 _compressors.SequenceEqual(rhs._compressors) &&
                 _connectionMode == rhs._connectionMode &&
+                _connectionModeSwitch == rhs._connectionModeSwitch &&
                 _connectTimeout == rhs._connectTimeout &&
                 _credentials.SequenceEqual(rhs._credentials) &&
-                object.Equals(_directConnection, rhs._directConnection) &&
+                _directConnection.Equals(rhs._directConnection) &&
                 _heartbeatInterval == rhs._heartbeatInterval &&
                 _heartbeatTimeout == rhs._heartbeatTimeout &&
                 _ipv6 == rhs._ipv6 &&

@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring.pr
         [ParameterAttributeData]
         public void Topology_secondary_discovery_with_directConnection_false_should_work_as_expected([Values(false, true, null)] bool? directConnection)
         {
-            RequireServer.Check().Supports(Feature.DirectConnection).ClusterTypes(ClusterType.ReplicaSet);
+            RequireServer.Check().Supports(Feature.DirectConnectionSetting).ClusterTypes(ClusterType.ReplicaSet);
 
             var setupClient = DriverTestConfiguration.Client;
             setupClient.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName).RunCommand<BsonDocument>("{ ping : 1 }");

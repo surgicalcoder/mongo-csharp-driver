@@ -93,8 +93,8 @@ namespace MongoDB.Driver
             _authenticationMechanismProperties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _authenticationSource = null;
             _compressors = new CompressorConfiguration[0];
-            _connectionMode = ConnectionMode.Automatic;
 #pragma warning disable CS0618
+            _connectionMode = ConnectionMode.Automatic;
             _connectionModeSwitch = ConnectionModeSwitch.NotSet;
 #pragma warning restore CS0618
             _connectTimeout = MongoDefaults.ConnectTimeout;
@@ -249,9 +249,8 @@ namespace MongoDB.Driver
                 {
                     throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
-                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
-                _directConnection = null;
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
             }
         }
 
@@ -294,11 +293,10 @@ namespace MongoDB.Driver
         /// </summary>
         public bool? DirectConnection
         {
+#pragma warning disable 618
             get
             {
-#pragma warning disable CS0618
                 if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
-#pragma warning restore CS0618
                 {
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
@@ -306,16 +304,14 @@ namespace MongoDB.Driver
             }
             set
             {
-#pragma warning disable CS0618
                 if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
                 {
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
-                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
-#pragma warning restore CS0618
                 _directConnection = value;
-                _connectionMode = ConnectionMode.Automatic;
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
             }
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -767,8 +763,7 @@ namespace MongoDB.Driver
             _authenticationSource = connectionString.AuthSource;
             _compressors = connectionString.Compressors;
 #pragma warning disable CS0618
-            _connectionModeSwitch = connectionString.ConnectionModeSwitch;
-            if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+            if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 switch (connectionString.Connect)
                 {
@@ -788,16 +783,17 @@ namespace MongoDB.Driver
                         _connectionMode = Driver.ConnectionMode.Automatic;
                         break;
                 }
-                _directConnection = null; // reset
             }
-            else if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            _connectionModeSwitch = connectionString.ConnectionModeSwitch;
 #pragma warning restore CS0618
-            {
-                _directConnection = connectionString.DirectConnection;
-                _connectionMode = ConnectionMode.Automatic; // reset
-            }
             _connectTimeout = connectionString.ConnectTimeout.GetValueOrDefault(MongoDefaults.ConnectTimeout);
             _databaseName = connectionString.DatabaseName;
+#pragma warning disable 618
+            if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            {
+                _directConnection = connectionString.DirectConnection;
+            }
+#pragma warning restore 618
             _fsync = connectionString.FSync;
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)

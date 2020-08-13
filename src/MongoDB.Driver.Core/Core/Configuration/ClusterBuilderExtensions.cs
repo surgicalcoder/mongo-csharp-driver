@@ -60,20 +60,17 @@ namespace MongoDB.Driver.Core.Configuration
 
             if (!connectionString.IsResolved)
             {
+#pragma warning disable 618
                 bool resolveHosts;
-#pragma warning disable CS0618
                 if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-#pragma warning restore CS0618
                 {
                     resolveHosts = connectionString.DirectConnection.GetValueOrDefault();
                 }
                 else
                 {
-#pragma warning disable CS0618
-                    var connectionMode = connectionString.Connect;
-                    resolveHosts = connectionMode == ClusterConnectionMode.Direct || connectionMode == ClusterConnectionMode.Standalone;
-#pragma warning restore CS0618
+                    resolveHosts = connectionString.Connect == ClusterConnectionMode.Direct || connectionString.Connect == ClusterConnectionMode.Standalone;
                 }
+#pragma warning restore 618
 
                 connectionString = connectionString.Resolve(resolveHosts);
             }
@@ -174,19 +171,12 @@ namespace MongoDB.Driver.Core.Configuration
             // Server
 
             // Cluster
-#pragma warning disable CS0618
-            builder = builder.ConfigureCluster(s =>
-            {
-                if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-                {
-                    return s.With(directConnection: connectionString.DirectConnection);
-                }
-                else
-                {
-                    return s.With(connectionMode: connectionString.Connect);
-                }
-            });
-#pragma warning restore CS0618
+#pragma warning disable 618
+            var connectionModeSwitch = connectionString.ConnectionModeSwitch;
+            var connectionMode = connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode ? connectionString.Connect : default;
+            var directConnection = connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection ? connectionString.DirectConnection : default;
+            builder = builder.ConfigureCluster(s => s.With(connectionMode: connectionMode, connectionModeSwitch: connectionModeSwitch, directConnection: directConnection));
+#pragma warning restore 618
             if (connectionString.Hosts.Count > 0)
             {
                 builder = builder.ConfigureCluster(s => s.With(endPoints: Optional.Enumerable(connectionString.Hosts)));

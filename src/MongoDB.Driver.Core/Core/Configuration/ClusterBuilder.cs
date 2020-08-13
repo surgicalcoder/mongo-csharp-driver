@@ -242,31 +242,18 @@ namespace MongoDB.Driver.Core.Configuration
             var serverMonitorFactory = CreateServerMonitorFactory();
 
 #pragma warning disable CS0618
-            if (_clusterSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-            {
-                return new ServerFactory(
-                    _clusterSettings.ConnectionModeSwitch,
-                    ClusterConnectionMode.Automatic,
+            var connectionModeSwitch = _clusterSettings.ConnectionModeSwitch;
+            var connectionMode = connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode ? _clusterSettings.ConnectionMode : default;
+            var directConnection = connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection ? _clusterSettings.DirectConnection : default;
+            return new ServerFactory(
+                connectionMode,
+                connectionModeSwitch,
+                directConnection,
+                _serverSettings,
+                connectionPoolFactory,
+                serverMonitorFactory,
+                _eventAggregator);
 #pragma warning restore CS0618
-                    _clusterSettings.DirectConnection,
-                    _serverSettings,
-                    connectionPoolFactory,
-                    serverMonitorFactory,
-                    _eventAggregator);
-            }
-            else
-            {
-                return new ServerFactory(
-#pragma warning disable CS0618
-                    _clusterSettings.ConnectionModeSwitch,
-                    _clusterSettings.ConnectionMode,
-#pragma warning restore CS0618
-                    directConnection: null,
-                    _serverSettings,
-                    connectionPoolFactory,
-                    serverMonitorFactory,
-                    _eventAggregator);
-            }
         }
 
         private IServerMonitorFactory CreateServerMonitorFactory()

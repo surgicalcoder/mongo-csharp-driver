@@ -91,14 +91,7 @@ namespace MongoDB.Driver.Core.Clusters
 
             _clusterId = new ClusterId();
 #pragma warning disable CS0618
-            if (_settings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-            {
-                _description = ClusterDescription.CreateInitial(_clusterId, _settings.DirectConnection);
-            }
-            else
-            {
-                _description = ClusterDescription.CreateInitial(_clusterId, _settings.ConnectionModeSwitch, _settings.ConnectionMode);
-            }
+            _description = ClusterDescription.CreateInitial(_clusterId, _settings.ConnectionMode, _settings.ConnectionModeSwitch, _settings.DirectConnection);
 #pragma warning restore CS0618
             _descriptionChangedTaskCompletionSource = new TaskCompletionSource<bool>();
             _latencyLimitingServerSelector = new LatencyLimitingServerSelector(settings.LocalThreshold);
@@ -164,27 +157,20 @@ namespace MongoDB.Driver.Core.Clusters
         {
             if (_state.TryChange(State.Disposed))
             {
-                ClusterDescription newClusterDescription;
 #pragma warning disable CS0618
-                if (_description.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+                var connectionModeSwitch = _description.ConnectionModeSwitch;
+                var connectionMode = connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode ? _description.ConnectionMode : default;
+                var directConnection = connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection ? _description.DirectConnection : default;
+
+                var newClusterDescription = new ClusterDescription(
+                    _clusterId,
+                    connectionMode,
+                    connectionModeSwitch,
+                    directConnection,
+                    dnsMonitorException: null,
+                    ClusterType.Unknown,
+                    Enumerable.Empty<ServerDescription>());
 #pragma warning restore CS0618
-                {
-                    newClusterDescription = new ClusterDescription(
-                        _clusterId,
-                        _description.DirectConnection,
-                        ClusterType.Unknown,
-                        Enumerable.Empty<ServerDescription>());
-                }
-                else
-                {
-#pragma warning disable CS0618
-                    newClusterDescription = new ClusterDescription(
-                        _clusterId,
-                        _description.ConnectionMode,
-                        ClusterType.Unknown,
-                        Enumerable.Empty<ServerDescription>());
-#pragma warning restore CS0618
-                }
 
                 UpdateClusterDescription(newClusterDescription);
 
