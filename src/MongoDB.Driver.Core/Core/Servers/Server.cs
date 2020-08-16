@@ -94,6 +94,8 @@ namespace MongoDB.Driver.Core.Servers
             IEventSubscriber eventSubscriber)
         {
             Ensure.IsNotNull(clusterId, nameof(clusterId));
+            ClusterConnectionModeHelper.EnsureConnectionModeValuesAreValid(clusterConnectionMode, connectionModeSwitch, directConnection);
+
             _clusterClock = Ensure.IsNotNull(clusterClock, nameof(clusterClock));
             _clusterConnectionMode = clusterConnectionMode;
             _connectionModeSwitch = connectionModeSwitch;

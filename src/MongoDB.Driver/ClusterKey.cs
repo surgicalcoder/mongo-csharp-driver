@@ -98,6 +98,7 @@ namespace MongoDB.Driver
             int waitQueueSize,
             TimeSpan waitQueueTimeout)
         {
+            ClusterConnectionModeHelper.EnsureConnectionModeValuesAreValid(connectionMode, connectionModeSwitch, directConnection);
             _allowInsecureTls = allowInsecureTls;
             _applicationName = applicationName;
             _clusterConfigurator = clusterConfigurator;
@@ -214,9 +215,10 @@ namespace MongoDB.Driver
                 object.ReferenceEquals(_clusterConfigurator, rhs._clusterConfigurator) &&
                 _compressors.SequenceEqual(rhs._compressors) &&
                 _connectionMode == rhs._connectionMode &&
+                _connectionModeSwitch == rhs._connectionModeSwitch &&
                 _connectTimeout == rhs._connectTimeout &&
                 _credentials.SequenceEqual(rhs._credentials) &&
-                object.Equals(_directConnection, rhs._directConnection) &&
+                _directConnection.Equals(rhs._directConnection) &&
                 _heartbeatInterval == rhs._heartbeatInterval &&
                 _heartbeatTimeout == rhs._heartbeatTimeout &&
                 _ipv6 == rhs._ipv6 &&

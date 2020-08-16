@@ -56,7 +56,7 @@ namespace MongoDB.Driver.Core.Configuration
         /// Initializes a new instance of the <see cref="ClusterSettings"/> class.
         /// </summary>
         /// <param name="connectionMode">The connection mode.</param>
-        /// <param name="connectionModeSwitch">The connectionMode switch.</param>
+        /// <param name="connectionModeSwitch">The connection mode switch.</param>
         /// <param name="directConnection">The directConnection.</param>
         /// <param name="endPoints">The end points.</param>
         /// <param name="kmsProviders">The kms providers.</param>
@@ -85,20 +85,10 @@ namespace MongoDB.Driver.Core.Configuration
             Optional<IReadOnlyDictionary<string, BsonDocument>> schemaMap = default(Optional<IReadOnlyDictionary<string, BsonDocument>>),
             Optional<ConnectionStringScheme> scheme = default(Optional<ConnectionStringScheme>))
         {
-            _connectionModeSwitch = connectionModeSwitch.WithDefault(ConnectionModeSwitch.NotSet);
 #pragma warning disable CS0618
-            if (connectionMode.HasValue && !connectionModeSwitch.HasValue)
-            {
-                // the ClusterConnectionModeSwitch value has not been provided
-                throw new InvalidOperationException("ClusterSettings.ConnectionMode must be used only with ClusterConnectionModeSwitch.");
-            }
             _connectionMode = connectionMode.WithDefault(ClusterConnectionMode.Automatic);
+            _connectionModeSwitch = connectionModeSwitch.WithDefault(ConnectionModeSwitch.NotSet);
 #pragma warning restore CS0618
-            if (directConnection.HasValue && !connectionModeSwitch.HasValue)
-            {
-                // the ClusterConnectionModeSwitch value has not been provided
-                throw new InvalidOperationException("ClusterSettings.DirectConnection must be used only with ClusterConnectionModeSwitch.");
-            }
             _directConnection = directConnection.WithDefault(null);
             _endPoints = Ensure.IsNotNull(endPoints.WithDefault(__defaultEndPoints), "endPoints").ToList();
             _kmsProviders = kmsProviders.WithDefault(null);
@@ -110,6 +100,8 @@ namespace MongoDB.Driver.Core.Configuration
             _postServerSelector = postServerSelector.WithDefault(null);
             _scheme = scheme.WithDefault(ConnectionStringScheme.MongoDB);
             _schemaMap = schemaMap.WithDefault(null);
+
+            ClusterConnectionModeHelper.EnsureConnectionModeValuesAreValid(_connectionMode, _connectionModeSwitch, _directConnection);
         }
 
         // properties
@@ -133,7 +125,7 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         /// <summary>
-        /// Gets the connectionMode switch.
+        /// Gets the connection mode switch.
         /// </summary>
         [Obsolete("Will be removed in a later version.")]
         public ConnectionModeSwitch ConnectionModeSwitch
@@ -273,7 +265,7 @@ namespace MongoDB.Driver.Core.Configuration
         /// Returns a new ClusterSettings instance with some settings changed.
         /// </summary>
         /// <param name="connectionMode">The connection mode.</param>
-        /// <param name="connectionModeSwitch">The connectionMode switch.</param>
+        /// <param name="connectionModeSwitch">The connection mode switch.</param>
         /// <param name="directConnection">The directConnection.</param>
         /// <param name="endPoints">The end points.</param>
         /// <param name="kmsProviders">The kms providers.</param>
@@ -304,8 +296,8 @@ namespace MongoDB.Driver.Core.Configuration
             Optional<ConnectionStringScheme> scheme = default(Optional<ConnectionStringScheme>))
         {
             return new ClusterSettings(
-                connectionModeSwitch: connectionModeSwitch.WithDefault(_connectionModeSwitch),
                 connectionMode: connectionMode.WithDefault(_connectionMode),
+                connectionModeSwitch: connectionModeSwitch.WithDefault(_connectionModeSwitch),
                 directConnection: directConnection.WithDefault(_directConnection),
                 endPoints: Optional.Enumerable(endPoints.WithDefault(_endPoints)),
                 kmsProviders: Optional.Create(kmsProviders.WithDefault(_kmsProviders)),
@@ -320,13 +312,13 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         // internal methods
-        internal ClusterType GetClusterType()
+        internal ClusterType GetInitialClusterType()
         {
 #pragma warning disable 618
             if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore 618
             {
-                if (!_directConnection.GetValueOrDefault() && _replicaSetName != null)
+                if (_replicaSetName != null && !_directConnection.GetValueOrDefault())
                 {
                     return ClusterType.ReplicaSet;
                 }

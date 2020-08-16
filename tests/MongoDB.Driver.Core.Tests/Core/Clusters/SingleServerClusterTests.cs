@@ -98,7 +98,9 @@ namespace MongoDB.Driver.Core.Clusters
         public void Description_should_not_contain_any_servers_if_the_provided_server_is_not_of_the_required_type(ClusterConnectionMode connectionMode, ServerType serverType)
 #pragma warning restore CS0618
         {
-            _settings = _settings.With(connectionMode: connectionMode);
+#pragma warning disable CS0618
+            _settings = _settings.With(connectionMode: connectionMode, connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode);
+#pragma warning restore CS0618
 
             var subject = CreateSubject();
             subject.Initialize();
@@ -115,7 +117,7 @@ namespace MongoDB.Driver.Core.Clusters
         public void Description_should_regain_a_server_if_the_provided_server_is_rebooted_to_its_expected_type()
         {
 #pragma warning disable CS0618
-            _settings = _settings.With(connectionMode: ClusterConnectionMode.Standalone);
+            _settings = _settings.With(connectionMode: ClusterConnectionMode.Standalone, connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode);
 #pragma warning restore CS0618
 
             var subject = CreateSubject();
@@ -161,6 +163,7 @@ namespace MongoDB.Driver.Core.Clusters
             _settings = _settings.With(
 #pragma warning disable CS0618
                 connectionMode: ClusterConnectionMode.Direct,
+                connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode,
 #pragma warning restore CS0618
                 replicaSetName: "rs");
 

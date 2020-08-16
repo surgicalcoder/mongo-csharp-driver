@@ -536,10 +536,10 @@ namespace MongoDB.Driver.Core.Clusters
 
         // private methods
 #pragma warning disable CS0618
-        private StubCluster CreateSubject(ClusterConnectionMode connectionMode = ClusterConnectionMode.Automatic, TimeSpan? serverSelectionTimeout = null)
+        private StubCluster CreateSubject(ClusterConnectionMode connectionMode = ClusterConnectionMode.Automatic, ConnectionModeSwitch connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode, TimeSpan? serverSelectionTimeout = null)
 #pragma warning restore CS0618
         {
-            _settings = _settings.With(connectionMode: connectionMode);
+            _settings = _settings.With(connectionMode: connectionMode, connectionModeSwitch: connectionModeSwitch);
             if (serverSelectionTimeout != null)
             {
                 _settings = _settings.With(serverSelectionTimeout: serverSelectionTimeout.Value);

@@ -219,14 +219,17 @@ namespace MongoDB.Driver
                 {
                     throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
-                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
-                _directConnection = null;
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode; // _directConnection is always null here
             }
         }
 
+        /// <summary>
+        /// Gets the connection mode switch.
+        /// </summary>
 #pragma warning disable CS0618
-        internal ConnectionModeSwitch ConnectionModeSwitch
+        [Obsolete("Will be removed in a later version.")]
+        public ConnectionModeSwitch ConnectionModeSwitch
 #pragma warning restore CS0618
         {
             get { return _connectionModeSwitch; }
@@ -308,9 +311,8 @@ namespace MongoDB.Driver
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
 
-                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
                 _directConnection = value;
-                _connectionMode = ConnectionMode.Automatic;
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection; // _connectionMode is always Automatic here
             }
         }
 
@@ -789,7 +791,6 @@ namespace MongoDB.Driver
             serverSettings.ClusterConfigurator = clientSettings.ClusterConfigurator;
             serverSettings.Compressors = clientSettings.Compressors;
 #pragma warning disable CS0618
-            serverSettings._connectionModeSwitch = clientSettings.ConnectionModeSwitch;
             if (clientSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 serverSettings.ConnectionMode = clientSettings.ConnectionMode;
@@ -926,9 +927,9 @@ namespace MongoDB.Driver
             clone._allowInsecureTls = _allowInsecureTls;
             clone._applicationName = _applicationName;
             clone._clusterConfigurator = _clusterConfigurator;
-            clone._connectionModeSwitch = _connectionModeSwitch;
             clone._compressors = _compressors;
             clone._connectionMode = _connectionMode;
+            clone._connectionModeSwitch = _connectionModeSwitch;
             clone._connectTimeout = _connectTimeout;
             clone._credentials = _credentials;
             clone._directConnection = _directConnection;
@@ -991,9 +992,10 @@ namespace MongoDB.Driver
                 object.ReferenceEquals(_clusterConfigurator, rhs._clusterConfigurator) &&
                _compressors.SequenceEqual(rhs._compressors) &&
                _connectionMode == rhs._connectionMode &&
+               _connectionModeSwitch == rhs._connectionModeSwitch &&
                _connectTimeout == rhs._connectTimeout &&
                _credentials == rhs._credentials &&
-               object.Equals(_directConnection, rhs._directConnection) &&
+               _directConnection.Equals(rhs._directConnection) &&
                _guidRepresentation == rhs._guidRepresentation &&
                _heartbeatInterval == rhs._heartbeatInterval &&
                _heartbeatTimeout == rhs._heartbeatTimeout &&
@@ -1127,10 +1129,16 @@ namespace MongoDB.Driver
                 parts.Add($"Compressors={string.Join(",", _compressors)}");
             }
 
-            parts.Add(string.Format("ConnectionMode={0}", _connectionMode));
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+            {
+                parts.Add(string.Format("ConnectionMode={0}", _connectionMode));
+            }
             parts.Add(string.Format("ConnectTimeout={0}", _connectTimeout));
             parts.Add(string.Format("Credentials={{{0}}}", _credentials));
-            parts.Add(string.Format("DirectConnection={0}", _directConnection));
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            {
+                parts.Add(string.Format("DirectConnection={0}", _directConnection));
+            }
             parts.Add(string.Format("GuidRepresentation={0}", _guidRepresentation));
             parts.Add(string.Format("HeartbeatInterval={0}", _heartbeatInterval));
             parts.Add(string.Format("HeartbeatTimeout={0}", _heartbeatTimeout));

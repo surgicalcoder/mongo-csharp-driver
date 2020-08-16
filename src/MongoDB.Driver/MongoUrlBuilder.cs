@@ -249,14 +249,13 @@ namespace MongoDB.Driver
                 {
                     throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
-                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
                 _connectionMode = value;
-                _directConnection = null;
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode; // _directConnection is always null here
             }
         }
 
         /// <summary>
-        /// Gets the connectionMode switch.
+        /// Gets the connection mode switch.
         /// </summary>
         [Obsolete("Will be removed in a later version.")]
         public ConnectionModeSwitch ConnectionModeSwitch
@@ -311,10 +310,8 @@ namespace MongoDB.Driver
                 {
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
-                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
-#pragma warning restore CS0618
                 _directConnection = value;
-                _connectionMode = ConnectionMode.Automatic;
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection; // _connectionMode is always Automatic here
             }
         }
 
@@ -788,7 +785,7 @@ namespace MongoDB.Driver
                         _connectionMode = Driver.ConnectionMode.Automatic;
                         break;
                 }
-                _directConnection = null; // reset
+                // _directConenction is always null here
             }
             else if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618

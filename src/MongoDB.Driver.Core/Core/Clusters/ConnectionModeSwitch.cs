@@ -18,7 +18,7 @@ using System;
 namespace MongoDB.Driver.Core.Clusters
 {
     /// <summary>
-    /// Determine whether to use legacy ConnectMode or DirectConnection.
+    /// Determine whether to use legacy ConnectionMode or DirectConnection.
     /// </summary>
     [Obsolete("Will be removed in a later version.")]
     public enum ConnectionModeSwitch

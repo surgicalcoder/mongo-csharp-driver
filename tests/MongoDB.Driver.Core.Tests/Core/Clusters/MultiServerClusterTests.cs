@@ -740,11 +740,12 @@ namespace MongoDB.Driver.Core.Clusters
         [InlineData(ClusterConnectionMode.Sharded, ServerType.ReplicaSetSecondary)]
         [InlineData(ClusterConnectionMode.Sharded, ServerType.Standalone)]
         public void Should_hide_a_seedlist_server_of_the_wrong_type(ClusterConnectionMode connectionMode, ServerType wrongType)
-#pragma warning restore CS0618
         {
             _settings = _settings.With(
                 endPoints: new[] { _firstEndPoint, _secondEndPoint, _thirdEndPoint },
-                connectionMode: connectionMode);
+                connectionMode: connectionMode,
+                connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode);
+#pragma warning restore CS0618
 
             var subject = CreateSubject();
             subject.Initialize();

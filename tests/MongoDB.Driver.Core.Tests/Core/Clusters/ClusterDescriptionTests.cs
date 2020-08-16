@@ -51,69 +51,68 @@ namespace MongoDB.Driver.Core.Clusters
         #endregion
 
         // static member tests
-        [Fact]
-        public void CreateInitial_should_return_initial_description()
+#pragma warning disable 618
+        [Theory]
+        [InlineData(ConnectionModeSwitch.NotSet, ClusterConnectionMode.Automatic, null)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, ClusterConnectionMode.Automatic, null)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, ClusterConnectionMode.Direct, null)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, ClusterConnectionMode.Automatic, null)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, ClusterConnectionMode.Automatic, false)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, ClusterConnectionMode.Automatic, true)]
+        public void CreateInitial_should_return_initial_description(ConnectionModeSwitch connectionModeSwitch, ClusterConnectionMode connectionMode, bool? directConnection)
         {
-#pragma warning disable CS0618
-            var connectionModeSwitch = ConnectionModeSwitch.NotSet;
-            var subject = ClusterDescription.CreateInitial(__clusterId, connectionModeSwitch, ClusterConnectionMode.Standalone);
-#pragma warning restore CS0618
+            var subject = ClusterDescription.CreateInitial(__clusterId, connectionMode, connectionModeSwitch, directConnection);
 
             subject.ClusterId.Should().Be(__clusterId);
-#pragma warning disable CS0618
-            subject.ConnectionMode.Should().Be(ClusterConnectionMode.Standalone);
-#pragma warning restore CS0618
-            subject.DirectConnection.Should().Be(null);
+            subject.ConnectionModeSwitch.Should().Be(connectionModeSwitch);
+            switch (connectionModeSwitch)
+            {
+                case ConnectionModeSwitch.UseConnectionMode: subject.ConnectionMode.Should().Be(connectionMode); break;
+                case ConnectionModeSwitch.UseDirectConnection: subject.DirectConnection.Should().Be(directConnection); break;
+            }
             subject.DnsMonitorException.Should().BeNull();
             subject.LogicalSessionTimeout.Should().NotHaveValue();
             subject.Servers.Should().BeEmpty();
             subject.State.Should().Be(ClusterState.Disconnected);
             subject.Type.Should().Be(ClusterType.Unknown);
         }
-
-        [Fact]
-        public void CreateInitial_with_directConnection_should_return_initial_description()
-        {
-            var subject = ClusterDescription.CreateInitial(__clusterId, true);
-
-            subject.ClusterId.Should().Be(__clusterId);
-            subject.DirectConnection.Should().Be(true);
-            subject.DnsMonitorException.Should().BeNull();
-            subject.LogicalSessionTimeout.Should().NotHaveValue();
-            subject.Servers.Should().BeEmpty();
-            subject.State.Should().Be(ClusterState.Disconnected);
-            subject.Type.Should().Be(ClusterType.Unknown);
-        }
+#pragma warning restore 618
 
         // instance member tests
-        [Fact]
-        public void Constructor_should_initialize_instance()
+#pragma warning disable 618
+        [Theory]
+        [InlineData(ConnectionModeSwitch.NotSet, ClusterConnectionMode.Automatic, null)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, ClusterConnectionMode.Automatic, null)]
+        [InlineData(ConnectionModeSwitch.UseConnectionMode, ClusterConnectionMode.ReplicaSet, null)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, ClusterConnectionMode.Automatic, null)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, ClusterConnectionMode.Automatic, false)]
+        [InlineData(ConnectionModeSwitch.UseDirectConnection, ClusterConnectionMode.Automatic, true)]
+        public void Constructor_should_initialize_instance(ConnectionModeSwitch connectionModeSwitch, ClusterConnectionMode connectionMode, bool? directConnection)
         {
             var dnsMonitorException = new Exception();
-#pragma warning disable CS0618
-            var connectionModeSwitch = ConnectionModeSwitch.NotSet;
-#pragma warning restore CS0618
-            var subject = CreateClusterDescription(
+            var subject = new ClusterDescription(
                 __clusterId,
-#pragma warning disable CS0618
-                ClusterConnectionMode.ReplicaSet,
-                connectionModeSwitch, 
-#pragma warning restore CS0618
-                null,
+                connectionMode,
+                connectionModeSwitch,
+                directConnection,
                 dnsMonitorException,
                 ClusterType.ReplicaSet,
                 new[] { __serverDescription1, __serverDescription2 });
 
             subject.ClusterId.Should().Be(__clusterId);
-#pragma warning disable CS0618
-            subject.ConnectionMode.Should().Be(ClusterConnectionMode.ReplicaSet);
-#pragma warning restore CS0618
+            subject.ConnectionModeSwitch.Should().Be(connectionModeSwitch);
+            switch (connectionModeSwitch)
+            {
+                case ConnectionModeSwitch.UseConnectionMode: subject.ConnectionMode.Should().Be(connectionMode); break;
+                case ConnectionModeSwitch.UseDirectConnection: subject.DirectConnection.Should().Be(directConnection); break;
+            }
             subject.DnsMonitorException.Should().BeSameAs(dnsMonitorException);
             subject.LogicalSessionTimeout.Should().NotHaveValue();
             subject.Servers.Should().ContainInOrder(new[] { __serverDescription1, __serverDescription2 });
             subject.State.Should().Be(ClusterState.Disconnected);
             subject.Type.Should().Be(ClusterType.ReplicaSet);
         }
+#pragma warning restore 618
 
         [Theory]
         [InlineData("ClusterId")]
@@ -161,7 +160,7 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning disable CS0618
             var connectionMode = ClusterConnectionMode.Automatic;
             var connectionModeSwitch = ConnectionModeSwitch.NotSet;
-            var subject = ClusterDescription.CreateInitial(clusterId, connectionModeSwitch, connectionMode);
+            var subject = ClusterDescription.CreateInitial(clusterId, connectionMode, connectionModeSwitch, directConnection: null);
 #pragma warning restore CS0618
             for (var i = 0; i < wireRanges.Length; i++)
             {
@@ -198,7 +197,7 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning disable CS0618
             var connectionMode = ClusterConnectionMode.Automatic;
             var connectionModeSwitch = ConnectionModeSwitch.NotSet;
-            var subject = ClusterDescription.CreateInitial(clusterId, connectionModeSwitch, connectionMode);
+            var subject = ClusterDescription.CreateInitial(clusterId, connectionMode, connectionModeSwitch, directConnection: null);
 #pragma warning restore CS0618
             for (var i = 0; i < wireRanges.Length; i++)
             {
@@ -328,7 +327,7 @@ namespace MongoDB.Driver.Core.Clusters
         [ParameterAttributeData]
         public void ToString_with_directConnection_should_return_string_representation([Values(null, false)] bool? directConnection)
         {
-            var subject = new ClusterDescription(new ClusterId(1), directConnection, ClusterType.Standalone, new[] { __serverDescription1 });
+            var subject = new ClusterDescription(new ClusterId(1), directConnection, dnsMonitorException: null, ClusterType.Standalone, new[] { __serverDescription1 });
             var directConnectionString = directConnection.HasValue ? $", DirectConnection : \"{directConnection.Value.ToString()}\"" : string.Empty;
             var expected = string.Format("{{ ClusterId : \"1\"{1}, Type : \"Standalone\", State : \"Disconnected\", Servers : [{0}] }}",
                 __serverDescription1.ToString(),
@@ -343,7 +342,7 @@ namespace MongoDB.Driver.Core.Clusters
             bool? directConnection = null;
 #pragma warning disable CS0618
             var connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
-            var subject = CreateClusterDescription(new ClusterId(1), ClusterConnectionMode.Standalone, connectionModeSwitch, directConnection, dnsMonitorException, ClusterType.Standalone, new[] { __serverDescription1 });
+            var subject = new ClusterDescription(new ClusterId(1), ClusterConnectionMode.Standalone, connectionModeSwitch, directConnection, dnsMonitorException, ClusterType.Standalone, new[] { __serverDescription1 });
 #pragma warning restore CS0618
             var expected = string.Format(
                 "{{ ClusterId : \"1\", ConnectionMode : \"Standalone\", Type : \"Standalone\", State : \"Disconnected\", Servers : [{0}], DnsMonitorException : \"{1}\" }}",
@@ -443,22 +442,21 @@ namespace MongoDB.Driver.Core.Clusters
             var clusterId = new ClusterId(1);
 #pragma warning disable CS0618
             var connectionModeSwitch = ConnectionModeSwitch.NotSet;
-            var connectionMode = ClusterConnectionMode.ReplicaSet;
+            var connectionMode = ClusterConnectionMode.Automatic;
+            bool? directConnection = null;
 #pragma warning restore CS0618
             var type = ClusterType.ReplicaSet;
             var servers = new[] { __serverDescription1, __serverDescription2 };
-            bool? directConnection = null;
 
-            return CreateClusterDescription(clusterId, connectionMode, connectionModeSwitch, directConnection, dnsMonitorException, type, servers);
+            return new ClusterDescription(clusterId, connectionMode, connectionModeSwitch, directConnection, dnsMonitorException, type, servers);
         }
 
+#pragma warning disable 618
         private ClusterDescription CreateSubject(string notEqualField = null)
         {
             var clusterId = new ClusterId(1);
-#pragma warning disable CS0618
             var connectionModeSwitch = ConnectionModeSwitch.NotSet;
-            var connectionMode = ClusterConnectionMode.ReplicaSet;
-#pragma warning restore CS0618
+            var connectionMode = ClusterConnectionMode.Automatic;
             bool? directConnection = null;
             Exception dnsMonitorException = null;
             var type = ClusterType.ReplicaSet;
@@ -469,7 +467,6 @@ namespace MongoDB.Driver.Core.Clusters
                 switch (notEqualField)
                 {
                     case "ClusterId": clusterId = new ClusterId(2); break;
-#pragma warning disable CS0618
                     case "ConnectionMode":
                         {
                             connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
@@ -478,7 +475,6 @@ namespace MongoDB.Driver.Core.Clusters
                     case "DirectConnection":
                         {
                             connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
-#pragma warning restore CS0618
                             directConnection = true;
                         } break;
                     case "DnsMonitorException": dnsMonitorException = new Exception(); break;
@@ -488,32 +484,8 @@ namespace MongoDB.Driver.Core.Clusters
                 }
             }
 
-            return CreateClusterDescription(clusterId, connectionMode, connectionModeSwitch, directConnection, dnsMonitorException, type, servers);
+            return new ClusterDescription(clusterId, connectionMode, connectionModeSwitch, directConnection, dnsMonitorException, type, servers);
         }
-
-        private ClusterDescription CreateClusterDescription(
-            ClusterId clusterId,
-#pragma warning disable CS0618
-            ClusterConnectionMode connectionMode,
-            ConnectionModeSwitch connectionModeSwitch,
-#pragma warning restore CS0618
-            bool? directConnection,
-            Exception dnsMonitorException,
-            ClusterType type,
-            ServerDescription[] servers)
-        {
-#pragma warning disable CS0618
-            if (connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-#pragma warning restore CS0618
-            {
-                return new ClusterDescription(clusterId, directConnection, dnsMonitorException, type, servers);
-            }
-            else
-            {
-#pragma warning disable CS0618
-                return new ClusterDescription(clusterId, connectionMode, dnsMonitorException, type, servers, connectionModeSwitch);
-#pragma warning restore CS0618
-            }
-        }
+#pragma warning restore 618
     }
 }

@@ -70,8 +70,7 @@ namespace MongoDB.Driver.Core.Configuration
                 else
                 {
 #pragma warning disable CS0618
-                    var connectionMode = connectionString.Connect;
-                    resolveHosts = connectionMode == ClusterConnectionMode.Direct || connectionMode == ClusterConnectionMode.Standalone;
+                    resolveHosts = connectionString.Connect == ClusterConnectionMode.Direct || connectionString.Connect == ClusterConnectionMode.Standalone;
 #pragma warning restore CS0618
                 }
 
@@ -175,17 +174,10 @@ namespace MongoDB.Driver.Core.Configuration
 
             // Cluster
 #pragma warning disable CS0618
-            builder = builder.ConfigureCluster(s =>
-            {
-                if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-                {
-                    return s.With(directConnection: connectionString.DirectConnection);
-                }
-                else
-                {
-                    return s.With(connectionMode: connectionString.Connect);
-                }
-            });
+            var connectionModeSwitch = connectionString.ConnectionModeSwitch;
+            var connectionMode = connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode ? connectionString.Connect : default;
+            var directConnection = connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection ? connectionString.DirectConnection : default;
+            builder = builder.ConfigureCluster(s => s.With(connectionMode: connectionMode, connectionModeSwitch: connectionModeSwitch, directConnection: directConnection));
 #pragma warning restore CS0618
             if (connectionString.Hosts.Count > 0)
             {

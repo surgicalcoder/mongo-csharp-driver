@@ -64,27 +64,25 @@ namespace MongoDB.Driver.Core.Clusters
             Ensure.IsGreaterThanZero(settings.EndPoints.Count, "settings.EndPoints.Count");
 
 #pragma warning disable CS0618
-            if (settings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
-            {
-                if (settings.ConnectionMode == ClusterConnectionMode.Standalone)
-#pragma warning restore CS0618
-                {
-                    throw new ArgumentException("ClusterConnectionMode.StandAlone is not supported for a MultiServerCluster.");
-                }
-#pragma warning disable CS0618
-                if (settings.ConnectionMode == ClusterConnectionMode.Direct)
-#pragma warning restore CS0618
-                {
-                    throw new ArgumentException("ClusterConnectionMode.Direct is not supported for a MultiServerCluster.");
-                }
-            }
-            else
+            if (settings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
                 if (settings.DirectConnection.GetValueOrDefault())
                 {
                     throw new ArgumentException("DirectConnection is not supported for a MultiServerCluster.");
                 }
             }
+            else
+            {
+                if (settings.ConnectionMode == ClusterConnectionMode.Standalone)
+                {
+                    throw new ArgumentException("ClusterConnectionMode.StandAlone is not supported for a MultiServerCluster.");
+                }
+                if (settings.ConnectionMode == ClusterConnectionMode.Direct)
+                {
+                    throw new ArgumentException("ClusterConnectionMode.Direct is not supported for a MultiServerCluster.");
+                }
+            }
+#pragma warning restore CS0618
 
             _dnsMonitorFactory = dnsMonitorFactory ?? new DnsMonitorFactory(eventSubscriber);
             _monitorServersCancellationTokenSource = new CancellationTokenSource();
@@ -159,7 +157,7 @@ namespace MongoDB.Driver.Core.Clusters
                     // are re-entrant such that this won't cause problems,
                     // but could prevent issues of conflicting reports
                     // from servers that are quick to respond.
-                    var clusterDescription = Description.WithType(Settings.GetClusterType());
+                    var clusterDescription = Description.WithType(Settings.GetInitialClusterType());
                     if (Settings.Scheme != ConnectionStringScheme.MongoDBPlusSrv)
                     {
                         lock (_serversLock)
@@ -211,12 +209,15 @@ namespace MongoDB.Driver.Core.Clusters
 
                 case ClusterType.Unknown:
 #pragma warning disable CS0618
-                    if (clusterSettings.ConnectionModeSwitch != ConnectionModeSwitch.UseDirectConnection)
+                    if (clusterSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+                    {
+                        return true;
+                    }
+                    else
                     {
                         switch (clusterSettings.ConnectionMode)
                         {
                             case ClusterConnectionMode.Automatic:
-#pragma warning restore CS0618
                                 if (serverType == ServerType.Standalone)
                                 {
                                     return _servers.Count == 1 || Settings.Scheme == ConnectionStringScheme.MongoDBPlusSrv; // Standalone is only valid in MultiServerCluster when using MongoDBPlusSrv scheme
@@ -227,10 +228,7 @@ namespace MongoDB.Driver.Core.Clusters
                                 throw new MongoInternalException("Unexpected connection mode.");
                         }
                     }
-                    else
-                    {
-                        return true;
-                    }
+#pragma warning restore CS0618
 
                 default:
                     throw new MongoInternalException("Unexpected cluster type.");

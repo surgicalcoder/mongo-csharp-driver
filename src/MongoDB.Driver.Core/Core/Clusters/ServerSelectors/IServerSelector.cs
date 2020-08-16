@@ -26,9 +26,9 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
         /// <summary>
         /// Selects the servers.
         /// </summary>
-        /// <param name="cluster">The cluster.</param>
+        /// <param name="clusterDescription">The cluster description.</param>
         /// <param name="servers">The servers.</param>
         /// <returns>The selected servers.</returns>
-        IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<ServerDescription> servers);
+        IEnumerable<ServerDescription> SelectServers(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers);
     }
 }

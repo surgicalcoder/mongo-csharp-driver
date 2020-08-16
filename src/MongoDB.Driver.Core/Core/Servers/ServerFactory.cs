@@ -37,9 +37,11 @@ namespace MongoDB.Driver.Core.Servers
 
         // constructors
 #pragma warning disable CS0618
-        public ServerFactory(ConnectionModeSwitch connectionModeSwitch, ClusterConnectionMode clusterConnectionMode, bool? directConnection, ServerSettings settings, IConnectionPoolFactory connectionPoolFactory, IServerMonitorFactory serverMonitoryFactory, IEventSubscriber eventSubscriber)
+        public ServerFactory(ClusterConnectionMode clusterConnectionMode, ConnectionModeSwitch connectionModeSwitch, bool? directConnection, ServerSettings settings, IConnectionPoolFactory connectionPoolFactory, IServerMonitorFactory serverMonitoryFactory, IEventSubscriber eventSubscriber)
 #pragma warning restore CS0618
         {
+            ClusterConnectionModeHelper.EnsureConnectionModeValuesAreValid(clusterConnectionMode, connectionModeSwitch, directConnection);
+
             _clusterConnectionMode = clusterConnectionMode;
             _connectionModeSwitch = connectionModeSwitch;
             _directConnection = directConnection;
