@@ -19,7 +19,7 @@ namespace MongoDB.Driver.Core.Clusters
 {
     internal static class ClusterConnectionModeHelper
     {
-#pragma warning disable 618
+#pragma warning disable CS0618
         public static void EnsureConnectionModeValuesAreValid(ClusterConnectionMode connectionMode, ConnectionModeSwitch connectionModeSwitch, bool? directConnection)
         {
             switch (connectionModeSwitch)
@@ -50,6 +50,6 @@ namespace MongoDB.Driver.Core.Clusters
                     throw new ArgumentException($"Invalid connectionMode: {connectionMode}.", nameof(connectionMode));
             }
         }
-#pragma warning disable 618
+#pragma warning restore CS0618
     }
 }

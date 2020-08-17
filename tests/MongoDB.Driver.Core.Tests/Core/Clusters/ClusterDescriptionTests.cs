@@ -318,7 +318,7 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning disable CS0618
             var subject = new ClusterDescription(new ClusterId(1), ClusterConnectionMode.Standalone, ClusterType.Standalone, new[] { __serverDescription1 });
 #pragma warning restore CS0618
-            var expected = string.Format("{{ ClusterId : \"1\", Type : \"Standalone\", State : \"Disconnected\", Servers : [{0}] }}",
+            var expected = string.Format("{{ ClusterId : \"1\", ConnectionMode : \"Standalone\", Type : \"Standalone\", State : \"Disconnected\", Servers : [{0}] }}",
                 __serverDescription1.ToString());
             subject.ToString().Should().Be(expected);
         }

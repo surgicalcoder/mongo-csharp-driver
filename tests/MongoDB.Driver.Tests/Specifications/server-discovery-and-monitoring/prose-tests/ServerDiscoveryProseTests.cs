@@ -51,7 +51,8 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring.pr
             }
 
             var dnsEndpoint = (DnsEndPoint)secondary.EndPoint;
-            using (var client = new DisposableMongoClient(new MongoClient(CreateConnectionString(dnsEndpoint, directConnection))))
+            var replicaSetName = secondary.ReplicaSetConfig.Name;
+            using (var client = new DisposableMongoClient(new MongoClient(CreateConnectionString(dnsEndpoint, directConnection, replicaSetName))))
             {
                 var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
                 var collection = database.GetCollection<BsonDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
@@ -70,12 +71,12 @@ namespace MongoDB.Driver.Tests.Specifications.server_discovery_and_monitoring.pr
         }
 
         // private methods
-        private string CreateConnectionString(DnsEndPoint endpoint, bool? directConnection)
+        private string CreateConnectionString(DnsEndPoint endpoint, bool? directConnection, string replicaSetName)
         {
-            var connectionString = $"mongodb://{endpoint.Host}:{endpoint.Port}";
+            var connectionString = $"mongodb://{endpoint.Host}:{endpoint.Port}/?replicaSet={replicaSetName}";
             if (directConnection.HasValue)
             {
-                connectionString += $"/?directConnection={directConnection.Value}";
+                connectionString += $"&directConnection={directConnection.Value}";
             }
             return connectionString;
         }

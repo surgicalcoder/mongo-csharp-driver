@@ -166,7 +166,7 @@ namespace MongoDB.Driver.Tests
             var applicationName = "app1";
             var clusterConfigurator = new Action<ClusterBuilder>(b => { });
 #pragma warning disable CS0618
-            var connectionModeSwitch = ConnectionModeSwitch.NotSet;
+            var connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
 #pragma warning restore CS0618
             var compressors = new CompressorConfiguration[0];
 #pragma warning disable CS0618
@@ -213,13 +213,24 @@ namespace MongoDB.Driver.Tests
                     case "ClusterConfigurator": clusterConfigurator = new Action<ClusterBuilder>(b => { }); break;
                     case "Compressors": compressors = new[] { new CompressorConfiguration(CompressorType.Zlib) }; break;
 #pragma warning disable CS0618
-                    case "ConnectionMode": connectionMode = ConnectionMode.ReplicaSet; break;
+                    case "ConnectionMode":
+                        {
+                            connectionMode = ConnectionMode.ReplicaSet;
+                            connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
+                            directConnection = null; // reset
+                        } break;
 #pragma warning restore CS0618
                     case "ConnectTimeout": connectTimeout = TimeSpan.FromSeconds(99); break;
 #pragma warning disable 618
                     case "Credentials": credentials = new List<MongoCredential> { MongoCredential.CreateMongoCRCredential("different", "different", "different") }; break;
+                    case "DirectConnection":
+                        {
+                            directConnection = true;
+                            connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
+                            connectionMode = ConnectionMode.Automatic; // reset
 #pragma warning restore 618
-                    case "DirectConnection": directConnection = true; break;
+                        }
+                        break;
                     case "HeartbeatInterval": heartbeatInterval = TimeSpan.FromSeconds(99); break;
                     case "HeartbeatTimeout": heartbeatTimeout = TimeSpan.FromSeconds(99); break;
                     case "IPv6": ipv6 = !ipv6; break;
@@ -284,7 +295,7 @@ namespace MongoDB.Driver.Tests
             Dictionary<string, IReadOnlyDictionary<string, object>> kmsProvidersValue = null,
             Dictionary<string, BsonDocument> schemaMapValue = null,
 #pragma warning disable CS0618
-            ConnectionModeSwitch connectionModeSwitch = ConnectionModeSwitch.NotSet)
+            ConnectionModeSwitch connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode)
 #pragma warning restore CS0618
         {
             var allowInsecureTls = true;
@@ -292,7 +303,7 @@ namespace MongoDB.Driver.Tests
             var clusterConfigurator = new Action<ClusterBuilder>(b => { });
             var compressors = new CompressorConfiguration[0];
 #pragma warning disable CS0618
-            var connectionMode = ConnectionMode.Direct;
+            var connectionMode = connectionModeSwitch != ConnectionModeSwitch.UseConnectionMode ? ConnectionMode.Automatic : ConnectionMode.Direct;
 #pragma warning restore CS0618
             var connectTimeout = TimeSpan.FromSeconds(1);
 #pragma warning disable 618

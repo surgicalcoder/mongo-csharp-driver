@@ -18,7 +18,7 @@ using MongoDB.Driver.Core.Clusters;
 
 namespace MongoDB.Driver
 {
-    internal static class ClusterConnectionModeHelper
+    internal static class ConnectionModeHelper
     {
 #pragma warning disable 618
         public static void EnsureConnectionModeValuesAreValid(ConnectionMode connectionMode, ConnectionModeSwitch connectionModeSwitch, bool? directConnection)
