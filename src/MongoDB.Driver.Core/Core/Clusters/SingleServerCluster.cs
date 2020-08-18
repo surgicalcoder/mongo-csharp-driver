@@ -151,10 +151,10 @@ namespace MongoDB.Driver.Core.Clusters
                     return serverType == ServerType.ShardRouter;
 
                 case ClusterType.Standalone:
-                    return serverType == ServerType.Standalone;
+                    return IsStandaloneServerValidForCluster();
 
                 case ClusterType.Unknown:
-                    if (IsUnknownServerValidForSingleServerCluster())
+                    if (IsUnknownServerValidForCluster())
                     {
                         return true;
                     }
@@ -166,7 +166,21 @@ namespace MongoDB.Driver.Core.Clusters
                     throw new MongoInternalException("Unexpected cluster type.");
             }
 
-            bool IsUnknownServerValidForSingleServerCluster()
+            bool IsStandaloneServerValidForCluster()
+            {
+#pragma warning disable CS0618
+                if (clusterSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+#pragma warning restore CS0618
+                {
+                    return clusterSettings.DirectConnection.GetValueOrDefault();
+                }
+                else
+                {
+                    return serverType == ServerType.Standalone;
+                }
+            }
+
+            bool IsUnknownServerValidForCluster()
             {
 #pragma warning disable CS0618
                 if (clusterSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)

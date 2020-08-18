@@ -318,13 +318,20 @@ namespace MongoDB.Driver.Core.Configuration
             if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore 618
             {
-                if (_replicaSetName != null && !_directConnection.GetValueOrDefault())
+                if (_directConnection.GetValueOrDefault())
                 {
-                    return ClusterType.ReplicaSet;
+                    return ClusterType.Standalone;
                 }
                 else
                 {
-                    return ClusterType.Unknown;
+                    if (_replicaSetName != null)
+                    {
+                        return ClusterType.ReplicaSet;
+                    }
+                    else
+                    {
+                        return ClusterType.Unknown;
+                    }
                 }
             }
             else

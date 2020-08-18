@@ -109,7 +109,6 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                     if (cluster is SingleServerCluster singleServerCluster)
                     {
 #pragma warning disable 618
-
                         if (clusterDescription.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                         {
                             singleServerCluster

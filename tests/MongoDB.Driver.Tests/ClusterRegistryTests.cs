@@ -68,7 +68,7 @@ namespace MongoDB.Driver.Tests
                 compressors: new[] { new CompressorConfiguration(CompressorType.Zlib) },
 #pragma warning disable CS0618
                 connectionMode: ConnectionMode.ReplicaSet,
-                connectionModeSwitch: ConnectionModeSwitch.NotSet,
+                connectionModeSwitch: ConnectionModeSwitch.UseConnectionMode,
 #pragma warning restore CS0618
                 connectTimeout: TimeSpan.FromSeconds(1),
                 credentials: credentials,
