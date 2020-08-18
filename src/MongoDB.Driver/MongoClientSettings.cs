@@ -220,13 +220,13 @@ namespace MongoDB.Driver
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
-
                 if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
                     throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
+
                 _connectionMode = value;
-                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode; // _directConnection is always null here
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
             }
         }
 
@@ -234,7 +234,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// Gets the connection mode switch.
         /// </summary>
-        [Obsolete("It will bre removed in later release.")]
+        [Obsolete("This property will be removed in a later release.")]
         public ConnectionModeSwitch ConnectionModeSwitch
 #pragma warning restore CS0618
         {
@@ -316,13 +316,13 @@ namespace MongoDB.Driver
             set
             {
                 if (_isFrozen) { throw new InvalidOperationException("MongoClientSettings is frozen."); }
-
                 if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
                 {
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
+
                 _directConnection = value;
-                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection; // _connectionMode is always Automatic here
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
             }
         }
 
@@ -1105,9 +1105,9 @@ namespace MongoDB.Driver
             }
             sb.AppendFormat("ConnectTimeout={0};", _connectTimeout);
             sb.AppendFormat("Credentials={{{0}}};", _credentials);
-            if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection && _directConnection.HasValue)
             {
-                sb.AppendFormat("DirectConnection={0};", _directConnection);
+                sb.AppendFormat("DirectConnection={0};", _directConnection.Value);
             }
             sb.AppendFormat("GuidRepresentation={0};", _guidRepresentation);
             sb.AppendFormat("HeartbeatInterval={0};", _heartbeatInterval);
@@ -1200,14 +1200,17 @@ namespace MongoDB.Driver
                         $".{nameof(_sslSettings.CheckCertificateRevocation)} cannot both be true.");
             }
 
-            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && IsDirectConnection())
+            if (IsDirectConnection())
             {
-                throw new InvalidOperationException($"{nameof(DirectConnection)} mode cannot be used with SRV.");
-            }
+                if (_scheme == ConnectionStringScheme.MongoDBPlusSrv)
+                {
+                    throw new InvalidOperationException($"SRV cannot be used with direct connections.");
+                }
 
-            if (_servers.Count > 1 && IsDirectConnection())
-            {
-                throw new InvalidOperationException($"{nameof(DirectConnection)} mode cannot be used with multiple host names.");
+                if (_servers.Count > 1)
+                {
+                    throw new InvalidOperationException($"Multiple host names cannot be used with direct connections.");
+                }
             }
 
             bool IsDirectConnection()

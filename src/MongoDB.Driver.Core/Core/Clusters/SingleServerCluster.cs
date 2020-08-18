@@ -154,14 +154,8 @@ namespace MongoDB.Driver.Core.Clusters
                     return IsStandaloneServerValidForCluster();
 
                 case ClusterType.Unknown:
-                    if (IsUnknownServerValidForCluster())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        throw new MongoInternalException("Unexpected connection mode.");
-                    }
+                    return IsUnknownServerValidForCluster();
+
                 default:
                     throw new MongoInternalException("Unexpected cluster type.");
             }

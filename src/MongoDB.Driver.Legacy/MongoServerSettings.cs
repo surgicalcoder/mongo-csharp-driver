@@ -220,7 +220,7 @@ namespace MongoDB.Driver
                     throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 _connectionMode = value;
-                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode; // _directConnection is always null here
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
             }
         }
 
@@ -228,7 +228,7 @@ namespace MongoDB.Driver
         /// Gets the connection mode switch.
         /// </summary>
 #pragma warning disable CS0618
-        [Obsolete("Will be removed in a later version.")]
+        [Obsolete("This property will be removed in a later release.")]
         public ConnectionModeSwitch ConnectionModeSwitch
 #pragma warning restore CS0618
         {
@@ -312,7 +312,7 @@ namespace MongoDB.Driver
                 }
 
                 _directConnection = value;
-                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection; // _connectionMode is always Automatic here
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
             }
         }
 
@@ -795,14 +795,14 @@ namespace MongoDB.Driver
             {
                 serverSettings.ConnectionMode = clientSettings.ConnectionMode;
             }
-            else if (clientSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
-            {
-                serverSettings.DirectConnection = clientSettings.DirectConnection;
-            }
 #pragma warning restore CS0618
             serverSettings.ConnectTimeout = clientSettings.ConnectTimeout;
 #pragma warning disable 618
             serverSettings.Credentials = clientSettings.Credentials;
+            if (clientSettings.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            {
+                serverSettings.DirectConnection = clientSettings.DirectConnection;
+            }
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
             {
                 serverSettings.GuidRepresentation = clientSettings.GuidRepresentation;
@@ -1233,14 +1233,17 @@ namespace MongoDB.Driver
                     $".{nameof(_sslSettings.CheckCertificateRevocation)} cannot both be true.");
             }
 
-            if (_scheme == ConnectionStringScheme.MongoDBPlusSrv && IsDirectConnection())
+            if (IsDirectConnection())
             {
-                throw new InvalidOperationException($"{nameof(DirectConnection)} mode cannot be used with SRV.");
-            }
+                if (_scheme == ConnectionStringScheme.MongoDBPlusSrv)
+                {
+                    throw new InvalidOperationException($"SRV cannot be used with direct connections.");
+                }
 
-            if (_servers.Count > 1 && IsDirectConnection())
-            {
-                throw new InvalidOperationException($"{nameof(DirectConnection)} mode cannot be used with multiple host names.");
+                if (_servers.Count > 1)
+                {
+                    throw new InvalidOperationException($"Multiple host names cannot be used with direct connections.");
+                }
             }
 
             if (_allowInsecureTls && _sslSettings != null && _sslSettings.CheckCertificateRevocation)

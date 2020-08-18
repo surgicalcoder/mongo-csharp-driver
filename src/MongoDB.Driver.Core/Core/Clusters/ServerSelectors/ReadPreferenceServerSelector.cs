@@ -69,29 +69,29 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
 
         // methods
         /// <inheritdoc/>
-        public IEnumerable<ServerDescription> SelectServers(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
+        public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
         {
             if (_maxStaleness.HasValue)
             {
-                if (clusterDescription.Servers.Any(s => s.Type != ServerType.Unknown && !Feature.MaxStaleness.IsSupported(s.Version)))
+                if (cluster.Servers.Any(s => s.Type != ServerType.Unknown && !Feature.MaxStaleness.IsSupported(s.Version)))
                 {
                     throw new NotSupportedException("All servers must be version 3.4 or newer to use max staleness.");
                 }
             }
 
-            if (clusterDescription.IsDirectConnection)
+            if (cluster.IsDirectConnection)
             {
                 return servers;
             }
 
-            switch (clusterDescription.Type)
+            switch (cluster.Type)
             {
-                case ClusterType.ReplicaSet: return SelectForReplicaSet(clusterDescription, servers);
+                case ClusterType.ReplicaSet: return SelectForReplicaSet(cluster, servers);
                 case ClusterType.Sharded: return SelectForShardedCluster(servers);
                 case ClusterType.Standalone: return SelectForStandaloneCluster(servers);
                 case ClusterType.Unknown: return __noServers;
                 default:
-                    var message = string.Format("ReadPreferenceServerSelector is not implemented for cluster of type: {0}.", clusterDescription.Type);
+                    var message = string.Format("ReadPreferenceServerSelector is not implemented for cluster of type: {0}.", cluster.Type);
                     throw new NotImplementedException(message);
             }
         }

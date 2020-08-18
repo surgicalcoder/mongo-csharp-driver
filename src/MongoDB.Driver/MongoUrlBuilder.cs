@@ -250,14 +250,14 @@ namespace MongoDB.Driver
                     throw new InvalidOperationException("ConnectionMode cannot be used when ConnectionModeSwitch is set to UseDirectConnection.");
                 }
                 _connectionMode = value;
-                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode; // _directConnection is always null here
+                _connectionModeSwitch = ConnectionModeSwitch.UseConnectionMode;
             }
         }
 
         /// <summary>
         /// Gets the connection mode switch.
         /// </summary>
-        [Obsolete("Will be removed in a later version.")]
+        [Obsolete("This property will be removed in a later release.")]
         public ConnectionModeSwitch ConnectionModeSwitch
         {
             get { return _connectionModeSwitch; }
@@ -311,7 +311,7 @@ namespace MongoDB.Driver
                     throw new InvalidOperationException("DirectConnection cannot be used when ConnectionModeSwitch is set to UseConnectionMode.");
                 }
                 _directConnection = value;
-                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection; // _connectionMode is always Automatic here
+                _connectionModeSwitch = ConnectionModeSwitch.UseDirectConnection;
             }
         }
 
@@ -764,8 +764,7 @@ namespace MongoDB.Driver
             _authenticationSource = connectionString.AuthSource;
             _compressors = connectionString.Compressors;
 #pragma warning disable CS0618
-            _connectionModeSwitch = connectionString.ConnectionModeSwitch;
-            if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+            if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
             {
                 switch (connectionString.Connect)
                 {
@@ -786,16 +785,17 @@ namespace MongoDB.Driver
                         break;
                 }
 #pragma warning restore CS0618
-                // _directConenction is always null here
             }
+#pragma warning disable CS0618 // Type or member is obsolete
+            _connectionModeSwitch = connectionString.ConnectionModeSwitch;
+#pragma warning restore CS0618 // Type or member is obsolete
             _connectTimeout = connectionString.ConnectTimeout.GetValueOrDefault(MongoDefaults.ConnectTimeout);
             _databaseName = connectionString.DatabaseName;
 #pragma warning disable CS0618
-            if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            if (connectionString.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {
                 _directConnection = connectionString.DirectConnection;
-                _connectionMode = ConnectionMode.Automatic; // reset
             }
             _fsync = connectionString.FSync;
 #pragma warning disable 618
@@ -1008,7 +1008,7 @@ namespace MongoDB.Driver
             {
                 if (_directConnection.HasValue)
                 {
-                    query.AppendFormat("directConnection={0};", MongoUtils.ToCamelCase(_directConnection.Value.ToString()));
+                    query.AppendFormat("directConnection={0};", JsonConvert.ToString(_directConnection.Value));
                 }
             }
             if (!string.IsNullOrEmpty(_replicaSetName))

@@ -38,11 +38,11 @@ namespace MongoDB.Driver
     {
         #region static
         // private static methods
-        private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
+        private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
         {
             var connectedServers = servers.Where(s => s.State == ServerState.Connected);
 
-            if (clusterDescription.IsDirectConnection)
+            if (cluster.IsDirectConnection)
             {
                 return connectedServers;
             }
@@ -633,10 +633,10 @@ namespace MongoDB.Driver
         {
             public ClusterDescription ClusterDescription;
 
-            public IEnumerable<ServerDescription> SelectServers(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
+            public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
             {
-                ClusterDescription = clusterDescription;
-                return SelectServersThatDetermineWhetherSessionsAreSupported(clusterDescription, servers);
+                ClusterDescription = cluster;
+                return SelectServersThatDetermineWhetherSessionsAreSupported(cluster, servers);
             }
         }
     }

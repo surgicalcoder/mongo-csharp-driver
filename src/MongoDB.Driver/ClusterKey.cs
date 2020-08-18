@@ -99,6 +99,7 @@ namespace MongoDB.Driver
             TimeSpan waitQueueTimeout)
         {
             ConnectionModeHelper.EnsureConnectionModeValuesAreValid(connectionMode, connectionModeSwitch, directConnection);
+
             _allowInsecureTls = allowInsecureTls;
             _applicationName = applicationName;
             _clusterConfigurator = clusterConfigurator;
@@ -151,7 +152,7 @@ namespace MongoDB.Driver
                 return _connectionMode;
             }
         }
-        [Obsolete("Will be removed in a later version.")]
+        [Obsolete("This property will be removed in a later release.")]
         public ConnectionModeSwitch ConnectionModeSwitch => _connectionModeSwitch;
         public TimeSpan ConnectTimeout { get { return _connectTimeout; } }
         public IReadOnlyList<MongoCredential> Credentials { get { return _credentials; } }

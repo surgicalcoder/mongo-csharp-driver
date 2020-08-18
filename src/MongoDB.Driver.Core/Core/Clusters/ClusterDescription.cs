@@ -45,11 +45,11 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning restore CS0618
 
         // private static methods
-        private static TimeSpan? CalculateLogicalSessionTimeout(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
+        private static TimeSpan? CalculateLogicalSessionTimeout(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
         {
             TimeSpan? logicalSessionTimeout = null;
 
-            foreach (var server in SelectServersThatDetermineWhetherSessionsAreSupported(clusterDescription, servers))
+            foreach (var server in SelectServersThatDetermineWhetherSessionsAreSupported(cluster, servers))
             {
                 if (server.LogicalSessionTimeout == null)
                 {
@@ -65,10 +65,10 @@ namespace MongoDB.Driver.Core.Clusters
             return logicalSessionTimeout;
         }
 
-        private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterDescription clusterDescription, IEnumerable<ServerDescription> servers)
+        private static IEnumerable<ServerDescription> SelectServersThatDetermineWhetherSessionsAreSupported(ClusterDescription cluster, IEnumerable<ServerDescription> servers)
         {
             var connectedServers = servers.Where(s => s.State == ServerState.Connected);
-            if (clusterDescription.IsDirectConnection)
+            if (cluster.IsDirectConnection)
             {
                 return connectedServers;
             }
@@ -197,7 +197,7 @@ namespace MongoDB.Driver.Core.Clusters
         /// <summary>
         /// Gets the connection mode switch.
         /// </summary>
-        [Obsolete("Will be removed in a later version.")]
+        [Obsolete("This property will be removed in a later release.")]
         public ConnectionModeSwitch ConnectionModeSwitch
         {
             get { return _connectionModeSwitch; }
@@ -353,7 +353,7 @@ namespace MongoDB.Driver.Core.Clusters
 #pragma warning disable CS0618
                 if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
                 {
-                    return _directConnection.HasValue ? $"DirectConnection : \"{_directConnection}\", " : string.Empty;
+                    return _directConnection.HasValue ? $"DirectConnection : \"{_directConnection}\", " : "";
                 }
                 else if (_connectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
 #pragma warning restore CS0618
@@ -362,7 +362,7 @@ namespace MongoDB.Driver.Core.Clusters
                 }
                 else
                 {
-                    return string.Empty;
+                    return "";
                 }
             }
         }

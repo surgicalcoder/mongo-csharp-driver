@@ -48,9 +48,9 @@ namespace MongoDB.Driver.Core.Clusters.ServerSelectors
 
         // methods
         /// <inheritdoc/>
-        public IEnumerable<ServerDescription> SelectServers(ClusterDescription clusterDescription, IEnumerable<Servers.ServerDescription> servers)
+        public IEnumerable<ServerDescription> SelectServers(ClusterDescription cluster, IEnumerable<Servers.ServerDescription> servers)
         {
-            if (clusterDescription.IsDirectConnection)
+            if (cluster.IsDirectConnection)
             {
                 return servers;
             }

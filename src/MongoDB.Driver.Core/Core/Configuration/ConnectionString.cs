@@ -225,7 +225,7 @@ namespace MongoDB.Driver.Core.Configuration
         /// <summary>
         /// Gets the connection mode switch.
         /// </summary>
-        [Obsolete("Will be removed in a later version.")]
+        [Obsolete("This property will be removed in a later release.")]
         public ConnectionModeSwitch ConnectionModeSwitch
         {
             get { return _connectionModeSwitch; }

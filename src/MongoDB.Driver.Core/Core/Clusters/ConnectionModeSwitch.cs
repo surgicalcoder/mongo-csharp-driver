@@ -20,7 +20,7 @@ namespace MongoDB.Driver.Core.Clusters
     /// <summary>
     /// Determine whether to use legacy ConnectionMode or DirectConnection.
     /// </summary>
-    [Obsolete("Will be removed in a later version.")]
+    [Obsolete("This enum will be removed in a later release.")]
     public enum ConnectionModeSwitch
     {
         /// <summary>
