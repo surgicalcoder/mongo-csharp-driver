@@ -817,6 +817,12 @@ namespace MongoDB.Driver
             clientSettings.ApplicationName = url.ApplicationName;
             clientSettings.AutoEncryptionOptions = null; // must be configured via code
             clientSettings.Compressors = url.Compressors;
+#pragma warning disable CS0618
+            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+            {
+                clientSettings.ConnectionMode = url.ConnectionMode;
+#pragma warning restore CS0618
+            }
             clientSettings.ConnectTimeout = url.ConnectTimeout;
             if (credential != null)
             {
@@ -834,11 +840,7 @@ namespace MongoDB.Driver
                 clientSettings.Credential = credential;
             }
 #pragma warning disable CS0618
-            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
-            {
-                clientSettings.ConnectionMode = url.ConnectionMode;
-            }
-            else if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {
                 clientSettings.DirectConnection = url.DirectConnection;

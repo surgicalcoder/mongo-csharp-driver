@@ -851,6 +851,13 @@ namespace MongoDB.Driver
             serverSettings.AllowInsecureTls = url.AllowInsecureTls;
             serverSettings.ApplicationName = url.ApplicationName;
             serverSettings.Compressors = url.Compressors;
+            // serverSettings._clusterConnectionModeSwitch will be calculated automatically
+#pragma warning disable CS0618
+            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
+            {
+                serverSettings.ConnectionMode = url.ConnectionMode;
+            }
+#pragma warning restore CS0618
             serverSettings.ConnectTimeout = url.ConnectTimeout;
             if (credential != null)
             {
@@ -868,12 +875,7 @@ namespace MongoDB.Driver
                 serverSettings.Credential = credential;
             }
 #pragma warning disable 618
-            // serverSettings._clusterConnectionModeSwitch will be calculated automatically
-            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseConnectionMode)
-            {
-                serverSettings.ConnectionMode = url.ConnectionMode;
-            }
-            else if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            if (url.ConnectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
             {
                 serverSettings.DirectConnection = url.DirectConnection;
             }

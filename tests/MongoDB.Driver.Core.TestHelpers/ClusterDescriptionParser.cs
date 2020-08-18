@@ -48,7 +48,6 @@ namespace MongoDB.Driver.Core.TestHelpers
             }
 #pragma warning restore 618
 
-
             var clusterType = (ClusterType)Enum.Parse(typeof(ClusterType), args["clusterType"].AsString);
 
             var numberOfServers = args["servers"].AsBsonArray.Count;

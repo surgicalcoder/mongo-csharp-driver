@@ -785,16 +785,18 @@ namespace MongoDB.Driver
                         _connectionMode = Driver.ConnectionMode.Automatic;
                         break;
                 }
+#pragma warning restore CS0618
                 // _directConenction is always null here
             }
-            else if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
+            _connectTimeout = connectionString.ConnectTimeout.GetValueOrDefault(MongoDefaults.ConnectTimeout);
+            _databaseName = connectionString.DatabaseName;
+#pragma warning disable CS0618
+            if (_connectionModeSwitch == ConnectionModeSwitch.UseDirectConnection)
 #pragma warning restore CS0618
             {
                 _directConnection = connectionString.DirectConnection;
                 _connectionMode = ConnectionMode.Automatic; // reset
             }
-            _connectTimeout = connectionString.ConnectTimeout.GetValueOrDefault(MongoDefaults.ConnectTimeout);
-            _databaseName = connectionString.DatabaseName;
             _fsync = connectionString.FSync;
 #pragma warning disable 618
             if (BsonDefaults.GuidRepresentationMode == GuidRepresentationMode.V2)
