@@ -48,12 +48,15 @@ namespace MongoDB.Driver.Core.Misc
                     var readTask = stream.ReadAsync(buffer, offset, count, cancellationToken);
                     var timeoutTask = Task.Delay(timeout, cancellationToken);
                     var completedTask = await Task.WhenAny(readTask, timeoutTask).ConfigureAwait(false);
-                    if (completedTask == timeoutTask)
+                    if (completedTask == readTask)
                     {
-                        ChangeState(3);
+                        bytesRead = readTask.Result;
+                        ChangeState(2); // note: might not actually go to state 2 if already in state 4
                     }
-                    bytesRead = readTask.Result;
-                    ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
+                    else
+                    {
+                        ChangeState(3); // note: might not actually go to state 3 if already in state 4
+                    }
                 }
                 catch when (state == 1)
                 {
@@ -173,11 +176,14 @@ namespace MongoDB.Driver.Core.Misc
                     var writeTask = stream.WriteAsync(buffer, offset, count, cancellationToken);
                     var timeoutTask = Task.Delay(timeout, cancellationToken);
                     var completedTask = await Task.WhenAny(writeTask, timeoutTask).ConfigureAwait(false);
-                    if (completedTask == timeoutTask)
+                    if (completedTask == writeTask)
                     {
-                        ChangeState(3);
+                        ChangeState(2); // note: might not actually go to state 2 if already in state 4
                     }
-                    ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
+                    else
+                    {
+                        ChangeState(3); // note: might not actually go to state 3 if already in state 4
+                    }
                 }
                 catch when (state == 1)
                 {
