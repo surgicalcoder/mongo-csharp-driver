@@ -41,12 +41,18 @@ namespace MongoDB.Driver.Core.Misc
             var state = 1; // 1 == reading, 2 == done reading, 3 == timedout, 4 == cancelled
 
             var bytesRead = 0;
-            using (new Timer(_ => ChangeState(3), null, timeout, Timeout.InfiniteTimeSpan))
             using (cancellationToken.Register(() => ChangeState(4)))
             {
                 try
                 {
-                    bytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                    var readTask = stream.ReadAsync(buffer, offset, count, cancellationToken);
+                    var timeoutTask = Task.Delay(timeout, cancellationToken);
+                    var completedTask = await Task.WhenAny(readTask, timeoutTask).ConfigureAwait(false);
+                    if (completedTask == timeoutTask)
+                    {
+                        ChangeState(3);
+                    }
+                    bytesRead = readTask.Result;
                     ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
                 }
                 catch when (state == 1)
@@ -160,12 +166,17 @@ namespace MongoDB.Driver.Core.Misc
         {
             var state = 1; // 1 == writing, 2 == done writing, 3 == timedout, 4 == cancelled
 
-            using (new Timer(_ => ChangeState(3), null, timeout, Timeout.InfiniteTimeSpan))
             using (cancellationToken.Register(() => ChangeState(4)))
             {
                 try
                 {
-                    await stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                    var writeTask = stream.WriteAsync(buffer, offset, count, cancellationToken);
+                    var timeoutTask = Task.Delay(timeout, cancellationToken);
+                    var completedTask = await Task.WhenAny(writeTask, timeoutTask).ConfigureAwait(false);
+                    if (completedTask == timeoutTask)
+                    {
+                        ChangeState(3);
+                    }
                     ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
                 }
                 catch when (state == 1)
