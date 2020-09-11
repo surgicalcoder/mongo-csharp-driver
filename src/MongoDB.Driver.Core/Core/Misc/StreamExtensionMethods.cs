@@ -50,7 +50,7 @@ namespace MongoDB.Driver.Core.Misc
                     var completedTask = await Task.WhenAny(readTask, timeoutTask).ConfigureAwait(false);
                     if (completedTask == readTask)
                     {
-                        bytesRead = readTask.Result;
+                        bytesRead = readTask.GetAwaiter().GetResult();
                         ChangeState(2); // note: might not actually go to state 2 if already in state 4
                     }
                     else
@@ -178,6 +178,7 @@ namespace MongoDB.Driver.Core.Misc
                     var completedTask = await Task.WhenAny(writeTask, timeoutTask).ConfigureAwait(false);
                     if (completedTask == writeTask)
                     {
+                        writeTask.GetAwaiter().GetResult(); // propagate exceptions
                         ChangeState(2); // note: might not actually go to state 2 if already in state 4
                     }
                     else
