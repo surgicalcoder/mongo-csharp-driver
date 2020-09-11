@@ -16,6 +16,7 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
@@ -33,9 +34,11 @@ namespace MongoDB.Driver.Tests.Jira
         [ParameterAttributeData]
         public void Ensure_that_MongoConnectionException_contains_expected_attributes([Values(false, true)] bool async)
         {
-            var serverResponseDelay = TimeSpan.FromMilliseconds(500);
-            var appName = $"app_sync_{async}";
-            RequireServer.Check().VersionGreaterThanOrEqualTo(new SemanticVersion(4, 4, 0));
+            RequireServer.Check().VersionGreaterThanOrEqualTo(new SemanticVersion(4, 4, 0)); // failCommand.blockTimeMS is supported since 4.4
+
+            var socketTimeout = TimeSpan.FromMilliseconds(100);
+            var serverResponseDelay = TimeSpan.FromMilliseconds(1000);
+            var appName = $"app_async_{async}";
 
             var timeoutCommand = BsonDocument.Parse($@"
             {{
@@ -52,7 +55,7 @@ namespace MongoDB.Driver.Tests.Jira
             }}");
             var mongoClientSettings = DriverTestConfiguration.GetClientSettings().Clone();
             mongoClientSettings.ApplicationName = appName;
-            mongoClientSettings.SocketTimeout = TimeSpan.FromMilliseconds(100);
+            mongoClientSettings.SocketTimeout = socketTimeout;
             using (var client = DriverTestConfiguration.CreateDisposableClient(mongoClientSettings))
             {
                 using (var failPoint = FailPoint.Configure(client.Cluster, NoCoreSession.NewHandle(), timeoutCommand))
@@ -84,6 +87,8 @@ namespace MongoDB.Driver.Tests.Jira
                     }
                 }
             }
+
+            Thread.Sleep(serverResponseDelay - socketTimeout); // wait until server will reset failpoint blocking
         }
     }
 }
