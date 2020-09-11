@@ -16,10 +16,13 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
-using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
+using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.TestHelpers;
+using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Jira
@@ -31,43 +34,54 @@ namespace MongoDB.Driver.Tests.Jira
         public void Ensure_that_MongoConnectionException_contains_expected_attributes([Values(false, true)] bool async)
         {
             var serverResponseDelay = TimeSpan.FromMilliseconds(500);
+            var appName = $"app_sync_{async}";
+            RequireServer.Check().VersionGreaterThanOrEqualTo(new SemanticVersion(4, 4, 0));
 
+            var timeoutCommand = BsonDocument.Parse($@"
+            {{
+                configureFailPoint : 'failCommand',
+                mode : {{
+                    times : 1
+                }},
+                data : {{
+                    failCommands : ['ping'],
+                    appName : '{appName}',
+                    blockConnection : true,
+                    blockTimeMS : {serverResponseDelay.TotalMilliseconds}
+                }}
+            }}");
             var mongoClientSettings = DriverTestConfiguration.GetClientSettings().Clone();
+            mongoClientSettings.ApplicationName = appName;
             mongoClientSettings.SocketTimeout = TimeSpan.FromMilliseconds(100);
-
             using (var client = DriverTestConfiguration.CreateDisposableClient(mongoClientSettings))
             {
-                var db = client.GetDatabase("db");
-                var collectionName = "coll_" + async;
-                db.DropCollection(collectionName);
-                var coll = db.GetCollection<BsonDocument>(collectionName);
-                coll.InsertOne(new BsonDocument());
-                // each collection document will trigger delay
-                var filterWithDelay = $"{{ $where : 'function() {{ sleep({serverResponseDelay.TotalMilliseconds}); return true; }}' }}";
-
-                if (async)
+                using (var failPoint = FailPoint.Configure(client.Cluster, NoCoreSession.NewHandle(), timeoutCommand))
                 {
-                    var exception = Record.Exception(() => coll.FindAsync(filterWithDelay).GetAwaiter().GetResult());
+                    var db = client.GetDatabase("db");
+                    if (async)
+                    {
+                        var exception = Record.Exception(() => db.RunCommandAsync<BsonDocument>("{ ping : 1 }").GetAwaiter().GetResult());
 
-                    var mongoConnectionException = exception.Should().BeOfType<MongoConnectionException>().Subject;
-                    mongoConnectionException.ContainsSocketTimeoutException.Should().BeFalse();
-                    mongoConnectionException.ContainsTimeoutException.Should().BeTrue();
-                    mongoConnectionException
-                        .InnerException.Should().BeOfType<TimeoutException>().Subject
-                        .InnerException.Should().BeNull();
-                }
-                else
-                {
-                    var exception = Record.Exception(() => coll.FindSync(filterWithDelay));
+                        var mongoConnectionException = exception.Should().BeOfType<MongoConnectionException>().Subject;
+                        mongoConnectionException.ContainsSocketTimeoutException.Should().BeFalse();
+                        mongoConnectionException.ContainsTimeoutException.Should().BeTrue();
+                        mongoConnectionException
+                            .InnerException.Should().BeOfType<TimeoutException>().Subject
+                            .InnerException.Should().BeNull();
+                    }
+                    else
+                    {
+                        var exception = Record.Exception(() => db.RunCommand<BsonDocument>("{ ping : 1 }"));
 
-                    var mongoConnectionException = exception.Should().BeOfType<MongoConnectionException>().Subject;
-                    mongoConnectionException.ContainsSocketTimeoutException.Should().BeTrue();
-                    mongoConnectionException.ContainsTimeoutException.Should().BeTrue();
-                    var socketException = mongoConnectionException
-                        .InnerException.Should().BeOfType<IOException>().Subject
-                        .InnerException.Should().BeOfType<SocketException>().Subject;
-                    socketException.SocketErrorCode.Should().Be(SocketError.TimedOut);
-                    socketException.InnerException.Should().BeNull();
+                        var mongoConnectionException = exception.Should().BeOfType<MongoConnectionException>().Subject;
+                        mongoConnectionException.ContainsSocketTimeoutException.Should().BeTrue();
+                        mongoConnectionException.ContainsTimeoutException.Should().BeTrue();
+                        var socketException = mongoConnectionException
+                            .InnerException.Should().BeOfType<IOException>().Subject
+                            .InnerException.Should().BeOfType<SocketException>().Subject;
+                        socketException.SocketErrorCode.Should().Be(SocketError.TimedOut);
+                        socketException.InnerException.Should().BeNull();
+                    }
                 }
             }
         }
