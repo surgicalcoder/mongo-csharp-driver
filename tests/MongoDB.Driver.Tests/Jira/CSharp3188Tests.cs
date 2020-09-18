@@ -16,11 +16,11 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
-using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.TestHelpers;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
@@ -32,38 +32,23 @@ namespace MongoDB.Driver.Tests.Jira
     {
         [SkippableTheory]
         [ParameterAttributeData]
-        public void Ensure_that_MongoConnectionException_contains_expected_attributes([Values(false, true)] bool async)
+        public void Connection_timeout_should_throw_expected_exception([Values(false, true)] bool async)
         {
             RequireServer.Check().VersionGreaterThanOrEqualTo(new SemanticVersion(4, 4, 0)); // failCommand.blockTimeMS is supported since 4.4
 
             var socketTimeout = TimeSpan.FromMilliseconds(100);
-            var serverResponseDelay = TimeSpan.FromMilliseconds(1000);
-            var appName = $"app_async_{async}";
+            var serverBlockTime = socketTimeout + TimeSpan.FromMilliseconds(60000);
 
-            var timeoutCommand = BsonDocument.Parse($@"
-            {{
-                configureFailPoint : 'failCommand',
-                mode : {{
-                    times : 1
-                }},
-                data : {{
-                    failCommands : ['ping'],
-                    appName : '{appName}',
-                    blockConnection : true,
-                    blockTimeMS : {serverResponseDelay.TotalMilliseconds}
-                }}
-            }}");
-            var mongoClientSettings = DriverTestConfiguration.GetClientSettings().Clone();
-            mongoClientSettings.ApplicationName = appName;
-            mongoClientSettings.SocketTimeout = socketTimeout;
-            using (var client = DriverTestConfiguration.CreateDisposableClient(mongoClientSettings))
+            var clientSettings = DriverTestConfiguration.GetClientSettings().Clone();
+            clientSettings.SocketTimeout = socketTimeout;
+            using (var client = DriverTestConfiguration.CreateDisposableClient(clientSettings))
             {
-                using (var failPoint = FailPoint.Configure(client.Cluster, NoCoreSession.NewHandle(), timeoutCommand))
+                using (ConfigureFailPoint(client.Cluster, serverBlockTime))
                 {
-                    var db = client.GetDatabase("db");
+                    var database = client.GetDatabase("database");
                     if (async)
                     {
-                        var exception = Record.Exception(() => db.RunCommandAsync<BsonDocument>("{ ping : 1 }").GetAwaiter().GetResult());
+                        var exception = Record.Exception(() => database.RunCommandAsync<BsonDocument>("{ ping : 1 }").GetAwaiter().GetResult());
 
                         var mongoConnectionException = exception.Should().BeOfType<MongoConnectionException>().Subject;
                         mongoConnectionException.ContainsSocketTimeoutException.Should().BeFalse();
@@ -74,7 +59,7 @@ namespace MongoDB.Driver.Tests.Jira
                     }
                     else
                     {
-                        var exception = Record.Exception(() => db.RunCommand<BsonDocument>("{ ping : 1 }"));
+                        var exception = Record.Exception(() => database.RunCommand<BsonDocument>("{ ping : 1 }"));
 
                         var mongoConnectionException = exception.Should().BeOfType<MongoConnectionException>().Subject;
                         mongoConnectionException.ContainsSocketTimeoutException.Should().BeTrue();
@@ -88,7 +73,23 @@ namespace MongoDB.Driver.Tests.Jira
                 }
             }
 
-            Thread.Sleep(serverResponseDelay - socketTimeout); // wait until server will reset failpoint blocking
+            FailPoint ConfigureFailPoint(ICluster cluster, TimeSpan blockTime)
+            {
+                var failPointCommand = BsonDocument.Parse($@"
+                {{
+                    configureFailPoint : 'failCommand',
+                    mode : {{
+                        times : 1
+                    }},
+                    data : {{
+                        failCommands : ['ping'],
+                        blockConnection : true,
+                        blockTimeMS : {blockTime.TotalMilliseconds}
+                    }}
+                }}");
+
+                return FailPoint.Configure(cluster, NoCoreSession.NewHandle(), failPointCommand);
+            }
         }
     }
 }
