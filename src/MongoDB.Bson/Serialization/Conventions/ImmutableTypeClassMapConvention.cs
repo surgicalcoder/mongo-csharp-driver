@@ -17,14 +17,13 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoDB.Bson.Serialization.Conventions
 {
     /// <summary>
     /// Maps a fully immutable type. This will include anonymous types.
     /// </summary>
-    public class ImmutableTypeClassMapConvention : ConventionBase, IClassMapConvention, IPostProcessingConvention
+    public class ImmutableTypeClassMapConvention : ConventionBase, IClassMapConvention
     {
         /// <inheritdoc />
         public void Apply(BsonClassMap classMap)
@@ -36,7 +35,8 @@ namespace MongoDB.Bson.Serialization.Conventions
                 return;
             }
 
-            var properties = GetProperties(typeInfo);
+            var propertyBindingFlags = BindingFlags.Public | BindingFlags.Instance;
+            var properties = typeInfo.GetProperties(propertyBindingFlags);
             if (properties.Any(CanWrite))
             {
                 return; // a type that has any writable properties is not immutable
@@ -52,10 +52,10 @@ namespace MongoDB.Bson.Serialization.Conventions
                 }
 
                 var parameters = ctor.GetParameters();
-                if (parameters.Length != properties.Length)
-                {
-                    continue; // only consider constructors that have sufficient parameters to initialize all properties
-                }
+                //if (parameters.Length != properties.Length)
+                //{
+                //    continue; // only consider constructors that have sufficient parameters to initialize all properties
+                //}
 
                 var matches = parameters
                     .GroupJoin(properties,
@@ -84,48 +84,18 @@ namespace MongoDB.Bson.Serialization.Conventions
                 // then map all the properties from the ClassType inheritance level also
                 foreach (var property in properties)
                 {
-                    MapPropertyIfPossible(classMap, property);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Applies a post processing modification to the class map.
-        /// </summary>
-        /// <param name="classMap">The class map.</param>
-        public void PostProcess(BsonClassMap classMap)
-        {
-            var typeInfo = classMap.ClassType.GetTypeInfo();
-
-            var properties = GetProperties(typeInfo);
-
-            if (properties.Length == 0 || // no properties to map
-                properties.Any(CanWrite)) // a type that has any writable properties is not immutable
-            {
-                return;
-            }
-
-            // Try to map properties that were not added in the Apply,
-            // because now we possibly can have constructors that could be configured in different conventions
-            // so, we need to add the related properties for them
-            foreach (var creator in classMap.CreatorMaps.Where(m => m.Arguments != null))
-            {
-                foreach (var argument in creator.Arguments)
-                {
-                    if (!classMap.DeclaredMemberMaps.Any(d => CompareWithIgnoreCase(d.ElementName, argument.Name)))
+                    if (property.DeclaringType != classMap.ClassType)
                     {
-                        var notMappedProperty = properties.FirstOrDefault(p => CompareWithIgnoreCase(p.Name, argument.Name));
-                        if (notMappedProperty != null)
-                        {
-                            MapPropertyIfPossible(classMap, notMappedProperty);
-                        }
+                        continue;
+                    }
+
+                    var memberMap = classMap.MapMember(property);
+                    if (classMap.IsAnonymous)
+                    {
+                        var defaultValue = memberMap.DefaultValue;
+                        memberMap.SetDefaultValue(defaultValue);
                     }
                 }
-            }
-
-            bool CompareWithIgnoreCase(string value1, string value2)
-            {
-                return value1.Equals(value2, StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -134,31 +104,6 @@ namespace MongoDB.Bson.Serialization.Conventions
         {
             // CanWrite gets true even if a property has only a private setter
             return propertyInfo.CanWrite && (propertyInfo.SetMethod?.IsPublic ?? false);
-        }
-
-        private PropertyInfo[] GetProperties(TypeInfo typeInfo)
-        {
-            var propertyBindingsFlags = BindingFlags.Public | BindingFlags.Instance;
-
-            return
-                typeInfo.GetProperties(propertyBindingsFlags)
-                .Where(p => p.GetCustomAttribute<BsonIgnoreAttribute>() == null)
-                .ToArray();
-        }
-
-        private void MapPropertyIfPossible(BsonClassMap classMap, PropertyInfo property)
-        {
-            if (property.DeclaringType != classMap.ClassType)
-            {
-                return;
-            }
-
-            var memberMap = classMap.MapMember(property);
-            if (classMap.IsAnonymous)
-            {
-                var defaultValue = memberMap.DefaultValue;
-                memberMap.SetDefaultValue(defaultValue);
-            }
         }
     }
 }
