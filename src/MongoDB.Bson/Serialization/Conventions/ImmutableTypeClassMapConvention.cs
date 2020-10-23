@@ -17,6 +17,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoDB.Bson.Serialization.Conventions
 {
@@ -52,9 +53,14 @@ namespace MongoDB.Bson.Serialization.Conventions
                 }
 
                 var parameters = ctor.GetParameters();
-                if (parameters.Length != properties.Length)
+
+                // never skip a constructor that is annotated with [BsonConstructor]
+                if (ctor.GetCustomAttribute<BsonConstructorAttribute>() == null)
                 {
-                    continue; // only consider constructors that have sufficient parameters to initialize all properties
+                    if (parameters.Length != properties.Length)
+                    {
+                        continue; // only consider constructors that have sufficient parameters to initialize all properties
+                    }
                 }
 
                 var matches = parameters
