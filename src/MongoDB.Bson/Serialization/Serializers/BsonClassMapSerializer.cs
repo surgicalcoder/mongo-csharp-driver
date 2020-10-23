@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 #if NET452 || NETSTANDARD2_0
 using System.ComponentModel;
@@ -207,7 +208,15 @@ namespace MongoDB.Bson.Serialization
                         {
                             if (memberMap.IsReadOnly)
                             {
-                                bsonReader.SkipValue();
+                                if (CanPopulateExistingInstance(document, memberMap, out var existingInstance, out var populatingInterface))
+                                {
+                                    var tempValues = DeserializeMemberValue(context, memberMap);
+                                    PopulateExistingInstance(existingInstance, tempValues, populatingInterface);
+                                }
+                                else
+                                {
+                                    bsonReader.SkipValue();
+                                }
                             }
                             else
                             {
@@ -722,6 +731,122 @@ namespace MongoDB.Bson.Serialization
         private bool ShouldSerializeDiscriminator(Type nominalType)
         {
             return (nominalType != _classMap.ClassType || _classMap.DiscriminatorIsRequired || _classMap.HasRootClass) && !_classMap.IsAnonymous;
+        }
+
+        private bool CanPopulateExistingInstance(object document, BsonMemberMap memberMap, out object existingInstance, out Type populatingInterface)
+        {
+            existingInstance = memberMap.Getter(document);
+            if (existingInstance != null)
+            {
+                var existingInstanceTypeInfo = existingInstance.GetType().GetTypeInfo();
+                var implementedInterfaces = existingInstanceTypeInfo.GetInterfaces();
+                foreach (var implementedInterface in implementedInterfaces)
+                {
+                    if (CanPopulateExistingInstanceUsingInterface(implementedInterface))
+                    {
+                        populatingInterface = implementedInterface;
+                        return true;
+                    }
+                }
+            }
+
+            populatingInterface = null;
+            return false;
+
+            bool CanPopulateExistingInstanceUsingInterface(Type implementedInterface)
+            {
+                if (implementedInterface == typeof(IList) ||
+                    implementedInterface == typeof(IDictionary))
+                {
+                    return true;
+                }
+
+                if (implementedInterface.IsConstructedGenericType)
+                {
+                    var implementedInterfaceDefinition = implementedInterface.GetGenericTypeDefinition();
+                    if (implementedInterfaceDefinition == typeof(ICollection<>) ||
+                        implementedInterfaceDefinition == typeof(IDictionary<,>))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        private void PopulateExistingInstance(object existingInstance, object values, Type populatingInterface)
+        {
+            if (populatingInterface == typeof(IList))
+            {
+                var methodInfo = GetType().GetTypeInfo().GetMethod(nameof(PopulateExistingInstanceUsingIList), BindingFlags.NonPublic | BindingFlags.Instance);
+                methodInfo.Invoke(this, new object[] { existingInstance, values });
+                return;
+            }
+
+            if (populatingInterface == typeof(IDictionary))
+            {
+                var methodInfo = GetType().GetTypeInfo().GetMethod(nameof(PopulateExistingInstanceUsingIDictionary), BindingFlags.NonPublic | BindingFlags.Instance);
+                methodInfo.Invoke(this, new object[] { existingInstance, values });
+                return;
+            }
+
+            if (populatingInterface.IsConstructedGenericType)
+            {
+                var populatingInterfaceDefinition = populatingInterface.GetGenericTypeDefinition();
+                if (populatingInterfaceDefinition == typeof(ICollection<>))
+                {
+                    var itemType = populatingInterface.GetTypeInfo().GetGenericArguments()[0];
+                    var methodInfo = GetType().GetTypeInfo().GetMethod(nameof(PopulateExistingInstanceUsingGenericICollection), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(itemType);
+                    methodInfo.Invoke(this, new object[] { existingInstance, values });
+                    return;
+                }
+
+                if (populatingInterfaceDefinition == typeof(IDictionary<,>))
+                {
+                    var keyType = populatingInterface.GetTypeInfo().GetGenericArguments()[0];
+                    var valueType = populatingInterface.GetTypeInfo().GetGenericArguments()[1];
+                    var methodInfo = GetType().GetTypeInfo().GetMethod(nameof(PopulateExistingInstanceUsingGenericICollection), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(keyType, valueType);
+                    methodInfo.Invoke(this, new object[] { existingInstance, values });
+                    return;
+                }
+            }
+
+            throw new NotImplementedException();
+        }
+
+        private void PopulateExistingInstanceUsingIList(IList existingInstance, IEnumerable values)
+        {
+            foreach (var value in values)
+            {
+                existingInstance.Add(value);
+            }
+        }
+
+        private void PopulateExistingInstanceUsingIDictionary(IDictionary existingInstance, IEnumerable values)
+        {
+            foreach (DictionaryEntry dictionaryEntry in values)
+            {
+                var key = dictionaryEntry.Key;
+                var value = dictionaryEntry.Value;
+                existingInstance.Add(key, value);
+            }
+        }
+
+        private void PopulateExistingInstanceUsingGenericICollection<T>(ICollection<T> existingInstance, IEnumerable<T> values)
+        {
+            foreach (var value in values)
+            {
+                existingInstance.Add(value);
+            }
+        }
+
+        private void PopulateExistingInstanceUsingGenericIDictionary<TKey, TValue>(IDictionary<TKey, TValue> existingInstance, IEnumerable<KeyValuePair<TKey, TValue>> values)
+        {
+            foreach (var value in values)
+            {
+                existingInstance.Add(value);
+            }
         }
 
         // nested classes
