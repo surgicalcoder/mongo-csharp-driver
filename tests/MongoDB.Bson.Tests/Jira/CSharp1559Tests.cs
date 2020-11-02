@@ -22,9 +22,9 @@ using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.TestHelpers;
 using Xunit;
 
-namespace MongoDB.Bson.Tests.Serialization
+namespace MongoDB.Bson.Tests.Jira
 {
-    public class SerializationTests
+    public class CSharp1559Tests
     {
         [Theory]
         [InlineData(typeof(DerivedWithoutSetter_BaseWithoutSetter), new[] { 1, 2 }, "{ \"X\" : 1, \"Y\" : 2 }")]
@@ -40,7 +40,7 @@ namespace MongoDB.Bson.Tests.Serialization
         [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonElementAttributeAndWithBsonConstructorAttribute_AbstractBaseImmutableWithConstructor), new[] { 1, 2 }, "{ \"X\" : 1, \"Y\" : 2 }")]
         [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithAbstractProperty), new[] { 2 }, "{ \"Y\" : 2 }")]
         [InlineData(typeof(DerivedImmutableWithMorePropertiesThanInConstructorButWithBsonIgnoreAttribute_AbstractBaseImmutableWithConstructor), new[] { 1 }, "{ \"X\" : 1 }")]
-        [InlineData(typeof(ClassWithTwoConstructorsWhereTheFirstIfNotFullyMatchedAndTheSecondIsFullyMatched), new[] { 1, 2 }, "{ \"X\" : 1, \"Y\" : 2 }")]
+        [InlineData(typeof(ClassWithTwoConstructorsWhereTheFirstIsNotFullyMatchedAndTheSecondIsFullyMatched), new[] { 1, 2 }, "{ \"X\" : 1, \"Y\" : 2 }")]
         [InlineData(typeof(ClassWithOneConstructorThatIsNotFullyMatched), new[] { 1, 2 }, "{ \"X\" : 1, \"Y\" : 2, \"Z\" : null }")]
         public void Serialization_should_return_expected_result(Type testCaseType, int[] arguments, string expectedJson)
         {
@@ -68,7 +68,7 @@ namespace MongoDB.Bson.Tests.Serialization
             var exception = Record.Exception(() => testCase.ToJson());
             var e = exception.Should().BeOfType<BsonSerializationException>().Subject;
 
-            e.Message.Should().Be("Creator map for class MongoDB.Bson.Tests.Serialization.SerializationTests+DerivedWithMismatchedXTypeComparingWithBase has 2 arguments, but none are configured.");
+            e.Message.Should().Be("Creator map for class MongoDB.Bson.Tests.Jira.CSharp1559Tests+DerivedWithMismatchedXTypeComparingWithBase has 2 arguments, but none are configured.");
         }
 
         [Fact]
@@ -340,17 +340,17 @@ namespace MongoDB.Bson.Tests.Serialization
             public int Y { get; } = 0; // should be overwritten
         }
 
-        public class ClassWithTwoConstructorsWhereTheFirstIfNotFullyMatchedAndTheSecondIsFullyMatched
+        public class ClassWithTwoConstructorsWhereTheFirstIsNotFullyMatchedAndTheSecondIsFullyMatched
         {
             public int? X { get; }
             public int? Y { get; }
 
-            public ClassWithTwoConstructorsWhereTheFirstIfNotFullyMatchedAndTheSecondIsFullyMatched(int? x)
+            public ClassWithTwoConstructorsWhereTheFirstIsNotFullyMatchedAndTheSecondIsFullyMatched(int? x)
                 : this(x, null)
             {
             }
 
-            public ClassWithTwoConstructorsWhereTheFirstIfNotFullyMatchedAndTheSecondIsFullyMatched(int? x, int? y)
+            public ClassWithTwoConstructorsWhereTheFirstIsNotFullyMatchedAndTheSecondIsFullyMatched(int? x, int? y)
             {
                 X = x;
                 Y = y;
