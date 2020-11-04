@@ -22,17 +22,17 @@ using Xunit;
 
 namespace MongoDB.Driver.Examples
 {
-    public class InsertDataWithEncryptedFieldsWithAuthoEncryption
+    public class InsertDataWithEncryptedFieldsWithAutoEncryption
     {
-        private static readonly string ConnectionString = "mongodb://localhost:27017";
-        private static readonly string SampleNameValue = "John Doe";
-        private static readonly int SampleSsnValue = 145014000;
+        private static readonly string __connectionString = "mongodb://localhost:27017";
+        private static readonly string __sampleNameValue = "John Doe";
+        private static readonly int __sampleSsnValue = 145014000;
 
-        private static BsonDocument SampleDoc =>
+        private static BsonDocument SampleDoc =
             new BsonDocument
             {
-                { "name", SampleNameValue },
-                { "ssn", SampleSsnValue },
+                { "name", __sampleNameValue },
+                { "ssn", __sampleSsnValue },
                 { "bloodType", "AB-" },
                 {
                     "medicalRecords",
@@ -56,24 +56,24 @@ namespace MongoDB.Driver.Examples
         [Fact]
         public void InsertDataWithEncryptedFields()
         {
-            var keyVaultCollectionNamespace = CollectionNamespace.FromFullName("encryption.__keyVault");
-            var recordsCollectionNamespace = CollectionNamespace.FromFullName("medicalRecords.patients");
+            var keyVaultNamespace = CollectionNamespace.FromFullName("encryption.__keyVault");
+            var medicalRecordsNamespace = CollectionNamespace.FromFullName("medicalRecords.patients");
 
             var base64KeyId = ""; // paste the generated key in Standard GuidRepresentation form here
 
-            var ssnQuery = Builders<BsonDocument>.Filter.Eq("ssn", SampleSsnValue);
+            var ssnQuery = Builders<BsonDocument>.Filter.Eq("ssn", __sampleSsnValue);
 
             // Construct a JSON Schema
             var schema = JsonSchemaCreator.CreateJsonSchema(base64KeyId);
 
             // Construct an encrypted client
             var encryptedClient = CreateEncryptedClient(
-                recordsCollectionNamespace,
-                keyVaultCollectionNamespace,
+                medicalRecordsNamespace,
+                keyVaultNamespace,
                 schema);
             var collection = encryptedClient
-                .GetDatabase(recordsCollectionNamespace.DatabaseNamespace.DatabaseName)
-                .GetCollection<BsonDocument>(recordsCollectionNamespace.CollectionName);
+                .GetDatabase(medicalRecordsNamespace.DatabaseNamespace.DatabaseName)
+                .GetCollection<BsonDocument>(medicalRecordsNamespace.CollectionName);
 
             // Insert a document into the collection
             collection.UpdateOne(ssnQuery, new BsonDocument("$set", SampleDoc), new UpdateOptions() { IsUpsert = true });
@@ -85,10 +85,10 @@ namespace MongoDB.Driver.Examples
             Console.WriteLine("Encrypted client query by the SSN (deterministically-encrypted) field:\n" + result.ToJson());
 
             // Query SSN field with normal client without encryption
-            var normalMongoClient = new MongoClient(ConnectionString);
+            var normalMongoClient = new MongoClient(__connectionString);
             collection = normalMongoClient
-              .GetDatabase(recordsCollectionNamespace.DatabaseNamespace.DatabaseName)
-              .GetCollection<BsonDocument>(recordsCollectionNamespace.CollectionName);
+              .GetDatabase(medicalRecordsNamespace.DatabaseNamespace.DatabaseName)
+              .GetCollection<BsonDocument>(medicalRecordsNamespace.CollectionName);
             var normalClientResult = collection.Find(ssnQuery).FirstOrDefault();
             if (normalClientResult != null)
             {
@@ -96,7 +96,7 @@ namespace MongoDB.Driver.Examples
             }
 
             // Query name (non-encrypted) field with normal client without encryption
-            var nameQuery = Builders<BsonDocument>.Filter.Eq("name", SampleNameValue);
+            var nameQuery = Builders<BsonDocument>.Filter.Eq("name", __sampleNameValue);
             var normalClientNameResult = collection.Find(nameQuery).FirstOrDefault();
             if (normalClientNameResult == null)
             {
@@ -107,7 +107,7 @@ namespace MongoDB.Driver.Examples
         }
 
         private IMongoClient CreateEncryptedClient(
-            CollectionNamespace recordNamespace,
+            CollectionNamespace medicalRecordsNamespace,
             CollectionNamespace keyVaultNamespace,
             BsonDocument schema)
         {
@@ -115,7 +115,7 @@ namespace MongoDB.Driver.Examples
 
             // For local master key
             var localMasterKey = File.ReadAllText("master-key.txt");
-            var localMasterKeyBytes = new BsonBinaryData(Convert.FromBase64String(localMasterKey)).Bytes;
+            var localMasterKeyBytes = Convert.FromBase64String(localMasterKey);
 
             var localOptions = new Dictionary<string, object>
             {
@@ -159,7 +159,7 @@ namespace MongoDB.Driver.Examples
             */
 
             var schemaMap = new Dictionary<string, BsonDocument>();
-            schemaMap.Add(recordNamespace.ToString(), schema);
+            schemaMap.Add(medicalRecordsNamespace.ToString(), schema);
 
             var extraOptions = new Dictionary<string, object>()
             {
@@ -169,8 +169,7 @@ namespace MongoDB.Driver.Examples
                 */
             };
 
-            var connectionString = "mongodb://localhost:27017";
-            var mongoClientSettings = MongoClientSettings.FromConnectionString(connectionString);
+            var mongoClientSettings = MongoClientSettings.FromConnectionString(__connectionString);
             var autoEncryptionSettings = new AutoEncryptionOptions(
                 keyVaultNamespace: keyVaultNamespace,
                 kmsProviders: kmsProviders,
@@ -238,14 +237,14 @@ namespace MongoDB.Driver.Examples
         private static readonly string DETERMINISTIC_ENCRYPTION_TYPE = "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic";
         private static readonly string RANDOM_ENCRYPTION_TYPE = "AEAD_AES_256_CBC_HMAC_SHA_512-Random";
 
-        private static BsonDocument BuildEncryptMetadata(string base64KeyId)
+        private static BsonDocument CreateEncryptMetadata(string base64KeyId)
         {
             var guid = GuidConverter.FromBytes(Convert.FromBase64String(base64KeyId), GuidRepresentation.Standard);
             var binary = new BsonBinaryData(guid, GuidRepresentation.Standard);
             return new BsonDocument("keyId", new BsonArray(new[] { binary }));
         }
 
-        private static BsonDocument BuildEncryptedField(string bsonType, bool isDeterministic)
+        private static BsonDocument CreateEncryptedField(string bsonType, bool isDeterministic)
         {
             return new BsonDocument
             {
@@ -265,15 +264,15 @@ namespace MongoDB.Driver.Examples
             return new BsonDocument
             {
                 { "bsonType", "object" },
-                { "encryptMetadata", BuildEncryptMetadata(keyId) },
+                { "encryptMetadata", CreateEncryptMetadata(keyId) },
                 {
                     "properties",
                     new BsonDocument
                     {
 
-                        { "ssn", BuildEncryptedField("int", true) },
-                        { "bloodType", BuildEncryptedField("string", false) },
-                        { "medicalRecords", BuildEncryptedField("array", false) },
+                        { "ssn", CreateEncryptedField("int", true) },
+                        { "bloodType", CreateEncryptedField("string", false) },
+                        { "medicalRecords", CreateEncryptedField("array", false) },
                         {
                             "insurance",
                             new BsonDocument
@@ -283,7 +282,7 @@ namespace MongoDB.Driver.Examples
                                     "properties",
                                     new BsonDocument
                                     {
-                                        { "policyNumber", BuildEncryptedField("int", true) }
+                                        { "policyNumber", CreateEncryptedField("int", true) }
                                     }
                                 }
                             }

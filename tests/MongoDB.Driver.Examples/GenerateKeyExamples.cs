@@ -30,18 +30,19 @@ namespace MongoDB.Driver.Examples
         public void LocalKmsProvider()
         {
             // 2. Code full example: generate a 96-byte master key and save to a file called master-key.txt.
+            string localMasterKeyBase64;
             using (var randomNumberGenerator = System.Security.Cryptography.RandomNumberGenerator.Create())
             {
                 var bytes = new byte[96];
                 randomNumberGenerator.GetBytes(bytes);
-                var localMasterKeyBase64 = Convert.ToBase64String(bytes);
+                localMasterKeyBase64 = Convert.ToBase64String(bytes);
                 Console.WriteLine(localMasterKeyBase64);
                 File.WriteAllText("master-key.txt", localMasterKeyBase64);
             }
 
             // 3. generate a data key using the master key read from the file master-key.txt
-            var localMasterKey = File.ReadAllText("master-key.txt");
-            var localMasterKeyBytes = new BsonBinaryData(Convert.FromBase64String(localMasterKey)).Bytes;
+            localMasterKeyBase64 = File.ReadAllText("master-key.txt");
+            var localMasterKeyBytes = Convert.FromBase64String(localMasterKeyBase64);
 
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>();
             var localOptions = new Dictionary<string, object>
@@ -77,7 +78,7 @@ namespace MongoDB.Driver.Examples
 #pragma warning restore CS0618
                     });
             var query = Builders<BsonDocument>.Filter.Eq("_id", new BsonBinaryData(dataKeyId, GuidRepresentation.Standard));
-            var doc = collection
+            var keyDocument = collection
                 .Find(query)
                 .Single();
         }
@@ -106,8 +107,8 @@ namespace MongoDB.Driver.Examples
                 kmsProviders: kmsProviders);
 
             var clientEncryption = new ClientEncryption(clientEncryptionOptions);
-            var awsDataKeyKey = new BsonString("arn:aws:kms:us-east-1:579766882180:key/89fcc2c4-08b0-4bd9-9f25-e30687b580d0"); // e.g. "arn:aws:kms:us-east-2:111122223333:alias/test-key"
-            var awsDataKeyRegion = new BsonString("us-east-1"); 
+            var awsDataKeyKey = "arn:aws:kms:us-east-1:579766882180:key/89fcc2c4-08b0-4bd9-9f25-e30687b580d0"; // e.g. "arn:aws:kms:us-east-2:111122223333:alias/test-key"
+            var awsDataKeyRegion = "us-east-1"; 
             var dataKeyOptions = new DataKeyOptions(
                 masterKey: new BsonDocument
                 {
@@ -132,7 +133,7 @@ namespace MongoDB.Driver.Examples
 #pragma warning restore CS0618
                     });
             var query = Builders<BsonDocument>.Filter.Eq("_id", new BsonBinaryData(dataKeyId, GuidRepresentation.Standard));
-            var doc = collection
+            var keyDocument = collection
                 .Find(query)
                 .Single();
         }
@@ -164,8 +165,8 @@ namespace MongoDB.Driver.Examples
                 kmsProviders: kmsProviders);
 
             var clientEncryption = new ClientEncryption(clientEncryptionOptions);
-            var azureDataKeyKeyName = new BsonString("key-name-csfle");
-            var azureDataKeyKeyVaultEndpoint = new BsonString("key-vault-csfle.vault.azure.net"); // typically <azureKeyName>.vault.azure.net
+            var azureDataKeyKeyName = "key-name-csfle";
+            var azureDataKeyKeyVaultEndpoint = "key-vault-csfle.vault.azure.net"; // typically <azureKeyName>.vault.azure.net
             var dataKeyOptions = new DataKeyOptions(
                 masterKey: new BsonDocument
                 {
@@ -190,7 +191,7 @@ namespace MongoDB.Driver.Examples
 #pragma warning restore CS0618
                     });
             var query = Builders<BsonDocument>.Filter.Eq("_id", new BsonBinaryData(dataKeyId, GuidRepresentation.Standard));
-            var doc = collection
+            var keyDocument = collection
                 .Find(query)
                 .Single();
         }
@@ -220,11 +221,11 @@ namespace MongoDB.Driver.Examples
                 kmsProviders: kmsProviders);
 
             var clientEncryption = new ClientEncryption(clientEncryptionOptions);
-            var gcpDataKeyProjectId = new BsonString("devprod-drivers");
-            var gcpDataKeyLocation = new BsonString("global"); // Optional. e.g. "global"
-            var gcpDataKeyKeyRing = new BsonString("key-ring-csfle");
-            var gcpDataKeyKeyName = new BsonString("key-name-csfle");
-            var gcpDataKeyEndpoint = new BsonString("cloudkms.googleapis.com:443"); // Optional, KMS URL, defaults to https://www.googleapis.com/auth/cloudkms
+            var gcpDataKeyProjectId = "devprod-drivers";
+            var gcpDataKeyLocation = "global"; // Optional. e.g. "global"
+            var gcpDataKeyKeyRing = "key-ring-csfle";
+            var gcpDataKeyKeyName = "key-name-csfle";
+            var gcpDataKeyEndpoint = "cloudkms.googleapis.com:443"; // Optional, KMS URL, defaults to https://www.googleapis.com/auth/cloudkms
 
             var dataKeyOptions = new DataKeyOptions(
                 masterKey: new BsonDocument
@@ -253,7 +254,7 @@ namespace MongoDB.Driver.Examples
 #pragma warning restore CS0618
                     });
             var query = Builders<BsonDocument>.Filter.Eq("_id", new BsonBinaryData(dataKeyId, GuidRepresentation.Standard));
-            var doc = collection
+            var keyDocument = collection
                 .Find(query)
                 .Single();
         }
