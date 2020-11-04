@@ -22,7 +22,7 @@ using Xunit;
 
 namespace MongoDB.Driver.Examples
 {
-    public class InsertDataWithEncryptedFields
+    public class InsertDataWithEncryptedFieldsWithAuthoEncryption
     {
         private static readonly string ConnectionString = "mongodb://localhost:27017";
         private static readonly string SampleNameValue = "John Doe";
@@ -52,8 +52,9 @@ namespace MongoDB.Driver.Examples
                 }
             };
 
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-insertdatawithencryptedfields-cs
         [Fact]
-        public void AutoEncryption()
+        public void InsertDataWithEncryptedFields()
         {
             var keyVaultCollectionNamespace = CollectionNamespace.FromFullName("encryption.__keyVault");
             var recordsCollectionNamespace = CollectionNamespace.FromFullName("medicalRecords.patients");
@@ -178,8 +179,60 @@ namespace MongoDB.Driver.Examples
             mongoClientSettings.AutoEncryptionOptions = autoEncryptionSettings;
             return new MongoClient(mongoClientSettings);
         }
+
+        [Fact]
+        public void GenerateJsonSchema()
+        {
+            // 4. Code snippet: generate the JSON Schema and assign it to a variable
+
+            var schema = JsonSchemaCreator.CreateJsonSchema("<your_key_id>").ToString(); // replace "your_key_id" with your base64 data encryption key id 
+        }
+
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-autoencryptionconfiguration-cs
+        [Fact]
+        public void AutoEncryptionConfiguration()
+        {
+            AutoEncryptionOptions autoEncryptionOptions = null;
+
+            var extraOptions = new Dictionary<string, object>()
+            {
+                { "mongocryptdSpawnArgs", new [] { "--port=30000" } },
+            };
+            autoEncryptionOptions.With(extraOptions: extraOptions);
+        }
+
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-insertpatient-cs
+#pragma warning disable xUnit1013 // Public method should be marked as test
+        public static void InsertPatient(
+#pragma warning restore xUnit1013 // Public method should be marked as test
+            IMongoCollection<BsonDocument> collection,
+            string name,
+            int ssn,
+            string bloodType,
+            BsonDocument[] medicalRecords,
+            int policyNumber,
+            string provider)
+        {
+            var insurance = new BsonDocument
+            {
+                { "policyNumber", policyNumber },
+                { "provider", provider }
+            };
+
+            var patient = new BsonDocument
+            {
+                { "name", name },
+                { "ssn", ssn },
+                { "bloodType", bloodType },
+                { "medicalRecords", BsonArray.Create(medicalRecords) },
+                { "insurance", insurance }
+            };
+
+            collection.InsertOne(patient);
+        }
     }
 
+    // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-jsonschemacreator-cs
     public static class JsonSchemaCreator
     {
         private static readonly string DETERMINISTIC_ENCRYPTION_TYPE = "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic";

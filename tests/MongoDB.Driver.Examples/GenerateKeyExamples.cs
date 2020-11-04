@@ -25,8 +25,9 @@ namespace MongoDB.Driver.Examples
 {
     public class GenerateKeyExamples
     {
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-localkmsprovider-cs
         [Fact]
-        public void LocalKey()
+        public void LocalKmsProvider()
         {
             // 2. Code full example: generate a 96-byte master key and save to a file called master-key.txt.
             using (var randomNumberGenerator = System.Security.Cryptography.RandomNumberGenerator.Create())
@@ -81,8 +82,9 @@ namespace MongoDB.Driver.Examples
                 .Single();
         }
 
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-awskmsprovider-cs
         [Fact]
-        public void AwsKey()
+        public void AwsKmsProvider()
         {
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>();
 
@@ -135,8 +137,9 @@ namespace MongoDB.Driver.Examples
                 .Single();
         }
 
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-azurekmsprovider-cs
         [Fact]
-        public void AzureKey()
+        public void AzureKmsProvider()
         {
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>();
 
@@ -192,8 +195,9 @@ namespace MongoDB.Driver.Examples
                 .Single();
         }
 
+        // https://gist.github.com/DmitryLukyanov/8417d1f5c30f12ffeb2be29056aff455#file-gcpkmsprovider-cs
         [Fact]
-        public void GcpKey()
+        public void GcpKmsProvider()
         {
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>();
 
@@ -252,55 +256,6 @@ namespace MongoDB.Driver.Examples
             var doc = collection
                 .Find(query)
                 .Single();
-        }
-
-        [Fact]
-        public void GenerateJsonSchema()
-        {
-            // 4. Code snippet: generate the JSON Schema and assign it to a variable
-
-            var schema = JsonSchemaCreator.CreateJsonSchema("<your_key_id>").ToString(); // replace "your_key_id" with your base64 data encryption key id 
-        }
-
-        [Fact]
-        public void ConfigureAutoEncryption()
-        {
-            AutoEncryptionOptions autoEncryptionOptions = null;
-
-            var extraOptions = new Dictionary<string, object>()
-            {
-                { "mongocryptdSpawnArgs", new [] { "--port=30000" } },
-            };
-            autoEncryptionOptions.With(extraOptions: extraOptions);
-        }
-
-#pragma warning disable xUnit1013 // Public method should be marked as test
-        public static void InsertPatient(
-#pragma warning restore xUnit1013 // Public method should be marked as test
-            IMongoCollection<BsonDocument> collection,
-            string name,
-            int ssn,
-            string bloodType,
-            BsonDocument[] medicalRecords,
-            int policyNumber,
-            string provider)
-        {
-            var insurance = new BsonDocument
-            {
-                { "policyNumber", policyNumber },
-                { "provider", provider }
-            };
-
-            var patient = new BsonDocument
-            {
-                { "name", name },
-                { "ssn", ssn },
-                { "bloodType", bloodType },
-                { "medicalRecords", BsonArray.Create(medicalRecords) },
-                { "insurance", insurance }
-            };
-
-            collection.InsertOne(patient);
         }
     }
 }
