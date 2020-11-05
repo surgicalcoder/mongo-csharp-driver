@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Examples
             var dataKeyIdBase64 = Convert.ToBase64String(GuidConverter.ToBytes(dataKeyId, GuidRepresentation.Standard));
             Console.WriteLine($"DataKeyId [base64]: {dataKeyIdBase64}");
 
-            // Validate key
+            // verify that key document was created
             var client = new MongoClient(connectionString);
             var collection = client
                 .GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName)
