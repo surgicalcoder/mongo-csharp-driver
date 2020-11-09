@@ -52,10 +52,6 @@ namespace MongoDB.Bson.Serialization.Conventions
                 }
 
                 var parameters = ctor.GetParameters();
-                if (parameters.Length != properties.Length)
-                {
-                    continue; // only consider constructors that have sufficient parameters to initialize all properties
-                }
 
                 var matches = parameters
                     .GroupJoin(properties,
@@ -88,6 +84,10 @@ namespace MongoDB.Bson.Serialization.Conventions
                     {
                         continue;
                     }
+                    if (!PropertyMatchesSomeCreatorParameter(classMap, property))
+                    {
+                        continue;
+                    }
 
                     var memberMap = classMap.MapMember(property);
                     if (classMap.IsAnonymous)
@@ -104,6 +104,47 @@ namespace MongoDB.Bson.Serialization.Conventions
         {
             // CanWrite gets true even if a property has only a private setter
             return propertyInfo.CanWrite && (propertyInfo.SetMethod?.IsPublic ?? false);
+        }
+
+        private bool PropertyMatchesSomeCreatorParameter(BsonClassMap classMap, PropertyInfo propertyInfo)
+        {
+            foreach (var creatorMap in classMap.CreatorMaps)
+            {
+                if (creatorMap.MemberInfo is ConstructorInfo constructorInfo)
+                {
+                    if (PropertyMatchesSomeConstructorParameter(constructorInfo))
+                    {
+                        return true;
+                    }
+                }               
+            }
+
+            // also map properties that match some constructor parameter that might be called by a derived class
+            foreach (var constructorInfo in classMap.ClassType.GetTypeInfo().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            {
+                if (classMap.ClassType.GetTypeInfo().IsAbstract || constructorInfo.IsFamily)
+                {
+                    if (PropertyMatchesSomeConstructorParameter(constructorInfo))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+
+            bool PropertyMatchesSomeConstructorParameter(ConstructorInfo constructorInfo)
+            {
+                foreach (var parameter in constructorInfo.GetParameters())
+                {
+                    if (string.Equals(propertyInfo.Name, parameter.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
     }
 }
