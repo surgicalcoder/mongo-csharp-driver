@@ -28,15 +28,15 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         private IClientSessionHandle _session;
 
         public UnifiedInsertOneOperation(
+            IClientSessionHandle session,
             IMongoCollection<BsonDocument> collection,
             BsonDocument document,
-            InsertOneOptions options,
-            IClientSessionHandle session)
+            InsertOneOptions options)
         {
             _collection = collection;
+            _session = session;
             _document = document;
             _options = options; // TODO: should not be null. Either throw or recreate
-            _session = session;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
@@ -51,13 +51,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     _collection.InsertOne(_session, _document, _options, cancellationToken);
                 }
+
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new OperationResult((BsonDocument)null);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
@@ -72,13 +72,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     await _collection.InsertOneAsync(_session, _document, _options, cancellationToken);
                 }
+
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new OperationResult((BsonDocument)null);
         }
     }
 
@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedInsertOneOperation(collection, document, options, session);
+            return new UnifiedInsertOneOperation(session, collection, document, options);
         }
     }
 }

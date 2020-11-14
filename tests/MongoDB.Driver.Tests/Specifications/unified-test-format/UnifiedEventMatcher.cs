@@ -30,7 +30,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             _valueMatcher = valueMatcher;
         }
 
-        public void AssertEventsMatch(BsonArray expectedEventsDocuments, List<object> actualEvents)
+        public void AssertEventsMatch(List<object> actualEvents, BsonArray expectedEventsDocuments)
         {
             actualEvents.Count.Should().Be(expectedEventsDocuments.Count);
 
@@ -50,7 +50,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                             switch (element.Name)
                             {
                                 case "command":
-                                    _valueMatcher.AssertValuesMatch(element.Value, commandStartedEvent.Command);
+                                    _valueMatcher.AssertValuesMatch(commandStartedEvent.Command, element.Value);
                                     break;
                                 case "commandName":
                                     commandStartedEvent.CommandName.Should().Be(element.Value.AsString);
@@ -70,7 +70,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                             switch (element.Name)
                             {
                                 case "reply":
-                                    _valueMatcher.AssertValuesMatch(element.Value, commandSucceededEvent.Reply);
+                                    _valueMatcher.AssertValuesMatch(commandSucceededEvent.Reply, element.Value);
                                     break;
                                 case "commandName":
                                     commandSucceededEvent.CommandName.Should().Be(element.Value.AsString);

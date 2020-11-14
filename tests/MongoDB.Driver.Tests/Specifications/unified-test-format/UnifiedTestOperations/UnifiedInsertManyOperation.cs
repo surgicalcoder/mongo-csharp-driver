@@ -30,15 +30,15 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         private IClientSessionHandle _session;
 
         public UnifiedInsertManyOperation(
+            IClientSessionHandle session,
             IMongoCollection<BsonDocument> collection,
             List<BsonDocument> documents,
-            InsertManyOptions options,
-            IClientSessionHandle session)
+            InsertManyOptions options)
         {
+            _session = session;
             _collection = collection;
             _documents = documents;
             _options = options; // TODO: should not be null. Either throw or recreate
-            _session = session;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
@@ -53,13 +53,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     _collection.InsertMany(_session, _documents, _options, cancellationToken);
                 }
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return null;
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
@@ -74,13 +73,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     await _collection.InsertManyAsync(_session, _documents, _options, cancellationToken);
                 }
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return null;
         }
     }
 
@@ -119,7 +117,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedInsertManyOperation(collection, documents, options, session);
+            return new UnifiedInsertManyOperation(session, collection, documents, options);
         }
     }
 }

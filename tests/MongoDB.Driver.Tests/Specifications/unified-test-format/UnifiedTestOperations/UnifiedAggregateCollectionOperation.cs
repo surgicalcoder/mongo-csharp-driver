@@ -28,48 +28,43 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         private AggregateOptions _options;
         private PipelineDefinition<BsonDocument, BsonDocument> _pipeline;
 
+        // no session?
         public UnifiedAggregateCollectionOperation(
             IMongoCollection<BsonDocument> collection,
-            AggregateOptions options,
-            PipelineDefinition<BsonDocument, BsonDocument> pipeline)
+            PipelineDefinition<BsonDocument, BsonDocument> pipeline,
+            AggregateOptions options)
         {
             _collection = collection;
-            _options = options;
             _pipeline = pipeline;
+            _options = options;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
         {
-            List<BsonDocument> result;
-
             try
             {
                 var cursor = _collection.Aggregate(_pipeline, _options, cancellationToken);
-                result = cursor.ToList();
+                var result = cursor.ToList();
+                return new OperationResult(new BsonArray(result));
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
-
-            return new OperationResult(new BsonArray(result));
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            List<BsonDocument> result;
-
             try
             {
                 var cursor = await _collection.AggregateAsync(_pipeline, _options, cancellationToken);
-                result = cursor.ToList();
+                var result = await cursor.ToListAsync();
+                return new OperationResult(new BsonArray(result));
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
-
-            return new OperationResult(new BsonArray(result));
         }
     }
 
@@ -102,7 +97,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedAggregateCollectionOperation(collection, options, pipeline);
+            return new UnifiedAggregateCollectionOperation(collection, pipeline, options);
         }
     }
 }

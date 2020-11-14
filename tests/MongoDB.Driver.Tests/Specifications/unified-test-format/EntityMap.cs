@@ -36,12 +36,14 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         private readonly Dictionary<string, IMongoDatabase> _databases = new Dictionary<string, IMongoDatabase>();
         private readonly Dictionary<string, BsonValue> _results = new Dictionary<string, BsonValue>();
         private readonly Dictionary<string, IClientSessionHandle> _sessions = new Dictionary<string, IClientSessionHandle>();
+        // assuming no clashes between string key values this could just be (and use a cast in the Get methods)
+        // private readonly Dictionary<string, object> _map;
 
         public EntityMap(BsonArray entitiesArray)
         {
             foreach (var entityItem in entitiesArray)
             {
-                if (entityItem.AsBsonDocument.ElementCount > 1)
+                if (entityItem.AsBsonDocument.ElementCount != 1)
                 {
                     throw new FormatException("Entity item should contain single element");
                 }
@@ -101,6 +103,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         // public methods
         public IGridFSBucket GetBucket(string bucketId)
         {
+            // return (IGridFSBucket)_map[bucketId];
             return _buckets[bucketId];
         }
 
@@ -136,6 +139,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         public void Dispose()
         {
+            //foreach (var entity in _map.Values)
+            //{
+            //    (entity as IDisposable)?.Dispose();
+            //}
             foreach (var client in _clients.Values)
             {
                 client.Dispose();
@@ -237,17 +244,19 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 }
             }
 
-            var client = DriverTestConfiguration.CreateDisposableClient(settings =>
-            {
-                settings.RetryReads = retryReads;
-                settings.RetryWrites = retryWrites;
-                settings.ReadConcern = readConcern;
-                settings.WriteConcern = writeConcern;
-                if (eventCapturer != null)
+            var client = DriverTestConfiguration.CreateDisposableClient(
+                settings =>
                 {
-                    settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
-                }
-            }, useMultipleShardRouters);
+                    settings.RetryReads = retryReads;
+                    settings.RetryWrites = retryWrites;
+                    settings.ReadConcern = readConcern;
+                    settings.WriteConcern = writeConcern;
+                    if (eventCapturer != null)
+                    {
+                        settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
+                    }
+                },
+                useMultipleShardRouters);
 
             return (client, eventCapturer);
         }

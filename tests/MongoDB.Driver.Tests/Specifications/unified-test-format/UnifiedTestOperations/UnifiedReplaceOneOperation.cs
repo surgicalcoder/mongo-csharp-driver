@@ -23,52 +23,47 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedReplaceOneOperation : IUnifiedTestOperation
     {
         private IMongoCollection<BsonDocument> _collection;
-        private BsonDocument _replacement;
         private FilterDefinition<BsonDocument> _filter;
         private ReplaceOptions _options;
+        private BsonDocument _replacement;
 
+        // no session?
         public UnifiedReplaceOneOperation(
             IMongoCollection<BsonDocument> collection,
-            BsonDocument replacement,
             FilterDefinition<BsonDocument> filter,
+            BsonDocument replacement,
             ReplaceOptions options)
         {
             _collection = collection;
-            _replacement = replacement;
             _filter = filter;
+            _replacement = replacement;
             _options = options;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
         {
-            ReplaceOneResult result;
-
             try
             {
-                result = _collection.ReplaceOne(_filter, _replacement, _options, cancellationToken);
+                var result = _collection.ReplaceOne(_filter, _replacement, _options, cancellationToken);
+                return new UnifiedReplaceOneOperationResultConverter().Convert(result);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new UnifiedReplaceOneOperationResultConverter().Convert(result);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            ReplaceOneResult result;
-
             try
             {
-                result = await _collection.ReplaceOneAsync(_filter, _replacement, _options, cancellationToken);
+                var result = await _collection.ReplaceOneAsync(_filter, _replacement, _options, cancellationToken);
+                return new UnifiedReplaceOneOperationResultConverter().Convert(result);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new UnifiedReplaceOneOperationResultConverter().Convert(result);
         }
     }
 
@@ -107,7 +102,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedReplaceOneOperation(collection, replacement, filter, options);
+            return new UnifiedReplaceOneOperation(collection, filter, replacement, options);
         }
     }
 

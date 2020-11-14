@@ -23,10 +23,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         private Exception _exception;
         private BsonValue _result;
 
-        private OperationResult()
-        {
-        }
-
         public OperationResult(Exception exception)
         {
             _exception = exception;

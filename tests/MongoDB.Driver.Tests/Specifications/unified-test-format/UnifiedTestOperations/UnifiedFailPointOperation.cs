@@ -25,8 +25,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedFailPointOperation : IUnifiedTestOperation
     {
         private readonly IMongoClient _client;
-        private readonly BsonDocument _failPointCommand;
         private FailPoint _failPoint;
+        private readonly BsonDocument _failPointCommand;
 
         public UnifiedFailPointOperation(
             IMongoClient client,
@@ -66,7 +66,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         public UnifiedFailPointOperation Build(BsonDocument arguments)
         {
             IMongoClient client = null;
-            BsonDocument command = null;
+            BsonDocument failPointCommand = null;
 
             foreach (var argument in arguments)
             {
@@ -76,15 +76,14 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                         client = _entityMap.GetClient(argument.Value.AsString);
                         break;
                     case "failPoint":
-                        command = argument.Value.AsBsonDocument;
+                        failPointCommand = argument.Value.AsBsonDocument;
                         break;
                     default:
                         throw new FormatException($"Invalid FailPointOperation argument name: {argument.Name}");
                 }
             }
 
-            return new UnifiedFailPointOperation(client, command);
+            return new UnifiedFailPointOperation(client, failPointCommand);
         }
     }
-
 }

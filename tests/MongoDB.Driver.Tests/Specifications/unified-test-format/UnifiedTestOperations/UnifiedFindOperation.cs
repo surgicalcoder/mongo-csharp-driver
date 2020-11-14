@@ -39,36 +39,30 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
         public OperationResult Execute(CancellationToken cancellationToken)
         {
-            List<BsonDocument> result;
-
             try
             {
                 var cursor = _collection.FindSync(_filter, _options, cancellationToken);
-                result = cursor.ToList();
+                var result = cursor.ToList();
+                return new OperationResult(new BsonArray(result));
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new OperationResult(new BsonArray(result));
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            List<BsonDocument> result;
-
             try
             {
                 var cursor = await _collection.FindAsync(_filter, _options, cancellationToken);
-                result = cursor.ToList();
+                var result = await cursor.ToListAsync();
+                return new OperationResult(new BsonArray(result));
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new OperationResult(new BsonArray(result));
         }
     }
 
@@ -102,7 +96,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                         options.Limit = argument.Value.AsInt32;
                         break;
                     case "sort":
-                        options.Sort = (SortDefinition<BsonDocument>)argument.Value;
+                        options.Sort = new BsonDocumentSortDefinition<BsonDocument>(argument.Value.AsBsonDocument);
                         break;
                     default:
                         throw new FormatException($"Invalid FindOperation argument name: {argument.Name}");

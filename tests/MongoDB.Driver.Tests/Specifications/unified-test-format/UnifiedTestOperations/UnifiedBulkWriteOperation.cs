@@ -26,28 +26,27 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedBulkWriteOperation : IUnifiedTestOperation
     {
         private IMongoCollection<BsonDocument> _collection;
-        private List<WriteModel<BsonDocument>> _requests;
         private BulkWriteOptions _options;
+        private List<WriteModel<BsonDocument>> _requests;
         private IClientSessionHandle _session;
 
         public UnifiedBulkWriteOperation(
+            IClientSessionHandle session,
             IMongoCollection<BsonDocument> collection,
             List<WriteModel<BsonDocument>> requests,
-            BulkWriteOptions options,
-            IClientSessionHandle session)
+            BulkWriteOptions options)
         {
-            _collection = collection;
-            _requests = requests;
-            _options = options;
             _session = session;
+            _collection = collection;
+            _options = options;
+            _requests = requests;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
         {
-            BulkWriteResult<BsonDocument> result;
-
             try
             {
+                BulkWriteResult<BsonDocument> result;
                 if (_session == null)
                 {
                     result = _collection.BulkWrite(_requests, _options);
@@ -56,21 +55,20 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     result = _collection.BulkWrite(_session, _requests, _options);
                 }
+
+                return new UnifiedBulkWriteOperationResultConverter().Convert(result);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new UnifiedBulkWriteOperationResultConverter().Convert(result);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            BulkWriteResult<BsonDocument> result;
-
             try
             {
+                BulkWriteResult<BsonDocument> result;
                 if (_session == null)
                 {
                     result = await _collection.BulkWriteAsync(_requests, _options);
@@ -79,13 +77,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     result = await _collection.BulkWriteAsync(_session, _requests, _options);
                 }
+
+                return new UnifiedBulkWriteOperationResultConverter().Convert(result);
             }
             catch (Exception ex)
             {
                 return new OperationResult(ex);
             }
-
-            return new UnifiedBulkWriteOperationResultConverter().Convert(result);
         }
     }
 
@@ -102,9 +100,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         {
             var collection = _entityMap.GetCollection(targetCollectionId);
 
-            List<WriteModel<BsonDocument>> requests = null;
-            BulkWriteOptions options = new BulkWriteOptions();
             IClientSessionHandle session = null;
+            BulkWriteOptions options = new BulkWriteOptions();
+            List<WriteModel<BsonDocument>> requests = null;
 
             foreach (var argument in arguments)
             {
@@ -124,7 +122,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedBulkWriteOperation(collection, requests, options, session);
+            return new UnifiedBulkWriteOperation(session, collection, requests, options);
         }
 
         private DeleteManyModel<BsonDocument> ParseDeleteManyModel(BsonDocument model)
@@ -198,7 +196,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
         private WriteModel<BsonDocument> ParseWriteModel(BsonDocument modelItem)
         {
-            if (modelItem.ElementCount > 1)
+            if (modelItem.ElementCount != 1)
             {
                 throw new FormatException("BulkWrite request model should contain single element");
             }
@@ -241,14 +239,16 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         public OperationResult Convert(BulkWriteResult<BsonDocument> result)
         {
             return new OperationResult(
-                new BsonDocument()
-                .Add("deletedCount", (int)result.DeletedCount)
-                .Add("insertedCount", (int)result.InsertedCount)
-                .Add("matchedCount", (int)result.MatchedCount)
-                .Add("modifiedCount", (int)result.ModifiedCount)
-                .Add("upsertedCount", result.Upserts.Count)
-                .Add("insertedIds", PrepareInsertedIds(result.ProcessedRequests))
-                .Add("upsertedIds", PrepareUpsertedIds(result.Upserts)));
+                new BsonDocument
+                {
+                    { "deletedCount", (int)result.DeletedCount }, // why the cast to int?
+                    { "insertedCount", (int)result.InsertedCount },
+                    { "matchedCount", (int)result.MatchedCount },
+                    { "modifiedCount", (int)result.ModifiedCount },
+                    { "upsertedCount", result.Upserts.Count },
+                    { "insertedIds", PrepareInsertedIds(result.ProcessedRequests) },
+                    { "upsertedIds", PrepareUpsertedIds(result.Upserts) }
+                });
         }
 
         private BsonDocument PrepareInsertedIds(IReadOnlyList<WriteModel<BsonDocument>> processedRequests)

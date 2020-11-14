@@ -13,8 +13,10 @@
 * limitations under the License.
 */
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOperations
 {
@@ -29,14 +31,30 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
         public OperationResult Execute(CancellationToken cancellationToken)
         {
-            _client.ListDatabases(cancellationToken);
-
-            return null;
+            try
+            {
+                var cursor = _client.ListDatabases(cancellationToken);
+                var result = cursor.ToList();
+                return new OperationResult(new BsonArray(result));
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(ex);
+            }
         }
 
-        public Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
+        public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            return Task.FromResult(Execute(cancellationToken));
+            try
+            {
+                var cursor = await _client.ListDatabasesAsync(cancellationToken);
+                var result = await cursor.ToListAsync();
+                return new OperationResult(new BsonArray(result));
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult(ex);
+            }
         }
     }
 }

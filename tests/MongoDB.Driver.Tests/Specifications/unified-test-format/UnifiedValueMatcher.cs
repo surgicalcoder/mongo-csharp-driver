@@ -30,12 +30,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             _entityMap = entityMap;
         }
 
-        public void AssertValuesMatch(BsonValue expected, BsonValue actual)
+        public void AssertValuesMatch(BsonValue actual, BsonValue expected)
         {
-            AssertValuesMatch(expected, actual, true);
+            AssertValuesMatch(actual, expected, isRoot: true);
         }
 
-        private void AssertValuesMatch(BsonValue expected, BsonValue actual, bool isRoot)
+        private void AssertValuesMatch(BsonValue actual, BsonValue expected, bool isRoot)
         {
             if (expected.IsBsonDocument &&
                 expected.AsBsonDocument.ElementCount == 1 &&
@@ -66,10 +66,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
             if (expected.IsBsonDocument)
             {
-                actual.IsBsonDocument.Should().BeTrue($"Actual value must be a document, but is '{actual.BsonType}'");
+                actual.BsonType.Should().Be(BsonType.Document);
 
-                var expectedDocument = expected.AsBsonDocument;
                 var actualDocument = actual.AsBsonDocument;
+                var expectedDocument = expected.AsBsonDocument;
 
                 foreach (var expectedElement in expectedDocument)
                 {
@@ -109,7 +109,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     }
 
                     actualDocument.Contains(expectedElement.Name).Should().BeTrue($"Actual document must contain key: {expectedElement.Name}");
-                    AssertValuesMatch(expectedItem, actualDocument[expectedElement.Name], false);
+                    AssertValuesMatch(actualDocument[expectedElement.Name], expectedItem, false);
                 }
 
                 if (!isRoot)
@@ -125,12 +125,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 actual.IsBsonArray.Should().BeTrue($"Actual value must be a document, but is '{actual.BsonType}'");
                 actual.AsBsonArray.Count.Should().Be(expected.AsBsonArray.Count, "Arrays must the be same size"); // TODO: Check if sizes are included in error message
 
-                var expectedArray = expected.AsBsonArray;
                 var actualArray = actual.AsBsonArray;
+                var expectedArray = expected.AsBsonArray;
 
                 for (int i = 0; i < expectedArray.Count; i++)
                 {
-                    AssertValuesMatch(expectedArray[i], actualArray[i], false);
+                    AssertValuesMatch(actualArray[i], expectedArray[i], false);
                 }
             }
             else if (expected.IsNumeric)
@@ -141,29 +141,29 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
             else
             {
-                expected.BsonType.Should().Be(actual.BsonType);
-                expected.Should().Be(actual);
+                actual.BsonType.Should().Be(expected.BsonType);
+                actual.Should().Be(expected);
             }
         }
 
         private void AssertExpectedType(BsonValue actual, BsonValue expectedTypes)
         {
-            List<string> types;
-
+            var actualTypeName = GetBsonTypeNameAsString(actual.BsonType);
+            List<string> expectedTypeNames;
             if (expectedTypes.IsString)
             {
-                types = new List<string> { expectedTypes.AsString };
+                expectedTypeNames = new List<string> { expectedTypes.AsString };
             }
             else if (expectedTypes.IsBsonArray)
             {
-                types = expectedTypes.AsBsonArray.Select(t => t.AsString).ToList();
+                expectedTypeNames = expectedTypes.AsBsonArray.Select(t => t.AsString).ToList();
             }
             else
             {
                 throw new FormatException($"Unexpected $$type value BsonType: '{expectedTypes.BsonType}'");
             }
 
-            types.Should().Contain(GetBsonTypeNameAsString(actual.BsonType));
+            actualTypeName.Should().BeOneOf(expectedTypeNames);
         }
 
         private string GetBsonTypeNameAsString(BsonType bsonType)

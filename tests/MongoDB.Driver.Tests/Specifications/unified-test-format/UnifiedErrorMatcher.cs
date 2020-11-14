@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             _valueMatcher = valueMatcher;
         }
 
-        public void AssertErrorsMatch(BsonDocument expectedError, Exception actualException)
+        public void AssertErrorsMatch(Exception actualException, BsonDocument expectedError)
         {
             foreach (var element in expectedError)
             {
@@ -50,8 +50,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         break;
                     case "errorContains":
                         var expectedSubstring = element.Value.AsString;
-                        var actualExceptionContains = actualException.Message.IndexOf(expectedSubstring, StringComparison.OrdinalIgnoreCase) >= 0;
-                        actualExceptionContains.Should().BeTrue();
+                        actualException.Message.Should().ContainEquivalentOf(expectedSubstring);
                         break;
                     case "errorCode":
                         var errorCode = element.Value.AsInt32;
@@ -67,8 +66,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoCommandException;
-                            ex.CodeName.Should().Be(errorCodeName);
+                            var mongoCommandException = actualException as MongoCommandException;
+                            mongoCommandException.CodeName.Should().Be(errorCodeName);
                         }
                         break;
                     case "errorLabelsContain":
@@ -76,8 +75,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoException;
-                            ex.ErrorLabels.Should().Contain(expectedErrorLabels);
+                            var mongoException = actualException as MongoException;
+                            mongoException.ErrorLabels.Should().Contain(expectedErrorLabels);
                         }
                         break;
                     case "errorLabelsOmit":
@@ -85,8 +84,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoException;
-                            ex.ErrorLabels.Should().NotContain(expectedAbsentErrorLabels);
+                            var mongoException = actualException as MongoException;
+                            mongoException.ErrorLabels.Should().NotContain(expectedAbsentErrorLabels);
                         }
                         break;
                     case "expectResult":
