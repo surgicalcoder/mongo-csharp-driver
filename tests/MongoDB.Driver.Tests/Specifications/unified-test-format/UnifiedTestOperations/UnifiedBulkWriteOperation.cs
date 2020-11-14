@@ -26,19 +26,19 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedBulkWriteOperation : IUnifiedTestOperation
     {
         private IMongoCollection<BsonDocument> _collection;
-        private List<WriteModel<BsonDocument>> _requests;
         private BulkWriteOptions _options;
+        private List<WriteModel<BsonDocument>> _requests;
         private IClientSessionHandle _session;
 
         public UnifiedBulkWriteOperation(
+            IClientSessionHandle session,
             IMongoCollection<BsonDocument> collection,
-            List<WriteModel<BsonDocument>> requests,
             BulkWriteOptions options,
-            IClientSessionHandle session)
+            List<WriteModel<BsonDocument>> requests)
         {
             _collection = collection;
-            _requests = requests;
             _options = options;
+            _requests = requests;
             _session = session;
         }
 
@@ -57,9 +57,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                     result = _collection.BulkWrite(_session, _requests, _options);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
 
             return new UnifiedBulkWriteOperationResultConverter().Convert(result);
@@ -80,9 +80,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                     result = await _collection.BulkWriteAsync(_session, _requests, _options);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
 
             return new UnifiedBulkWriteOperationResultConverter().Convert(result);
@@ -124,7 +124,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedBulkWriteOperation(collection, requests, options, session);
+            return new UnifiedBulkWriteOperation(session, collection, options, requests);
         }
 
         private DeleteManyModel<BsonDocument> ParseDeleteManyModel(BsonDocument model)
@@ -198,7 +198,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
         private WriteModel<BsonDocument> ParseWriteModel(BsonDocument modelItem)
         {
-            if (modelItem.ElementCount > 1)
+            if (modelItem.ElementCount != 1)
             {
                 throw new FormatException("BulkWrite request model should contain single element");
             }
@@ -241,14 +241,16 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         public OperationResult Convert(BulkWriteResult<BsonDocument> result)
         {
             return new OperationResult(
-                new BsonDocument()
-                .Add("deletedCount", (int)result.DeletedCount)
-                .Add("insertedCount", (int)result.InsertedCount)
-                .Add("matchedCount", (int)result.MatchedCount)
-                .Add("modifiedCount", (int)result.ModifiedCount)
-                .Add("upsertedCount", result.Upserts.Count)
-                .Add("insertedIds", PrepareInsertedIds(result.ProcessedRequests))
-                .Add("upsertedIds", PrepareUpsertedIds(result.Upserts)));
+                new BsonDocument
+                {
+                    { "deletedCount", result.DeletedCount },
+                    { "insertedCount", result.InsertedCount },
+                    { "matchedCount", result.MatchedCount },
+                    { "modifiedCount", result.ModifiedCount },
+                    { "upsertedCount", result.Upserts.Count },
+                    { "insertedIds", PrepareInsertedIds(result.ProcessedRequests) },
+                    { "upsertedIds", PrepareUpsertedIds(result.Upserts) }
+                });
         }
 
         private BsonDocument PrepareInsertedIds(IReadOnlyList<WriteModel<BsonDocument>> processedRequests)

@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,51 +24,47 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedAggregateCollectionOperation : IUnifiedTestOperation
     {
         private IMongoCollection<BsonDocument> _collection;
-        private AggregateOptions _options;
         private PipelineDefinition<BsonDocument, BsonDocument> _pipeline;
+        private AggregateOptions _options;
 
         public UnifiedAggregateCollectionOperation(
             IMongoCollection<BsonDocument> collection,
-            AggregateOptions options,
-            PipelineDefinition<BsonDocument, BsonDocument> pipeline)
+            PipelineDefinition<BsonDocument, BsonDocument> pipeline,
+            AggregateOptions options)
         {
             _collection = collection;
-            _options = options;
             _pipeline = pipeline;
+            _options = options;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
         {
-            List<BsonDocument> result;
-
             try
             {
                 var cursor = _collection.Aggregate(_pipeline, _options, cancellationToken);
-                result = cursor.ToList();
-            }
-            catch (Exception ex)
-            {
-                return new OperationResult(ex);
-            }
+                var result = cursor.ToList();
 
-            return new OperationResult(new BsonArray(result));
+                return new OperationResult(new BsonArray(result));
+            }
+            catch (Exception exception)
+            {
+                return new OperationResult(exception);
+            }
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            List<BsonDocument> result;
-
             try
             {
                 var cursor = await _collection.AggregateAsync(_pipeline, _options, cancellationToken);
-                result = cursor.ToList();
-            }
-            catch (Exception ex)
-            {
-                return new OperationResult(ex);
-            }
+                var result = await cursor.ToListAsync();
 
-            return new OperationResult(new BsonArray(result));
+                return new OperationResult(new BsonArray(result));
+            }
+            catch (Exception exception)
+            {
+                return new OperationResult(exception);
+            }
         }
     }
 
@@ -88,6 +83,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
             AggregateOptions options = new AggregateOptions();
             PipelineDefinition<BsonDocument, BsonDocument> pipeline = null;
+            // TODO: Check if session should be processed
 
             foreach (var argument in arguments)
             {
@@ -102,7 +98,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedAggregateCollectionOperation(collection, options, pipeline);
+            return new UnifiedAggregateCollectionOperation(collection, pipeline, options);
         }
     }
 }

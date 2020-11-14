@@ -22,15 +22,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
     public class UnifiedErrorMatcher
     {
-        private UnifiedValueMatcher _valueMatcher;
-
-        public UnifiedErrorMatcher(UnifiedValueMatcher valueMatcher)
-        {
-            _valueMatcher = valueMatcher;
-        }
-
         public void AssertErrorsMatch(BsonDocument expectedError, Exception actualException)
         {
+            expectedError.Elements.Should().NotBeEmpty();
+
             foreach (var element in expectedError)
             {
                 switch (element.Name)
@@ -50,16 +45,15 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         break;
                     case "errorContains":
                         var expectedSubstring = element.Value.AsString;
-                        var actualExceptionContains = actualException.Message.IndexOf(expectedSubstring, StringComparison.OrdinalIgnoreCase) >= 0;
-                        actualExceptionContains.Should().BeTrue();
+                        actualException.Message.Should().ContainEquivalentOf(expectedSubstring);
                         break;
                     case "errorCode":
                         var errorCode = element.Value.AsInt32;
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoCommandException;
-                            ex.Code.Should().Be(errorCode);
+                            var mongoCommandException = actualException as MongoCommandException;
+                            mongoCommandException.Code.Should().Be(errorCode);
                         }
                         break;
                     case "errorCodeName":
@@ -67,8 +61,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoCommandException;
-                            ex.CodeName.Should().Be(errorCodeName);
+                            var mongoCommandException = actualException as MongoCommandException;
+                            mongoCommandException.CodeName.Should().Be(errorCodeName);
                         }
                         break;
                     case "errorLabelsContain":
@@ -76,8 +70,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoException;
-                            ex.ErrorLabels.Should().Contain(expectedErrorLabels);
+                            var mongoCommandException = actualException as MongoException;
+                            mongoCommandException.ErrorLabels.Should().Contain(expectedErrorLabels);
                         }
                         break;
                     case "errorLabelsOmit":
@@ -85,14 +79,16 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         // TODO: Add exception type assertion.
                         // TODO: Check in debug.
                         {
-                            var ex = actualException as MongoException;
-                            ex.ErrorLabels.Should().NotContain(expectedAbsentErrorLabels);
+                            var mongoCommandException = actualException as MongoException;
+                            mongoCommandException.ErrorLabels.Should().NotContain(expectedAbsentErrorLabels);
                         }
                         break;
                     case "expectResult":
                         var expectResult = element.Value.AsBsonDocument;
                         // TODO: Implement case.
                         break;
+                    default:
+                        throw new FormatException($"Unrecognized error assertion: '{element.Name}'");
                 }
             }
         }

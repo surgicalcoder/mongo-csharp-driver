@@ -41,7 +41,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         {
             foreach (var entityItem in entitiesArray)
             {
-                if (entityItem.AsBsonDocument.ElementCount > 1)
+                if (entityItem.AsBsonDocument.ElementCount != 1)
                 {
                     throw new FormatException("Entity item should contain single element");
                 }
@@ -237,17 +237,19 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 }
             }
 
-            var client = DriverTestConfiguration.CreateDisposableClient(settings =>
-            {
-                settings.RetryReads = retryReads;
-                settings.RetryWrites = retryWrites;
-                settings.ReadConcern = readConcern;
-                settings.WriteConcern = writeConcern;
-                if (eventCapturer != null)
+            var client = DriverTestConfiguration.CreateDisposableClient(
+                settings =>
                 {
-                    settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
-                }
-            }, useMultipleShardRouters);
+                    settings.RetryReads = retryReads;
+                    settings.RetryWrites = retryWrites;
+                    settings.ReadConcern = readConcern;
+                    settings.WriteConcern = writeConcern;
+                    settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // the default value for spec tests
+                    if (eventCapturer != null)
+                    {
+                        settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
+                    }
+                }, useMultipleShardRouters);
 
             return (client, eventCapturer);
         }

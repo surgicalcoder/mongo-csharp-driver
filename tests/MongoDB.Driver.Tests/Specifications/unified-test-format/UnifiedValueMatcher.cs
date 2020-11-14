@@ -32,7 +32,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         public void AssertValuesMatch(BsonValue expected, BsonValue actual)
         {
-            AssertValuesMatch(expected, actual, true);
+            AssertValuesMatch(expected, actual, isRoot: true);
         }
 
         private void AssertValuesMatch(BsonValue expected, BsonValue actual, bool isRoot)
@@ -66,7 +66,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
             if (expected.IsBsonDocument)
             {
-                actual.IsBsonDocument.Should().BeTrue($"Actual value must be a document, but is '{actual.BsonType}'");
+                actual.BsonType.Should().Be(BsonType.Document);
 
                 var expectedDocument = expected.AsBsonDocument;
                 var actualDocument = actual.AsBsonDocument;
@@ -84,10 +84,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         {
                             case "$$exists":
                                 actualDocument.Contains(expectedElement.Name).Should().Be(specialOperator[0].AsBoolean); // TODO: Recheck this actually works
-                                return; // TODO: eh. return or continue?
+                                continue;
                             case "$$type":
                                 AssertExpectedType(actual, specialOperator[0]);
-                                return; // TODO: eh. return or continue?
+                                continue;
                             case "$$unsetOrMatches":
                                 if (!actualDocument.Contains(expectedElement.Name))
                                 {
@@ -109,7 +109,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     }
 
                     actualDocument.Contains(expectedElement.Name).Should().BeTrue($"Actual document must contain key: {expectedElement.Name}");
-                    AssertValuesMatch(expectedItem, actualDocument[expectedElement.Name], false);
+                    AssertValuesMatch(expectedItem, actualDocument[expectedElement.Name], isRoot: false);
                 }
 
                 if (!isRoot)
@@ -130,40 +130,41 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
                 for (int i = 0; i < expectedArray.Count; i++)
                 {
-                    AssertValuesMatch(expectedArray[i], actualArray[i], false);
+                    AssertValuesMatch(expectedArray[i], actualArray[i], isRoot: false);
                 }
             }
             else if (expected.IsNumeric)
             {
                 actual.IsNumeric.Should().BeTrue($"Actual value must be numeric, but is '{actual.BsonType}'");
 
-                expected.ToDouble().Should().Be(actual.ToDouble()); // TODO: Cast them to double? What about epsilon? Or maybe check each number type individually?
+                actual.ToDouble().Should().Be(expected.ToDouble()); // TODO: Cast them to double? What about epsilon? Or maybe check each number type individually?
             }
             else
             {
-                expected.BsonType.Should().Be(actual.BsonType);
-                expected.Should().Be(actual);
+                actual.BsonType.Should().Be(expected.BsonType);
+                actual.Should().Be(expected);
             }
         }
 
         private void AssertExpectedType(BsonValue actual, BsonValue expectedTypes)
         {
-            List<string> types;
+            var actualTypeName = GetBsonTypeNameAsString(actual.BsonType);
+            List<string> expectedTypeNames;
 
             if (expectedTypes.IsString)
             {
-                types = new List<string> { expectedTypes.AsString };
+                expectedTypeNames = new List<string> { expectedTypes.AsString };
             }
             else if (expectedTypes.IsBsonArray)
             {
-                types = expectedTypes.AsBsonArray.Select(t => t.AsString).ToList();
+                expectedTypeNames = expectedTypes.AsBsonArray.Select(t => t.AsString).ToList();
             }
             else
             {
                 throw new FormatException($"Unexpected $$type value BsonType: '{expectedTypes.BsonType}'");
             }
 
-            types.Should().Contain(GetBsonTypeNameAsString(actual.BsonType));
+            actualTypeName.Should().BeOneOf(expectedTypeNames);
         }
 
         private string GetBsonTypeNameAsString(BsonType bsonType)
@@ -198,14 +199,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     return "long";
                 case BsonType.Decimal128:
                     return "decimal";
-                // TODO: not sure why Java excluded those, so I leave em hanging here for review
-                case BsonType.EndOfDocument:
-                case BsonType.Undefined:
-                case BsonType.JavaScript:
-                case BsonType.Symbol:
-                case BsonType.JavaScriptWithScope:
-                case BsonType.MinKey:
-                case BsonType.MaxKey:
                 default:
                     throw new NotSupportedException($"Bson type string conversion not supported: '{bsonType}'");
             }

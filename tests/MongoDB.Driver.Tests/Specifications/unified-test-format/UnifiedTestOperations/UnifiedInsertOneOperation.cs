@@ -28,10 +28,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         private IClientSessionHandle _session;
 
         public UnifiedInsertOneOperation(
+            IClientSessionHandle session,
             IMongoCollection<BsonDocument> collection,
             BsonDocument document,
-            InsertOneOptions options,
-            IClientSessionHandle session)
+            InsertOneOptions options)
         {
             _collection = collection;
             _document = document;
@@ -52,12 +52,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                     _collection.InsertOne(_session, _document, _options, cancellationToken);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
 
-            return new OperationResult((BsonDocument)null);
+            return new OperationResult((BsonValue)null);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
@@ -73,12 +73,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                     await _collection.InsertOneAsync(_session, _document, _options, cancellationToken);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
 
-            return new OperationResult((BsonDocument)null);
+            return new OperationResult((BsonValue)null);
         }
     }
 
@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedInsertOneOperation(collection, document, options, session);
+            return new UnifiedInsertOneOperation(session, collection, document, options);
         }
     }
 }

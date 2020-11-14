@@ -30,10 +30,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         private IClientSessionHandle _session;
 
         public UnifiedInsertManyOperation(
+            IClientSessionHandle session,
             IMongoCollection<BsonDocument> collection,
             List<BsonDocument> documents,
-            InsertManyOptions options,
-            IClientSessionHandle session)
+            InsertManyOptions options)
         {
             _collection = collection;
             _documents = documents;
@@ -54,12 +54,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                     _collection.InsertMany(_session, _documents, _options, cancellationToken);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
 
-            return null;
+            return new OperationResult((BsonValue)null);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
@@ -75,12 +75,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                     await _collection.InsertManyAsync(_session, _documents, _options, cancellationToken);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return new OperationResult(ex);
+                return new OperationResult(exception);
             }
 
-            return null;
+            return new OperationResult((BsonValue)null);
         }
     }
 
@@ -119,7 +119,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 }
             }
 
-            return new UnifiedInsertManyOperation(collection, documents, options, session);
+            return new UnifiedInsertManyOperation(session, collection, documents, options);
         }
     }
 }

@@ -69,7 +69,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 var result = ExecuteOperation(operation, test["async"].AsBoolean);
                 if (result != null)
                 {
-                    AssertOperation(operationItem.AsBsonDocument, result, _entityMap);
+                    AssertResult(operationItem.AsBsonDocument, result, _entityMap);
                 }
                 if (operation is UnifiedFailPointOperation failPointOperation)
                 {
@@ -105,33 +105,36 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 var databaseName = dataItem["databaseName"].AsString;
                 var documents = dataItem["documents"].AsBsonArray.Cast<BsonDocument>().ToList();
 
-                if (documents.Count > 0)
-                {
-                    var database = client.GetDatabase(databaseName);
-                    var collection = database
-                        .GetCollection<BsonDocument>(collectionName)
-                        .WithWriteConcern(WriteConcern.WMajority);
+                var database = client.GetDatabase(databaseName);
+                var collection = database
+                    .GetCollection<BsonDocument>(collectionName)
+                    .WithWriteConcern(WriteConcern.WMajority);
 
-                    database.DropCollection(collectionName);
+                database.DropCollection(collectionName);
+                if (documents.Any())
+                {
                     collection.InsertMany(documents);
+                }
+                else
+                {
+                    database.CreateCollection(collectionName); // TODO: Use "majority" write concern.
                 }
             }
         }
 
-        private void AssertOperation(BsonDocument operation, OperationResult operationResult, EntityMap entityMap)
+        private void AssertResult(BsonDocument operation, OperationResult actualResult, EntityMap entityMap)
         {
-            var unifiedValueMatcher = new UnifiedValueMatcher(entityMap);
             if (operation.TryGetValue("expectResult", out var expectedResult))
             {
-                unifiedValueMatcher.AssertValuesMatch(expectedResult, operationResult.Result);
+                new UnifiedValueMatcher(entityMap).AssertValuesMatch(expectedResult, actualResult.Result);
             }
             if (operation.TryGetValue("expectError", out var expectedError))
             {
-                new UnifiedErrorMatcher(unifiedValueMatcher).AssertErrorsMatch(expectedError.AsBsonDocument, operationResult.Exception);
+                new UnifiedErrorMatcher().AssertErrorsMatch(expectedError.AsBsonDocument, actualResult.Exception);
             }
             else
             {
-                operationResult.Exception.Should().BeNull();
+                actualResult.Exception.Should().BeNull();
             }
         }
 
@@ -172,10 +175,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             var factory = new UnifiedTestOperationFactory(entityMap);
 
             var operationName = operation["name"].AsString;
-            var operarionTarget = operation["object"].AsString;
+            var operationTarget = operation["object"].AsString;
             var operationArguments = operation.GetValue("arguments", null)?.AsBsonDocument;
 
-            return factory.CreateOperation(operationName, operarionTarget, operationArguments);
+            return factory.CreateOperation(operationName, operationTarget, operationArguments);
         }
 
         private OperationResult ExecuteOperation(IUnifiedTestOperation operation, bool async)
