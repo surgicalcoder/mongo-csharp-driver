@@ -33,10 +33,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             BsonDocument document,
             InsertOneOptions options)
         {
+            _session = session;
             _collection = collection;
             _document = document;
             _options = options; // TODO: should not be null. Either throw or recreate
-            _session = session;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
@@ -51,13 +51,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     _collection.InsertOne(_session, _document, _options, cancellationToken);
                 }
+
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception exception)
             {
                 return new OperationResult(exception);
             }
-
-            return new OperationResult((BsonValue)null);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
@@ -72,13 +72,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     await _collection.InsertOneAsync(_session, _document, _options, cancellationToken);
                 }
+
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception exception)
             {
                 return new OperationResult(exception);
             }
-
-            return new OperationResult((BsonValue)null);
         }
     }
 
@@ -93,11 +93,11 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
         public UnifiedInsertOneOperation Build(string targetCollectionId, BsonDocument arguments)
         {
-            IMongoCollection<BsonDocument> collection = _entityMap.GetCollection(targetCollectionId);
+            var collection = _entityMap.GetCollection(targetCollectionId);
 
+            IClientSessionHandle session = null;
             BsonDocument document = null;
             InsertOneOptions options = new InsertOneOptions();
-            IClientSessionHandle session = null;
 
             foreach (var argument in arguments)
             {

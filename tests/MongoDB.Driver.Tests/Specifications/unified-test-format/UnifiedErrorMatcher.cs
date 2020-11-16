@@ -22,7 +22,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
     public class UnifiedErrorMatcher
     {
-        public void AssertErrorsMatch(BsonDocument expectedError, Exception actualException)
+        public void AssertErrorsMatch(Exception actualException, BsonDocument expectedError)
         {
             expectedError.Elements.Should().NotBeEmpty();
 

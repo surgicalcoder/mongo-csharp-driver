@@ -69,7 +69,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 var result = ExecuteOperation(operation, test["async"].AsBoolean);
                 if (result != null)
                 {
-                    AssertResult(operationItem.AsBsonDocument, result, _entityMap);
+                    AssertResult(result, operationItem.AsBsonDocument, _entityMap);
                 }
                 if (operation is UnifiedFailPointOperation failPointOperation)
                 {
@@ -111,7 +111,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     .WithWriteConcern(WriteConcern.WMajority);
 
                 database.DropCollection(collectionName);
-                if (documents.Any())
+                if (documents.Count > 0)
                 {
                     collection.InsertMany(documents);
                 }
@@ -122,15 +122,19 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
         }
 
-        private void AssertResult(BsonDocument operation, OperationResult actualResult, EntityMap entityMap)
+        // alphabetical order?
+        private void AssertResult(OperationResult actualResult, BsonDocument operation, EntityMap entityMap)
         {
             if (operation.TryGetValue("expectResult", out var expectedResult))
             {
-                new UnifiedValueMatcher(entityMap).AssertValuesMatch(expectedResult, actualResult.Result);
+                actualResult.Exception.Should().BeNull();
+                new UnifiedValueMatcher(entityMap).AssertValuesMatch(actualResult.Result, expectedResult);
             }
             if (operation.TryGetValue("expectError", out var expectedError))
             {
-                new UnifiedErrorMatcher().AssertErrorsMatch(expectedError.AsBsonDocument, actualResult.Exception);
+                actualResult.Result.Should().BeNull();
+                actualResult.Exception.Should().NotBeNull();
+                new UnifiedErrorMatcher().AssertErrorsMatch(actualResult.Exception, expectedError.AsBsonDocument);
             }
             else
             {
@@ -166,7 +170,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 var eventCapturer = entityMap.GetEventCapturer(clientId);
                 var actualEvents = eventCapturer.Events;
 
-                unifiedEventMatcher.AssertEventsMatch(eventItem["events"].AsBsonArray, actualEvents);
+                unifiedEventMatcher.AssertEventsMatch(actualEvents, eventItem["events"].AsBsonArray);
             }
         }
 

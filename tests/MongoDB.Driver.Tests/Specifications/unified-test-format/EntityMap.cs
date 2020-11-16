@@ -24,7 +24,7 @@ using MongoDB.Driver.TestHelpers;
 
 namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
-    // TODO: This class needs to be split into subclasses.
+    // TODO: This class needs to be split into subclasses. WHY?
     public sealed class EntityMap : IDisposable
     {
         // private variables
@@ -36,6 +36,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         private readonly Dictionary<string, IMongoDatabase> _databases = new Dictionary<string, IMongoDatabase>();
         private readonly Dictionary<string, BsonValue> _results = new Dictionary<string, BsonValue>();
         private readonly Dictionary<string, IClientSessionHandle> _sessions = new Dictionary<string, IClientSessionHandle>();
+        // assuming no clashes between string key values this could just be (and use a cast in the Get methods)
+        // private readonly Dictionary<string, object> _map;
 
         public EntityMap(BsonArray entitiesArray)
         {
@@ -101,6 +103,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         // public methods
         public IGridFSBucket GetBucket(string bucketId)
         {
+            // return (IGridFSBucket)_map[bucketId];
             return _buckets[bucketId];
         }
 
@@ -136,6 +139,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         public void Dispose()
         {
+            //foreach (var entity in _map.Values)
+            //{
+            //    (entity as IDisposable)?.Dispose();
+            //}
             foreach (var client in _clients.Values)
             {
                 client.Dispose();
@@ -249,7 +256,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     {
                         settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
                     }
-                }, useMultipleShardRouters);
+                },
+                useMultipleShardRouters);
 
             return (client, eventCapturer);
         }

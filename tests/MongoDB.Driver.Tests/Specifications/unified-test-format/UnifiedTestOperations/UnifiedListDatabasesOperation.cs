@@ -35,7 +35,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = _client.ListDatabases(cancellationToken);
                 var result = cursor.ToList();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)
@@ -50,7 +49,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = await _client.ListDatabasesAsync(cancellationToken);
                 var result = await cursor.ToListAsync();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)

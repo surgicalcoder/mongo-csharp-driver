@@ -30,12 +30,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             _entityMap = entityMap;
         }
 
-        public void AssertValuesMatch(BsonValue expected, BsonValue actual)
+        public void AssertValuesMatch(BsonValue actual, BsonValue expected)
         {
-            AssertValuesMatch(expected, actual, isRoot: true);
+            AssertValuesMatch(actual, expected, isRoot: true);
         }
 
-        private void AssertValuesMatch(BsonValue expected, BsonValue actual, bool isRoot)
+        private void AssertValuesMatch(BsonValue actual, BsonValue expected, bool isRoot)
         {
             if (expected.IsBsonDocument &&
                 expected.AsBsonDocument.ElementCount == 1 &&
@@ -68,8 +68,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             {
                 actual.BsonType.Should().Be(BsonType.Document);
 
-                var expectedDocument = expected.AsBsonDocument;
                 var actualDocument = actual.AsBsonDocument;
+                var expectedDocument = expected.AsBsonDocument;
 
                 foreach (var expectedElement in expectedDocument)
                 {
@@ -84,10 +84,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         {
                             case "$$exists":
                                 actualDocument.Contains(expectedElement.Name).Should().Be(specialOperator[0].AsBoolean); // TODO: Recheck this actually works
-                                continue;
+                                continue; // deeply nested continue is hard to read
                             case "$$type":
                                 AssertExpectedType(actual, specialOperator[0]);
-                                continue;
+                                continue; // deeply nested continue is hard to read
                             case "$$unsetOrMatches":
                                 if (!actualDocument.Contains(expectedElement.Name))
                                 {
@@ -109,7 +109,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     }
 
                     actualDocument.Contains(expectedElement.Name).Should().BeTrue($"Actual document must contain key: {expectedElement.Name}");
-                    AssertValuesMatch(expectedItem, actualDocument[expectedElement.Name], isRoot: false);
+                    AssertValuesMatch(actualDocument[expectedElement.Name], expectedItem, false);
                 }
 
                 if (!isRoot)
@@ -125,12 +125,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 actual.IsBsonArray.Should().BeTrue($"Actual value must be a document, but is '{actual.BsonType}'");
                 actual.AsBsonArray.Count.Should().Be(expected.AsBsonArray.Count, "Arrays must the be same size"); // TODO: Check if sizes are included in error message
 
-                var expectedArray = expected.AsBsonArray;
                 var actualArray = actual.AsBsonArray;
+                var expectedArray = expected.AsBsonArray;
 
                 for (int i = 0; i < expectedArray.Count; i++)
                 {
-                    AssertValuesMatch(expectedArray[i], actualArray[i], isRoot: false);
+                    AssertValuesMatch(actualArray[i], expectedArray[i], false);
                 }
             }
             else if (expected.IsNumeric)

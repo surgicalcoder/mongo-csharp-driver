@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,8 +24,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedAggregateDatabaseOperation : IUnifiedTestOperation
     {
         private IMongoDatabase _database;
-        private PipelineDefinition<NoPipelineInput, BsonDocument> _pipeline;
         private AggregateOptions _options;
+        private PipelineDefinition<NoPipelineInput, BsonDocument> _pipeline;
 
         public UnifiedAggregateDatabaseOperation(
             IMongoDatabase database,
@@ -44,7 +43,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = _database.Aggregate(_pipeline, _options, cancellationToken);
                 var result = cursor.ToList();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)
@@ -59,7 +57,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = await _database.AggregateAsync(_pipeline, _options, cancellationToken);
                 var result = await cursor.ToListAsync();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)
@@ -91,8 +88,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 switch (argument.Name)
                 {
                     case "pipeline":
-                        pipeline = new BsonDocumentStagePipelineDefinition<NoPipelineInput, BsonDocument>(
-                            argument.Value.AsBsonArray.Cast<BsonDocument>());
+                        var stages = argument.Value.AsBsonArray.Cast<BsonDocument>();
+                        pipeline = new BsonDocumentStagePipelineDefinition<NoPipelineInput, BsonDocument>(stages);
                         break;
                     default:
                         throw new FormatException($"Invalid AggregateOperation argument name: {argument.Name}");

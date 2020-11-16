@@ -35,8 +35,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
         {
             _collection = collection;
             _filter = filter;
-            _options = options;
             _replacement = replacement;
+            _options = options;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
@@ -44,7 +44,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             try
             {
                 var result = _collection.ReplaceOne(_filter, _replacement, _options, cancellationToken);
-
                 return new UnifiedReplaceOneOperationResultConverter().Convert(result);
             }
             catch (Exception exception)
@@ -58,7 +57,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             try
             {
                 var result = await _collection.ReplaceOneAsync(_filter, _replacement, _options, cancellationToken);
-
                 return new UnifiedReplaceOneOperationResultConverter().Convert(result);
             }
             catch (Exception exception)

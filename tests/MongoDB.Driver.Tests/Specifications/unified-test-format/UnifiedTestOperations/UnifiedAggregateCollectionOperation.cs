@@ -24,8 +24,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
     public class UnifiedAggregateCollectionOperation : IUnifiedTestOperation
     {
         private IMongoCollection<BsonDocument> _collection;
-        private PipelineDefinition<BsonDocument, BsonDocument> _pipeline;
         private AggregateOptions _options;
+        private PipelineDefinition<BsonDocument, BsonDocument> _pipeline;
 
         public UnifiedAggregateCollectionOperation(
             IMongoCollection<BsonDocument> collection,
@@ -43,7 +43,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = _collection.Aggregate(_pipeline, _options, cancellationToken);
                 var result = cursor.ToList();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)
@@ -58,7 +57,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = await _collection.AggregateAsync(_pipeline, _options, cancellationToken);
                 var result = await cursor.ToListAsync();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)
@@ -90,8 +88,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 switch (argument.Name)
                 {
                     case "pipeline":
-                        pipeline = new BsonDocumentStagePipelineDefinition<BsonDocument, BsonDocument>(
-                            argument.Value.AsBsonArray.Cast<BsonDocument>());
+                        var stages = argument.Value.AsBsonArray.Cast<BsonDocument>();
+                        pipeline = new BsonDocumentStagePipelineDefinition<BsonDocument, BsonDocument>(stages);
                         break;
                     default:
                         throw new FormatException($"Invalid AggregateOperation argument name: {argument.Name}");

@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -43,7 +42,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = _collection.FindSync(_filter, _options, cancellationToken);
                 var result = cursor.ToList();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)
@@ -58,7 +56,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             {
                 var cursor = await _collection.FindAsync(_filter, _options, cancellationToken);
                 var result = await cursor.ToListAsync();
-
                 return new OperationResult(new BsonArray(result));
             }
             catch (Exception exception)

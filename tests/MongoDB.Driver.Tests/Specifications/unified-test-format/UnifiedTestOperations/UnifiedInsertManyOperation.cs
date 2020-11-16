@@ -35,10 +35,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
             List<BsonDocument> documents,
             InsertManyOptions options)
         {
+            _session = session;
             _collection = collection;
             _documents = documents;
             _options = options; // TODO: should not be null. Either throw or recreate
-            _session = session;
         }
 
         public OperationResult Execute(CancellationToken cancellationToken)
@@ -53,13 +53,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     _collection.InsertMany(_session, _documents, _options, cancellationToken);
                 }
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception exception)
             {
                 return new OperationResult(exception);
             }
-
-            return new OperationResult((BsonValue)null);
         }
 
         public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
@@ -74,13 +73,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
                 {
                     await _collection.InsertManyAsync(_session, _documents, _options, cancellationToken);
                 }
+                return new OperationResult((BsonValue)null);
             }
             catch (Exception exception)
             {
                 return new OperationResult(exception);
             }
-
-            return new OperationResult((BsonValue)null);
         }
     }
 
@@ -95,11 +93,11 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format.UnifiedTestOpe
 
         public UnifiedInsertManyOperation Build(string targetCollectionId, BsonDocument arguments)
         {
-            IMongoCollection<BsonDocument> collection = _entityMap.GetCollection(targetCollectionId);
+            var collection = _entityMap.GetCollection(targetCollectionId);
 
+            IClientSessionHandle session = null;
             List<BsonDocument> documents = null;
             InsertManyOptions options = new InsertManyOptions();
-            IClientSessionHandle session = null;
 
             foreach (var argument in arguments)
             {
