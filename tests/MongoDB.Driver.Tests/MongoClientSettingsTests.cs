@@ -707,18 +707,18 @@ namespace MongoDB.Driver.Tests
         [Fact]
         public void TestFromUrlWithMongoDBAWS_should_parse_credentials_correctly()
         {
-            const string authMech = "MONGODB-AWS";
-            const string user = "AKIAIOSFODNN7EXAMPLE";
-            const string pwd = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY";
+            const string authMechanism = "MONGODB-AWS";
+            const string username = "AKIAIOSFODNN7EXAMPLE";
+            const string password = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY";
             const string awsSessionToken = "AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3zrkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtpZ3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE";
 
-            var uri = $"mongodb+srv://{user}:{Uri.EscapeDataString(pwd)}@awssessiontokentest.example.net/test?authSource=$external&authMechanism={authMech}&authMechanismProperties=AWS_SESSION_TOKEN:{Uri.EscapeDataString(awsSessionToken)}";
+            var uri = $"mongodb+srv://{username}:{Uri.EscapeDataString(password)}@awssessiontokentest.example.net/test?authSource=$external&authMechanism={authMechanism}&authMechanismProperties=AWS_SESSION_TOKEN:{Uri.EscapeDataString(awsSessionToken)}";
             var url = new MongoUrl(uri);
 
             var result = MongoClientSettings.FromUrl(url).Credential;
 
-            result.Mechanism.Should().Be(authMech);
-            result.Username.Should().Be(user);
+            result.Mechanism.Should().Be(authMechanism);
+            result.Username.Should().Be(username);
             result.GetMechanismProperty("AWS_SESSION_TOKEN", string.Empty).Should().Be(awsSessionToken);
         }
 
