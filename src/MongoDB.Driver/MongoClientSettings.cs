@@ -834,7 +834,7 @@ namespace MongoDB.Driver
                     }
                     else
                     {
-                        credential = credential.WithMechanismProperty(property.Key, Uri.UnescapeDataString(property.Value ?? string.Empty));
+                        credential = credential.WithMechanismProperty(property.Key, Uri.UnescapeDataString(property.Value ?? ""));
                     }
                 }
                 clientSettings.Credential = credential;
