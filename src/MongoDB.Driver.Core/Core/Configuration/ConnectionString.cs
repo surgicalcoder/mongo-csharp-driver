@@ -686,15 +686,22 @@ namespace MongoDB.Driver.Core.Configuration
                 }
             }
 
+            foreach (var key in resolvedOptions.AllKeys)
+            {
+                resolvedOptions[key] = Uri.EscapeDataString(resolvedOptions[key]);
+            }
+
+            // _allOptions are the escaped options from the original connection string.
+            // Add them after escaping the resolvedOptions from the TXT record to avoid double-escaping.
             resolvedOptions.Add(_allOptions);
 
             var mergedOptions = new List<string>();
             mergedOptions.AddRange(
                 resolvedOptions
                 .AllKeys
-                .SelectMany(x => resolvedOptions
-                    .GetValues(x)
-                    .Select(y => $"{x}={Uri.EscapeDataString(y)}")));
+                .SelectMany(key => resolvedOptions
+                    .GetValues(key)
+                    .Select(value => $"{key}={value}")));
 
             if (mergedOptions.Count > 0)
             {
