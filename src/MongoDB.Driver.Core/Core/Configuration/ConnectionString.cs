@@ -686,22 +686,15 @@ namespace MongoDB.Driver.Core.Configuration
                 }
             }
 
-            foreach (var key in resolvedOptions.AllKeys)
-            {
-                resolvedOptions[key] = Uri.EscapeDataString(resolvedOptions[key]);
-            }
-
-            // _allOptions are the escaped options from the original connection string.
-            // Add them after escaping the resolvedOptions from the TXT record to avoid double-escaping.
             resolvedOptions.Add(_allOptions);
 
             var mergedOptions = new List<string>();
             mergedOptions.AddRange(
                 resolvedOptions
                 .AllKeys
-                .SelectMany(key => resolvedOptions
-                    .GetValues(key)
-                    .Select(value => $"{key}={value}")));
+                .SelectMany(x => resolvedOptions
+                    .GetValues(x)
+                    .Select(y => $"{x}={Uri.EscapeDataString(y)}")));
 
             if (mergedOptions.Count > 0)
             {
@@ -776,8 +769,10 @@ namespace MongoDB.Driver.Core.Configuration
             foreach (Capture option in match.Groups["option"].Captures)
             {
                 var parts = option.Value.Split('=');
-                _allOptions.Add(parts[0], parts[1]);
-                ParseOption(parts[0].Trim(), Uri.UnescapeDataString(parts[1].Trim()));
+                var name = parts[0].Trim(); // TODO: unescape?
+                var value = Uri.UnescapeDataString(parts[1].Trim());
+                _allOptions.Add(name, value);
+                ParseOption(name, value);
             }
         }
 
@@ -1308,7 +1303,7 @@ namespace MongoDB.Driver.Core.Configuration
                 throw new MongoConfigurationException("Only 1 TXT record is allowed when using the SRV protocol.");
             }
 
-            return txtRecords.Select(tr => tr.Strings.Aggregate("", (acc, s) => acc + Uri.UnescapeDataString(s))).ToList();
+            return txtRecords.Select(tr => string.Join("", tr.Strings)).ToList();
         }
 
         private NameValueCollection GetResolvedOptions(List<string> options)
@@ -1317,7 +1312,7 @@ namespace MongoDB.Driver.Core.Configuration
             var dummyConnectionString = "mongodb://localhost/";
             if (options.Count > 0)
             {
-                dummyConnectionString += "?" + string.Join("&", options);
+                dummyConnectionString += "?" + string.Join("&", options); // note: options from the txtRecords have not been Unescaped
             }
             var dnsConnectionString = new ConnectionString(dummyConnectionString);
             ValidateResolvedOptions(dnsConnectionString.AllOptionNames);
