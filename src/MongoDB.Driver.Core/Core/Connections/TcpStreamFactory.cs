@@ -48,7 +48,11 @@ namespace MongoDB.Driver.Core.Connections
         // methods
         public Stream CreateStream(EndPoint endPoint, CancellationToken cancellationToken)
         {
-#if NETSTANDARD1_5 || NETSTANDARD2_0
+#if NET452
+            var socket = CreateSocket(endPoint);
+            Connect(socket, endPoint, cancellationToken);
+            return CreateNetworkStream(socket);
+#else
             // ugh... I know... but there isn't a non-async version of dns resolution
             // in .NET Core
             var resolved = ResolveEndPointsAsync(endPoint).GetAwaiter().GetResult();
@@ -73,16 +77,16 @@ namespace MongoDB.Driver.Core.Connections
 
             // we should never get here...
             throw new InvalidOperationException("Unabled to resolve endpoint.");
-#else
-            var socket = CreateSocket(endPoint);
-            Connect(socket, endPoint, cancellationToken);
-            return CreateNetworkStream(socket);
 #endif
         }
 
         public async Task<Stream> CreateStreamAsync(EndPoint endPoint, CancellationToken cancellationToken)
         {
-#if NETSTANDARD1_5 || NETSTANDARD2_0
+#if NET452
+            var socket = CreateSocket(endPoint);
+            await ConnectAsync(socket, endPoint, cancellationToken).ConfigureAwait(false);
+            return CreateNetworkStream(socket);
+#else
             var resolved = await ResolveEndPointsAsync(endPoint).ConfigureAwait(false);
             for (int i = 0; i < resolved.Length; i++)
             {
@@ -105,10 +109,6 @@ namespace MongoDB.Driver.Core.Connections
 
             // we should never get here...
             throw new InvalidOperationException("Unabled to resolve endpoint.");
-#else
-            var socket = CreateSocket(endPoint);
-            await ConnectAsync(socket, endPoint, cancellationToken).ConfigureAwait(false);
-            return CreateNetworkStream(socket);
 #endif
         }
 
@@ -181,9 +181,7 @@ namespace MongoDB.Driver.Core.Connections
                 try
                 {
                     var dnsEndPoint = endPoint as DnsEndPoint;
-#if NETSTANDARD1_5 || NETSTANDARD2_0
-                    await socket.ConnectAsync(endPoint).ConfigureAwait(false);
-#else
+#if NET452
                     if (dnsEndPoint != null)
                     {
                         // mono doesn't support DnsEndPoint in its BeginConnect method.
@@ -193,6 +191,8 @@ namespace MongoDB.Driver.Core.Connections
                     {
                         await Task.Factory.FromAsync(socket.BeginConnect(endPoint, null, null), socket.EndConnect).ConfigureAwait(false);
                     }
+#else
+                    await socket.ConnectAsync(endPoint).ConfigureAwait(false);
 #endif
                     ChangeState(2); // note: might not actually go to state 2 if already in state 3 or 4
                 }

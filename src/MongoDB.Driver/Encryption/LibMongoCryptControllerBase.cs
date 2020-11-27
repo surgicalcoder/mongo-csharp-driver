@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -23,7 +24,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
-using MongoDB.Driver.Core.Misc;
 using MongoDB.Libmongocrypt;
 
 namespace MongoDB.Driver.Encryption
@@ -219,9 +219,10 @@ namespace MongoDB.Driver.Encryption
 
         private void SendKmsRequest(KmsRequest request, CancellationToken cancellation)
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             ParseKmsEndPoint(request.Endpoint, out var host, out var port);
-            socket.Connect(host, port);
+
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            SocketHelper.ResolvedAndConnect(socket, new DnsEndPoint(host, port));
 
             using (var networkStream = new NetworkStream(socket, ownsSocket: true))
             using (var sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false))
@@ -248,13 +249,10 @@ namespace MongoDB.Driver.Encryption
 
         private async Task SendKmsRequestAsync(KmsRequest request, CancellationToken cancellation)
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             ParseKmsEndPoint(request.Endpoint, out var host, out var port);
-#if NETSTANDARD1_5
-            await socket.ConnectAsync(host, port).ConfigureAwait(false);
-#else
-            await Task.Factory.FromAsync(socket.BeginConnect(host, port, null, null), socket.EndConnect).ConfigureAwait(false);
-#endif
+
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            await SocketHelper.ResolveAndConnectAsync(socket, new DnsEndPoint(host, port)).ConfigureAwait(false);
 
             using (var networkStream = new NetworkStream(socket, ownsSocket: true))
             using (var sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false))
@@ -271,6 +269,146 @@ namespace MongoDB.Driver.Encryption
                     var responseBytes = new byte[count];
                     Buffer.BlockCopy(buffer, 0, responseBytes, 0, count);
                     request.Feed(responseBytes);
+                }
+            }
+        }
+
+        // nested type
+        private static class SocketHelper
+        {
+            public static void ResolvedAndConnect(Socket socket, EndPoint endPoint)
+            {
+#if NETSTANDARD1_5
+                var resolved = ResolveEndPointsAsync(endPoint).GetAwaiter().GetResult();
+                for (int i = 0; i < resolved.Length; i++)
+                {
+                    try
+                    {
+                        Connect(socket, resolved[i]);
+                        return;
+                    }
+                    catch
+                    {
+                        // if we have tried all of them and still failed,
+                        // then blow up.
+                        if (i == resolved.Length - 1)
+                        {
+                            throw;
+                        }
+                    }
+                }
+#else
+                Connect(socket, endPoint);
+#endif
+            }
+
+            public static async Task ResolveAndConnectAsync(Socket socket, EndPoint endPoint)
+            {
+#if NETSTANDARD1_5
+                var resolved = await ResolveEndPointsAsync(endPoint).ConfigureAwait(false);
+                for (int i = 0; i < resolved.Length; i++)
+                {
+                    try
+                    {
+                        await ConnectAsync(socket, resolved[i]).ConfigureAwait(false);
+                        return;
+                    }
+                    catch
+                    {
+                        // if we have tried all of them and still failed,
+                        // then blow up.
+                        if (i == resolved.Length - 1)
+                        {
+                            throw;
+                        }
+                    }
+                }
+#else
+                await ConnectAsync(socket, endPoint).ConfigureAwait(false);
+#endif
+            }
+
+            // private methods
+            private static void Connect(Socket socket, EndPoint endPoint)
+            {
+                var dnsEndPoint = endPoint as DnsEndPoint;
+                if (dnsEndPoint != null)
+                {
+                    // mono doesn't support DnsEndPoint in its BeginConnect method.
+                    socket.Connect(dnsEndPoint.Host, dnsEndPoint.Port);
+                }
+                else
+                {
+                    var ip = (IPEndPoint)endPoint;
+                    socket.Connect(ip.Address, ip.Port);
+                }
+            }
+
+            private static async Task ConnectAsync(Socket socket, EndPoint endPoint)
+            {
+                var dnsEndPoint = endPoint as DnsEndPoint;
+#if NET452
+                if (dnsEndPoint != null)
+                {
+                    // mono doesn't support DnsEndPoint in its BeginConnect method.
+                    await Task.Factory.FromAsync(socket.BeginConnect(dnsEndPoint.Host, dnsEndPoint.Port, null, null), socket.EndConnect).ConfigureAwait(false);
+                }
+                else
+                {
+                    await Task.Factory.FromAsync(socket.BeginConnect(endPoint, null, null), socket.EndConnect).ConfigureAwait(false);
+                }
+#else
+                await socket.ConnectAsync(endPoint).ConfigureAwait(false);
+#endif
+            }
+
+            private static async Task<EndPoint[]> ResolveEndPointsAsync(EndPoint initial)
+            {
+                var dnsInitial = initial as DnsEndPoint;
+                if (dnsInitial == null)
+                {
+                    return new[] { initial };
+                }
+
+                IPAddress address;
+                if (IPAddress.TryParse(dnsInitial.Host, out address))
+                {
+                    return new[] { new IPEndPoint(address, dnsInitial.Port) };
+                }
+
+                var preferred = initial.AddressFamily;
+                return (await Dns.GetHostAddressesAsync(dnsInitial.Host).ConfigureAwait(false))
+                    .Select(x => new IPEndPoint(x, dnsInitial.Port))
+                    .OrderBy(x => x, new PreferredAddressFamilyComparer(preferred))
+                    .ToArray();
+            }
+
+            // nested types
+            private class PreferredAddressFamilyComparer : IComparer<EndPoint>
+            {
+                private readonly AddressFamily _preferred;
+
+                public PreferredAddressFamilyComparer(AddressFamily preferred)
+                {
+                    _preferred = preferred;
+                }
+
+                public int Compare(EndPoint x, EndPoint y)
+                {
+                    if (x.AddressFamily == y.AddressFamily)
+                    {
+                        return 0;
+                    }
+                    if (x.AddressFamily == _preferred)
+                    {
+                        return -1;
+                    }
+                    else if (y.AddressFamily == _preferred)
+                    {
+                        return 1;
+                    }
+
+                    return 0;
                 }
             }
         }
