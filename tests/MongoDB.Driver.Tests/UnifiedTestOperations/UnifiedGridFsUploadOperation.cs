@@ -74,9 +74,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedGridFsUploadOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedGridFsUploadOperationBuilder(EntityMap entityMap)
+        public UnifiedGridFsUploadOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }
@@ -104,7 +104,10 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         var sourceDocument = argument.Value.AsBsonDocument;
                         JsonDrivenHelper.EnsureAllFieldsAreValid(sourceDocument, "$$hexBytes");
                         var sourceString = sourceDocument["$$hexBytes"].AsString;
-                        (sourceString.Length % 2).Should().Be(0);
+                        if (sourceString.Length % 2 != 0)
+                        {
+                            throw new FormatException("$$hexBytes must have an even number of bytes.");
+                        }
                         source = BsonUtils.ParseHexString(sourceString);
                         break;
                     default:

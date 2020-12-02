@@ -24,7 +24,7 @@ using MongoDB.Driver.TestHelpers;
 
 namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
-    public sealed class EntityMap : IDisposable
+    public sealed class UnifiedEntityMap : IDisposable
     {
         // private variables
         private readonly Dictionary<string, IGridFSBucket> _buckets = new Dictionary<string, IGridFSBucket>();
@@ -37,7 +37,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         private readonly Dictionary<string, IClientSessionHandle> _sessions = new Dictionary<string, IClientSessionHandle>();
         private readonly Dictionary<string, BsonDocument> _sessionIds = new Dictionary<string, BsonDocument>();
 
-        public EntityMap(BsonArray entitiesArray)
+        public UnifiedEntityMap(BsonArray entitiesArray)
         {
             foreach (var entityItem in entitiesArray)
             {
@@ -64,9 +64,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         {
                             throw new Exception($"Client entity with id '{id}' already exists");
                         }
-                        var createClientResult = CreateClient(entity);
-                        _clients.Add(id, createClientResult.Item1);
-                        _clientEventCapturers.Add(id, createClientResult.Item2);
+                        CreateClient(entity, out var client, out var eventCapturer);
+                        _clients.Add(id, client);
+                        _clientEventCapturers.Add(id, eventCapturer);
                         break;
                     case "collection":
                         if (_collections.ContainsKey(id))
@@ -89,9 +89,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         {
                             throw new Exception($"Session entity with id '{id}' already exists");
                         }
-                        var createSessionResult = CreateSession(entity);
-                        _sessions.Add(id, createSessionResult.Item1);
-                        _sessionIds.Add(id, createSessionResult.Item2);
+                        var session = CreateSession(entity);
+                        var sessionId = session.WrappedCoreSession.Id;
+                        _sessions.Add(id, session);
+                        _sessionIds.Add(id, sessionId);
                         break;
                     default:
                         throw new FormatException($"Unrecognized entity type: '{entityType}'");
@@ -234,9 +235,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             return new GridFSBucket(database);
         }
 
-        private (DisposableMongoClient, EventCapturer) CreateClient(BsonDocument entity)
+        private void CreateClient(
+            BsonDocument entity,
+            out DisposableMongoClient client,
+            out EventCapturer eventCapturer)
         {
-            EventCapturer eventCapturer = null;
+            eventCapturer = null;
             var eventTypesToCapture = new List<string>();
             var commandNamesToSkip = new List<string>
             {
@@ -324,7 +328,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 }
             }
 
-            var client = DriverTestConfiguration.CreateDisposableClient(
+            var localEventCapturer = eventCapturer; // copy value of eventCapturer ref variable to a local variable (to avoid error CS1628)
+            client = DriverTestConfiguration.CreateDisposableClient(
                 settings =>
                 {
                     settings.RetryReads = retryReads;
@@ -332,14 +337,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                     settings.ReadConcern = readConcern;
                     settings.WriteConcern = writeConcern;
                     settings.HeartbeatInterval = TimeSpan.FromMilliseconds(5); // the default value for spec tests
-                    if (eventCapturer != null)
+                    if (localEventCapturer != null)
                     {
-                        settings.ClusterConfigurator = c => c.Subscribe(eventCapturer);
+                        settings.ClusterConfigurator = c => c.Subscribe(localEventCapturer);
                     }
                 },
                 useMultipleShardRouters);
-
-            return (client, eventCapturer);
         }
 
         private IMongoCollection<BsonDocument> CreateCollection(BsonDocument entity)
@@ -411,7 +414,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             return client.GetDatabase(databaseName);
         }
 
-        private (IClientSessionHandle, BsonDocument) CreateSession(BsonDocument entity)
+        private IClientSessionHandle CreateSession(BsonDocument entity)
         {
             IMongoClient client = null;
             ClientSessionOptions options = null;
@@ -470,9 +473,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
 
             var session = client.StartSession(options);
-            var sessionId = session.WrappedCoreSession.Id;
 
-            return (session, sessionId);
+            return session;
         }
     }
 }

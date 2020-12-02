@@ -66,9 +66,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedGridFsDownloadOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedGridFsDownloadOperationBuilder(EntityMap entityMap)
+        public UnifiedGridFsDownloadOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

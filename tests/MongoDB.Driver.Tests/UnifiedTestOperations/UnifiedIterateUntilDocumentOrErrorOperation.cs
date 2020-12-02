@@ -64,9 +64,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedIterateUntilDocumentOrErrorOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedIterateUntilDocumentOrErrorOperationBuilder(EntityMap entityMap)
+        public UnifiedIterateUntilDocumentOrErrorOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
 
 namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
@@ -25,7 +26,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
     {
         public void AssertErrorsMatch(Exception actualException, BsonDocument expectedError)
         {
-            expectedError.Elements.Should().NotBeEmpty();
+            if (expectedError.ElementCount == 0)
+            {
+                throw new FormatException("Expected error document should contain at least one element.");
+            }
 
             foreach (var element in expectedError)
             {
@@ -63,16 +67,14 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         private void AssertErrorCode(Exception actualException, int expectedErrorCode)
         {
-            actualException.Should().BeOfType<MongoCommandException>();
-            var mongoCommandException = actualException as MongoCommandException;
+            var mongoCommandException = actualException.Should().BeOfType<MongoCommandException>().Subject;
 
             mongoCommandException.Code.Should().Be(expectedErrorCode);
         }
 
         private void AssertErrorCodeName(Exception actualException, string expectedErrorCodeName)
         {
-            actualException.Should().BeOfType<MongoCommandException>();
-            var mongoCommandException = actualException as MongoCommandException;
+            var mongoCommandException = actualException.Should().BeOfType<MongoCommandException>().Subject;
 
             mongoCommandException.CodeName.Should().Be(expectedErrorCodeName);
         }
@@ -122,12 +124,20 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 actualException is MongoClientException ||
                 actualException is BsonException;
 
-            actualIsClientError.Should().Be(expectedIsClientError);
+            if (actualIsClientError != expectedIsClientError)
+            {
+                var message = $"Expected exception to {(expectedIsClientError ? "" : "not ")}be a client exception, but found {actualException}.";
+
+                throw new AssertionException(message);
+            }
         }
 
         private void AssertIsError(Exception actualException, bool expectedIsError)
         {
-            expectedIsError.Should().BeTrue("Test files MUST NOT specify false.");
+            if (!expectedIsError)
+            {
+                throw new FormatException("Test files MUST NOT specify false.");
+            }
 
             actualException.Should().NotBeNull();
         }

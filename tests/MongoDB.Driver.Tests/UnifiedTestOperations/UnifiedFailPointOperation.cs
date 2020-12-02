@@ -45,9 +45,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedFailPointOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedFailPointOperationBuilder(EntityMap entityMap)
+        public UnifiedFailPointOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

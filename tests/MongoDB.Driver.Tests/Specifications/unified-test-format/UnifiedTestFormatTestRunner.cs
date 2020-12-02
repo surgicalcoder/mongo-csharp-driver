@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
     public sealed class UnifiedTestFormatTestRunner : IDisposable
     {
-        private EntityMap _entityMap;
+        private UnifiedEntityMap _entityMap;
         private List<FailPoint> _failPoints = new List<FailPoint>();
 
         [SkippableTheory]
@@ -54,7 +54,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             BsonArray initialData,
             BsonDocument test)
         {
-            schemaVersion.Should().StartWith("1.0");
+            if (!schemaVersion.StartsWith("1.0"))
+            {
+                throw new FormatException("Schema is not 1.0.");
+            }
             if (testSetRunOnRequirements != null)
             {
                 RequireServer.Check().RunOn(testSetRunOnRequirements);
@@ -67,7 +70,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
             if (entities != null)
             {
-                _entityMap = new EntityMap(entities);
+                _entityMap = new UnifiedEntityMap(entities);
             }
 
             if (initialData != null)
@@ -137,7 +140,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
         }
 
-        private void AssertEvents(BsonArray eventItems, EntityMap entityMap)
+        private void AssertEvents(BsonArray eventItems, UnifiedEntityMap entityMap)
         {
             var unifiedEventMatcher = new UnifiedEventMatcher(new UnifiedValueMatcher(entityMap));
             foreach (var eventItem in eventItems)
@@ -192,7 +195,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 var databaseName = outcomeItem["databaseName"].AsString;
                 var expectedData = outcomeItem["documents"].AsBsonArray.Cast<BsonDocument>().ToList();
 
-                var findOptions = new FindOptions<BsonDocument> { Sort = "{ _id: 1 }" };
+                var findOptions = new FindOptions<BsonDocument> { Sort = "{ _id : 1 }" };
                 var collection = client
                     .GetDatabase(databaseName)
                     .GetCollection<BsonDocument>(collectionName)
@@ -209,7 +212,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
         }
 
-        private void AssertResult(OperationResult actualResult, BsonDocument operation, EntityMap entityMap)
+        private void AssertResult(OperationResult actualResult, BsonDocument operation, UnifiedEntityMap entityMap)
         {
             if (operation.TryGetValue("expectResult", out var expectedResult))
             {
@@ -241,7 +244,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
         }
 
-        private IUnifiedTestOperation CreateOperation(BsonDocument operation, EntityMap entityMap)
+        private IUnifiedTestOperation CreateOperation(BsonDocument operation, UnifiedEntityMap entityMap)
         {
             var factory = new UnifiedTestOperationFactory(entityMap);
 
@@ -257,11 +260,11 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             if (CoreTestConfiguration.ServerVersion >= new SemanticVersion(3, 6, 0))
             {
                 var command = new BsonDocument("killAllSessions", new BsonArray());
-                var database = client.GetDatabase("admin");
+                var adminDatabase = client.GetDatabase("admin");
 
                 try
                 {
-                    database.RunCommand<BsonDocument>(command);
+                    adminDatabase.RunCommand<BsonDocument>(command);
                 }
                 catch (MongoCommandException exception) when (
                     CoreTestConfiguration.ServerVersion < new SemanticVersion(4, 1, 9) &&

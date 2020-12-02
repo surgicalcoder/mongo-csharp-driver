@@ -63,10 +63,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 var expectedEventType = expectedEventDocument.GetElement(0).Name;
                 var expectedEventValue = expectedEventDocument[0].AsBsonDocument;
 
-                switch (actualEvent)
+                switch (expectedEventType)
                 {
-                    case CommandStartedEvent commandStartedEvent:
-                        expectedEventType.Should().Be("commandStartedEvent");
+                    case "commandStartedEvent":
+                        var commandStartedEvent = actualEvent.Should().BeOfType<CommandStartedEvent>().Subject;
                         foreach (var element in expectedEventValue)
                         {
                             switch (element.Name)
@@ -85,8 +85,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                             }
                         }
                         break;
-                    case CommandSucceededEvent commandSucceededEvent:
-                        expectedEventType.Should().Be("commandSucceededEvent");
+                    case "commandSucceededEvent":
+                        var commandSucceededEvent = actualEvent.Should().BeOfType<CommandSucceededEvent>().Subject;
                         foreach (var element in expectedEventValue)
                         {
                             switch (element.Name)
@@ -102,8 +102,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                             }
                         }
                         break;
-                    case CommandFailedEvent commandFailedEvent:
-                        expectedEventType.Should().Be("commandFailedEvent");
+                    case "commandFailedEvent":
+                        var commandFailedEvent = actualEvent.Should().BeOfType<CommandFailedEvent>().Subject;
                         foreach (var element in expectedEventValue)
                         {
                             switch (element.Name)
@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         }
                         break;
                     default:
-                        throw new FormatException($"Unrecognized event type: '{actualEvent.GetType()}'");
+                        throw new FormatException($"Unrecognized event type: '{expectedEventType}'");
                 }
             }
         }
@@ -160,8 +160,8 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 }
             }
 
-            return $"{Environment.NewLine}Expected events to be: {expectedEventsDocuments.ToJson(jsonWriterSettings)}" +
-                   $"{Environment.NewLine}But found: {actualEventsDocuments.ToJson(jsonWriterSettings)}";
+            return $"Expected events to be: {expectedEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}" +
+                   $"But found: {actualEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}";
         }
     }
 }

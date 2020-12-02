@@ -34,27 +34,21 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
         public void Execute()
         {
-            var lastTwoCommands = _eventCapturer
+            var lastTwoLsids = _eventCapturer
                 .Events
                 .Skip(_eventCapturer.Events.Count - 2)
-                .Select(commandStartedEvent => ((CommandStartedEvent)commandStartedEvent).Command)
+                .Select(commandStartedEvent => ((CommandStartedEvent)commandStartedEvent).Command["lsid"])
                 .ToList();
 
-            AssertDifferentLsid(lastTwoCommands[0], lastTwoCommands[1]);
-        }
-
-        // private methods
-        private void AssertDifferentLsid(BsonDocument first, BsonDocument second)
-        {
-            first["lsid"].Should().NotBe(second["lsid"]);
+            lastTwoLsids[0].Should().NotBe(lastTwoLsids[1]);
         }
     }
 
     public class UnifiedAssertDifferentLsidOnLastTwoCommandsOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedAssertDifferentLsidOnLastTwoCommandsOperationBuilder(EntityMap entityMap)
+        public UnifiedAssertDifferentLsidOnLastTwoCommandsOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
 

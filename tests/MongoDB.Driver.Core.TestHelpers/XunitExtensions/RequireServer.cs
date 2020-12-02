@@ -258,7 +258,7 @@ namespace MongoDB.Driver.Core.TestHelpers.XunitExtensions
                         }
                         break;
                     default:
-                        throw new FormatException($"Unrecogrized requirement field: '{item.Name}'");
+                        throw new FormatException($"Unrecognized requirement field: '{item.Name}'");
                 }
             }
 

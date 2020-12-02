@@ -36,9 +36,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedCommitTransactionOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedCommitTransactionOperationBuilder(EntityMap entityMap)
+        public UnifiedCommitTransactionOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

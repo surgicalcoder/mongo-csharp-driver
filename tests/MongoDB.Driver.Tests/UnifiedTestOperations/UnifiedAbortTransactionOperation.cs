@@ -36,9 +36,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedAbortTransactionOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedAbortTransactionOperationBuilder(EntityMap entityMap)
+        public UnifiedAbortTransactionOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

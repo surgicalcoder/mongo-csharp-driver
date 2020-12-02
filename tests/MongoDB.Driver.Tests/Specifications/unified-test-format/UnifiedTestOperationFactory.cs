@@ -21,9 +21,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
     public class UnifiedTestOperationFactory
     {
-        private EntityMap _entityMap;
+        private UnifiedEntityMap _entityMap;
 
-        public UnifiedTestOperationFactory(EntityMap entityMap)
+        public UnifiedTestOperationFactory(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

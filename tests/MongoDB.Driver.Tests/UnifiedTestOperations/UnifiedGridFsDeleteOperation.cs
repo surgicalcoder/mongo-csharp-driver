@@ -66,9 +66,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedGridFsDeleteOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedGridFsDeleteOperationBuilder(EntityMap entityMap)
+        public UnifiedGridFsDeleteOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

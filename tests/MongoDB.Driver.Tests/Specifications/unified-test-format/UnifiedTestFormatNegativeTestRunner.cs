@@ -51,9 +51,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             {
                 foreach (var testCase in base.CreateTestCases(document))
                 {
-                    var name = $"{testCase.Name.Replace(PathPrefix, "")}";
-                    var test = testCase.Test.DeepClone().AsBsonDocument.Add("async", false);
-                    yield return new JsonDrivenTestCase(name, testCase.Shared, test);
+                    foreach (var async in new[] { false, true })
+                    {
+                        var name = $"{testCase.Name.Replace(PathPrefix, "")}:async={async}";
+                        var test = testCase.Test.DeepClone().AsBsonDocument.Add("async", async);
+                        yield return new JsonDrivenTestCase(name, testCase.Shared, test);
+                    }
                 }
             }
         }

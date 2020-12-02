@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                 {
                     foreach (var operationItem in _operations)
                     {
-                        assertOperationCallback(operationItem.AsBsonDocument, false, cancellationToken);
+                        assertOperationCallback(operationItem.AsBsonDocument, false, token);
                     }
 
                     return (object)null;
@@ -60,7 +60,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                 {
                     foreach (var operationItem in _operations)
                     {
-                        assertOperationCallback(operationItem.AsBsonDocument, true, cancellationToken);
+                        assertOperationCallback(operationItem.AsBsonDocument, true, token);
                     }
 
                     return Task.FromResult<object>(null);
@@ -72,9 +72,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedWithTransactionOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedWithTransactionOperationBuilder(EntityMap entityMap)
+        public UnifiedWithTransactionOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

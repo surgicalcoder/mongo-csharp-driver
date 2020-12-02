@@ -73,9 +73,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedCreateChangeStreamOnClientOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedCreateChangeStreamOnClientOperationBuilder(EntityMap entityMap)
+        public UnifiedCreateChangeStreamOnClientOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

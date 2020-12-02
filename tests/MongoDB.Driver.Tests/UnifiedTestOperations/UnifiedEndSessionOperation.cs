@@ -36,9 +36,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedEndSessionOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedEndSessionOperationBuilder(EntityMap entityMap)
+        public UnifiedEndSessionOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

@@ -26,9 +26,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 {
     public class UnifiedValueMatcher
     {
-        private EntityMap _entityMap;
+        private UnifiedEntityMap _entityMap;
 
-        public UnifiedValueMatcher(EntityMap entityMap)
+        public UnifiedValueMatcher(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }
@@ -42,10 +42,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             }
             catch (XunitException exception)
             {
-                throw new AssertionException(
-                        $"{Environment.NewLine}Expected value to be: {expected?.ToJson(jsonWriterSettings)}" +
-                        $"{Environment.NewLine}But found: {actual?.ToJson(jsonWriterSettings)}",
-                    exception);
+                var message =
+                    $"Expected value to be: {expected?.ToJson(jsonWriterSettings)}{Environment.NewLine}" +
+                    $"But found: {actual?.ToJson(jsonWriterSettings)}{Environment.NewLine}";
+                throw new AssertionException(message, exception);
             }
         }
 
@@ -68,11 +68,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         AssertValuesMatch(actual, operatorValue, true);
                         break;
                     case "$$unsetOrMatches":
-                        if (actual == null)
+                        if (actual != null)
                         {
-                            break;
+                            AssertValuesMatch(actual, operatorValue, true);
                         }
-                        AssertValuesMatch(actual, operatorValue, true);
                         break;
                     default:
                         throw new FormatException($"Unrecognized root level special operator: '{operatorName}'");

@@ -68,9 +68,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedDeleteOneOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedDeleteOneOperationBuilder(EntityMap entityMap)
+        public UnifiedDeleteOneOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

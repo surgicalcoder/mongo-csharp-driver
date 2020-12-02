@@ -63,9 +63,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedListDatabasesOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedListDatabasesOperationBuilder(EntityMap entityMap)
+        public UnifiedListDatabasesOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

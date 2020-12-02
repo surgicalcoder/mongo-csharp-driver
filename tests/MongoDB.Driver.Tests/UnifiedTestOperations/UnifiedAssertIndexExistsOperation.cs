@@ -39,7 +39,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
         public void Execute()
         {
             var client = DriverTestConfiguration.Client;
-            var indexes = client.GetDatabase(_databaseName).GetCollection<BsonDocument>(_collectionName).Indexes.List().ToList();
+            var database = client.GetDatabase(_databaseName);
+            var collection = database.GetCollection<BsonDocument>(_collectionName);
+            var indexes = collection.Indexes.List().ToList();
             var indexNames = indexes.Select(i => i["name"].AsString);
 
             indexNames.Should().Contain(_indexName);

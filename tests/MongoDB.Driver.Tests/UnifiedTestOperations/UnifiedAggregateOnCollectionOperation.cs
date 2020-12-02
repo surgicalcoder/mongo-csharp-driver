@@ -71,9 +71,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedAggregateOnCollectionOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedAggregateOnCollectionOperationBuilder(EntityMap entityMap)
+        public UnifiedAggregateOnCollectionOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }
@@ -102,8 +102,10 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
             {
                 return new UnifiedAggregateToCollectionOperation(collection, pipeline, options);
             }
-
-            return new UnifiedAggregateOnCollectionOperation(collection, pipeline, options);
+            else
+            {
+                return new UnifiedAggregateOnCollectionOperation(collection, pipeline, options);
+            }
         }
     }
 }

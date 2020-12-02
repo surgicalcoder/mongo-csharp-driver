@@ -37,9 +37,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedAssertSessionPinnedOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedAssertSessionPinnedOperationBuilder(EntityMap entityMap)
+        public UnifiedAssertSessionPinnedOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

@@ -55,7 +55,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                     _collection.InsertMany(_session, _documents, _options, cancellationToken);
                 }
 
-                return OperationResult.FromResult(new BsonDocument()); // In .NET InsertMany returns no result
+                return OperationResult.FromResult(null); // In .NET InsertMany returns no result
             }
             catch (Exception exception)
             {
@@ -76,7 +76,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                     await _collection.InsertManyAsync(_session, _documents, _options, cancellationToken);
                 }
 
-                return OperationResult.FromResult(new BsonDocument());
+                return OperationResult.FromResult(null);
             }
             catch (Exception exception)
             {
@@ -87,9 +87,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedInsertManyOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedInsertManyOperationBuilder(EntityMap entityMap)
+        public UnifiedInsertManyOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }

@@ -70,9 +70,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
     public class UnifiedFindOperationBuilder
     {
-        private readonly EntityMap _entityMap;
+        private readonly UnifiedEntityMap _entityMap;
 
-        public UnifiedFindOperationBuilder(EntityMap entityMap)
+        public UnifiedFindOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
         }
