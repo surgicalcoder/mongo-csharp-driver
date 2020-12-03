@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
@@ -165,7 +166,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
         {
             var extraOptions = new Dictionary<string, object>()
             {
-                { "mongocryptdSpawnPath", Environment.GetEnvironmentVariable("MONGODB_BINARIES") ?? string.Empty }
+                { "mongocryptdSpawnPath", Path.Combine(GetEnvironmentVariableOrDefaultOrThrowIfNothing("MONGODB_BINARIES", string.Empty), "mongocryptd") }
             };
 
             var kmsProviders = new ReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>(new Dictionary<string, IReadOnlyDictionary<string, object>>());

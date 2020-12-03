@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -910,7 +911,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                 {
                     extraOptions = new Dictionary<string, object>()
                     {
-                        { "mongocryptdSpawnPath", GetEnvironmentVariableOrDefaultOrThrowIfNothing("MONGODB_BINARIES", string.Empty) }
+                        { "mongocryptdSpawnPath", Path.Combine(GetEnvironmentVariableOrDefaultOrThrowIfNothing("MONGODB_BINARIES", string.Empty), "mongocryptd") }
                     };
                 }
 
