@@ -39,6 +39,11 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         public UnifiedEntityMap(BsonArray entitiesArray)
         {
+            if (entitiesArray == null)
+            {
+                return;
+            }
+
             foreach (var entityItem in entitiesArray)
             {
                 if (entityItem.AsBsonDocument.ElementCount != 1)
@@ -240,7 +245,6 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             out DisposableMongoClient client,
             out EventCapturer eventCapturer)
         {
-            eventCapturer = null;
             var eventTypesToCapture = new List<string>();
             var commandNamesToSkip = new List<string>
             {
@@ -271,11 +275,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         useMultipleShardRouters = element.Value.AsBoolean;
                         break;
                     case "observeEvents":
-                        eventCapturer = eventCapturer ?? new EventCapturer();
                         eventTypesToCapture.AddRange(element.Value.AsBsonArray.Select(x => x.AsString));
                         break;
                     case "ignoreCommandMonitoringEvents":
-                        eventCapturer = eventCapturer ?? new EventCapturer();
                         commandNamesToSkip.AddRange(element.Value.AsBsonArray.Select(x => x.AsString));
                         break;
                     case "uriOptions":
@@ -307,8 +309,10 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 }
             }
 
-            if (eventCapturer != null)
+            eventCapturer = null;
+            if (eventTypesToCapture.Count > 0)
             {
+                eventCapturer = new EventCapturer();
                 foreach (var eventTypeToCapture in eventTypesToCapture)
                 {
                     switch (eventTypeToCapture)

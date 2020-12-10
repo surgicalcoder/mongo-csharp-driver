@@ -51,7 +51,6 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
         public UnifiedAssertSameLsidOnLastTwoCommandsOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
-
         }
 
         public UnifiedAssertSameLsidOnLastTwoCommandsOperation Build(BsonDocument arguments)

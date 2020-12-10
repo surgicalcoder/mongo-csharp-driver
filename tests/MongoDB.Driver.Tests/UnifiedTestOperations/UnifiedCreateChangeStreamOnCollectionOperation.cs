@@ -43,7 +43,6 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
             try
             {
                 var cursor = _collection.Watch(_pipeline, _options, cancellationToken);
-                cursor.MoveNext();
                 var changeStream = cursor.ToEnumerable().GetEnumerator();
 
                 return OperationResult.FromChangeStream(changeStream);

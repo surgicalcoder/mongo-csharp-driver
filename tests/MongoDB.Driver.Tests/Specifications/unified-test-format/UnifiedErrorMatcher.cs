@@ -68,14 +68,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         private void AssertErrorCode(Exception actualException, int expectedErrorCode)
         {
             var mongoCommandException = actualException.Should().BeOfType<MongoCommandException>().Subject;
-
             mongoCommandException.Code.Should().Be(expectedErrorCode);
         }
 
         private void AssertErrorCodeName(Exception actualException, string expectedErrorCodeName)
         {
             var mongoCommandException = actualException.Should().BeOfType<MongoCommandException>().Subject;
-
             mongoCommandException.CodeName.Should().Be(expectedErrorCodeName);
         }
 
@@ -86,24 +84,19 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         private void AssertErrorLabelsContain(Exception actualException, IEnumerable<string> expectedErrorLabels)
         {
-            actualException.Should().BeAssignableTo<MongoException>();
-            var mongoException = actualException as MongoException;
-
+            var mongoException = actualException.Should().BeAssignableTo<MongoException>().Subject;
             mongoException.ErrorLabels.Should().Contain(expectedErrorLabels);
         }
 
         private void AssertErrorLabelsOmit(Exception actualException, IEnumerable<string> expectedAbsentErrorLabels)
         {
-            actualException.Should().BeAssignableTo<MongoException>();
-            var mongoException = actualException as MongoException;
-
+            var mongoException = actualException.Should().BeAssignableTo<MongoException>().Subject;
             mongoException.ErrorLabels.Should().NotContain(expectedAbsentErrorLabels);
         }
 
         private void AssertExpectResult(Exception actualException, BsonDocument expectedResult)
         {
-            actualException.Should().BeOfType<MongoBulkWriteException<BsonDocument>>();
-            var bulkWriteException = actualException as MongoBulkWriteException<BsonDocument>;
+            var bulkWriteException = actualException.Should().BeOfType<MongoBulkWriteException<BsonDocument>>().Subject;
             var bulkWriteResult = bulkWriteException.Result;
             var actualResult = new BsonDocument
             {
@@ -127,14 +120,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
             if (actualIsClientError != expectedIsClientError)
             {
                 var message = $"Expected exception to {(expectedIsClientError ? "" : "not ")}be a client exception, but found {actualException}.";
-
                 throw new AssertionException(message);
             }
         }
 
         private void AssertIsError(Exception actualException, bool expectedIsError)
         {
-            if (!expectedIsError)
+            if (expectedIsError == false)
             {
                 throw new FormatException("Test files MUST NOT specify false.");
             }

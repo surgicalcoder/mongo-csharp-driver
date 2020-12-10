@@ -47,7 +47,6 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
         public UnifiedAssertSessionTransactionStateOperationBuilder(UnifiedEntityMap entityMap)
         {
             _entityMap = entityMap;
-
         }
 
         public UnifiedAssertSessionTransactionStateOperation Build(BsonDocument arguments)

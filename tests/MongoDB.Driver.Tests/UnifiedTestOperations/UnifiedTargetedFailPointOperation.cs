@@ -14,7 +14,6 @@
 */
 
 using System;
-using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.TestHelpers;
@@ -38,7 +37,10 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
         public void Execute(out FailPoint failPoint)
         {
             var pinnedServer = _session?.WrappedCoreSession?.CurrentTransaction?.PinnedServer;
-            pinnedServer.Should().NotBeNull();
+            if (pinnedServer == null)
+            {
+                throw new InvalidOperationException("UnifiedTargetedFailPointOperation requires a pinned server");
+            }
             var session = NoCoreSession.NewHandle();
 
             failPoint = FailPoint.Configure(pinnedServer, session, _failPointCommand);

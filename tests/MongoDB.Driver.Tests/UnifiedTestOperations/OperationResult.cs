@@ -21,9 +21,9 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 {
     public class OperationResult
     {
+        private IEnumerator<ChangeStreamDocument<BsonDocument>> _changeStream;
         private Exception _exception;
         private BsonValue _result;
-        private IEnumerator<ChangeStreamDocument<BsonDocument>> _changeStream;
 
         private OperationResult()
         {

@@ -35,13 +35,13 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
 
         public void AssertValuesMatch(BsonValue actual, BsonValue expected)
         {
-            var jsonWriterSettings = new JsonWriterSettings { Indent = true };
             try
             {
                 AssertValuesMatch(actual, expected, isRoot: true);
             }
             catch (XunitException exception)
             {
+                var jsonWriterSettings = new JsonWriterSettings { Indent = true };
                 var message =
                     $"Expected value to be: {expected?.ToJson(jsonWriterSettings)}{Environment.NewLine}" +
                     $"But found: {actual?.ToJson(jsonWriterSettings)}{Environment.NewLine}";

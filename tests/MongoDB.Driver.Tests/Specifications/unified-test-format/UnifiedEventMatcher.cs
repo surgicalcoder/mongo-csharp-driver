@@ -160,8 +160,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                 }
             }
 
-            return $"Expected events to be: {expectedEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}" +
-                   $"But found: {actualEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}";
+            return
+                $"Expected events to be: {expectedEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}" +
+                $"But found: {actualEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}";
         }
     }
 }
