@@ -22,10 +22,22 @@ using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.GridFS;
 using MongoDB.Driver.TestHelpers;
 
-namespace MongoDB.Driver.Tests.Specifications.unified_test_format
+namespace MongoDB.Driver.Tests.UnifiedTestOperations
 {
     public sealed class UnifiedEntityMap : IDisposable
     {
+        #region static
+        public static UnifiedEntityMap Create(BsonArray entitiesArray)
+        {
+            var map = new UnifiedEntityMap();
+            if (entitiesArray != null)
+            {
+                map.Initialize(entitiesArray);
+            }
+            return map;
+        }
+        #endregion
+
         // private variables
         private readonly Dictionary<string, IGridFSBucket> _buckets = new Dictionary<string, IGridFSBucket>();
         private readonly Dictionary<string, IEnumerator<ChangeStreamDocument<BsonDocument>>> _changeStreams = new Dictionary<string, IEnumerator<ChangeStreamDocument<BsonDocument>>>();
@@ -37,72 +49,9 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
         private readonly Dictionary<string, IClientSessionHandle> _sessions = new Dictionary<string, IClientSessionHandle>();
         private readonly Dictionary<string, BsonDocument> _sessionIds = new Dictionary<string, BsonDocument>();
 
-        public UnifiedEntityMap(BsonArray entitiesArray)
+        // constructors
+        private UnifiedEntityMap()
         {
-            if (entitiesArray == null)
-            {
-                return;
-            }
-
-            foreach (var entityItem in entitiesArray)
-            {
-                if (entityItem.AsBsonDocument.ElementCount != 1)
-                {
-                    throw new FormatException("Entity item should contain single element");
-                }
-
-                var entityType = entityItem.AsBsonDocument.GetElement(0).Name;
-                var entity = entityItem[0].AsBsonDocument;
-                var id = entity["id"].AsString;
-                switch (entityType)
-                {
-                    case "bucket":
-                        if (_buckets.ContainsKey(id))
-                        {
-                            throw new Exception($"Bucket entity with id '{id}' already exists");
-                        }
-                        var bucket = CreateBucket(entity);
-                        _buckets.Add(id, bucket);
-                        break;
-                    case "client":
-                        if (_clients.ContainsKey(id))
-                        {
-                            throw new Exception($"Client entity with id '{id}' already exists");
-                        }
-                        CreateClient(entity, out var client, out var eventCapturer);
-                        _clients.Add(id, client);
-                        _clientEventCapturers.Add(id, eventCapturer);
-                        break;
-                    case "collection":
-                        if (_collections.ContainsKey(id))
-                        {
-                            throw new Exception($"Collection entity with id '{id}' already exists");
-                        }
-                        var collection = CreateCollection(entity);
-                        _collections.Add(id, collection);
-                        break;
-                    case "database":
-                        if (_databases.ContainsKey(id))
-                        {
-                            throw new Exception($"Database entity with id '{id}' already exists");
-                        }
-                        var database = CreateDatabase(entity);
-                        _databases.Add(id, database);
-                        break;
-                    case "session":
-                        if (_sessions.ContainsKey(id))
-                        {
-                            throw new Exception($"Session entity with id '{id}' already exists");
-                        }
-                        var session = CreateSession(entity);
-                        var sessionId = session.WrappedCoreSession.Id;
-                        _sessions.Add(id, session);
-                        _sessionIds.Add(id, sessionId);
-                        break;
-                    default:
-                        throw new FormatException($"Unrecognized entity type: '{entityType}'");
-                }
-            }
         }
 
         // public methods
@@ -233,7 +182,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         database = _databases[databaseId];
                         break;
                     default:
-                        throw new FormatException($"Unrecognized bucket entity field: '{element.Name}'");
+                        throw new FormatException($"Unrecognized bucket entity field: '{element.Name}'.");
                 }
             }
 
@@ -300,12 +249,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                                     writeConcern = new WriteConcern(option.Value.AsInt32);
                                     break;
                                 default:
-                                    throw new FormatException($"Unrecognized client uriOption name: '{option.Name}'");
+                                    throw new FormatException($"Unrecognized client uriOption name: '{option.Name}'.");
                             }
                         }
                         break;
                     default:
-                        throw new FormatException($"Unrecognized client entity field: '{element.Name}'");
+                        throw new FormatException($"Unrecognized client entity field: '{element.Name}'.");
                 }
             }
 
@@ -327,7 +276,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                             eventCapturer = eventCapturer.Capture<CommandFailedEvent>(x => !commandNamesToSkip.Contains(x.CommandName));
                             break;
                         default:
-                            throw new FormatException($"Invalid event name: {eventTypeToCapture}");
+                            throw new FormatException($"Invalid event name: {eventTypeToCapture}.");
                     }
                 }
             }
@@ -379,12 +328,12 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                                     settings.ReadConcern = ReadConcern.FromBsonDocument(option.Value.AsBsonDocument);
                                     break;
                                 default:
-                                    throw new FormatException($"Unrecognized collection option field: '{option.Name}'");
+                                    throw new FormatException($"Unrecognized collection option field: '{option.Name}'.");
                             }
                         }
                         break;
                     default:
-                        throw new FormatException($"Unrecognized collection entity field: '{element.Name}'");
+                        throw new FormatException($"Unrecognized collection entity field: '{element.Name}'.");
                 }
             }
 
@@ -411,7 +360,7 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                         databaseName = element.Value.AsString;
                         break;
                     default:
-                        throw new FormatException($"Unrecognized database entity field: '{element.Name}'");
+                        throw new FormatException($"Unrecognized database entity field: '{element.Name}'.");
                 }
             }
 
@@ -461,24 +410,90 @@ namespace MongoDB.Driver.Tests.Specifications.unified_test_format
                                                 writeConcern = WriteConcern.FromBsonDocument(transactionOption.Value.AsBsonDocument);
                                                 break;
                                             default:
-                                                throw new FormatException($"Invalid session transaction option: '{transactionOption.Name}'");
+                                                throw new FormatException($"Invalid session transaction option: '{transactionOption.Name}'.");
                                         }
                                     }
                                     options.DefaultTransactionOptions = new TransactionOptions(readConcern, readPreference, writeConcern);
                                     break;
                                 default:
-                                    throw new FormatException($"Unrecognized session option: '{option.Name}'");
+                                    throw new FormatException($"Unrecognized session option: '{option.Name}'.");
                             }
                         }
                         break;
                     default:
-                        throw new FormatException($"Unrecognized database entity field: '{element.Name}'");
+                        throw new FormatException($"Unrecognized database entity field: '{element.Name}'.");
                 }
             }
 
             var session = client.StartSession(options);
 
             return session;
+        }
+
+        private void Initialize(BsonArray entitiesArray)
+        {
+            if (entitiesArray != null)
+            {
+                foreach (var entityItem in entitiesArray)
+                {
+                    if (entityItem.AsBsonDocument.ElementCount != 1)
+                    {
+                        throw new FormatException("Entity item should contain single element.");
+                    }
+
+                    var entityType = entityItem.AsBsonDocument.GetElement(0).Name;
+                    var entity = entityItem[0].AsBsonDocument;
+                    var id = entity["id"].AsString;
+                    switch (entityType)
+                    {
+                        case "bucket":
+                            if (_buckets.ContainsKey(id))
+                            {
+                                throw new Exception($"Bucket entity with id '{id}' already exists.");
+                            }
+                            var bucket = CreateBucket(entity);
+                            _buckets.Add(id, bucket);
+                            break;
+                        case "client":
+                            if (_clients.ContainsKey(id))
+                            {
+                                throw new Exception($"Client entity with id '{id}' already exists.");
+                            }
+                            CreateClient(entity, out var client, out var eventCapturer);
+                            _clients.Add(id, client);
+                            _clientEventCapturers.Add(id, eventCapturer);
+                            break;
+                        case "collection":
+                            if (_collections.ContainsKey(id))
+                            {
+                                throw new Exception($"Collection entity with id '{id}' already exists.");
+                            }
+                            var collection = CreateCollection(entity);
+                            _collections.Add(id, collection);
+                            break;
+                        case "database":
+                            if (_databases.ContainsKey(id))
+                            {
+                                throw new Exception($"Database entity with id '{id}' already exists.");
+                            }
+                            var database = CreateDatabase(entity);
+                            _databases.Add(id, database);
+                            break;
+                        case "session":
+                            if (_sessions.ContainsKey(id))
+                            {
+                                throw new Exception($"Session entity with id '{id}' already exists.");
+                            }
+                            var session = CreateSession(entity);
+                            var sessionId = session.WrappedCoreSession.Id;
+                            _sessions.Add(id, session);
+                            _sessionIds.Add(id, sessionId);
+                            break;
+                        default:
+                            throw new FormatException($"Unrecognized entity type: '{entityType}'.");
+                    }
+                }
+            }
         }
     }
 }

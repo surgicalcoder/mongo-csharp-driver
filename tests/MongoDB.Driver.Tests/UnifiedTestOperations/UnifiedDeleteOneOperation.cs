@@ -90,7 +90,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         filter = new BsonDocumentFilterDefinition<BsonDocument>(argument.Value.AsBsonDocument);
                         break;
                     default:
-                        throw new FormatException($"Invalid DeleteOneOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid DeleteOneOperation argument name: '{argument.Name}'.");
                 }
             }
 

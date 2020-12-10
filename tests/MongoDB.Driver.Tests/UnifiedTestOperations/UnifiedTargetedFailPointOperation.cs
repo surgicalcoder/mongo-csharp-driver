@@ -39,7 +39,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
             var pinnedServer = _session?.WrappedCoreSession?.CurrentTransaction?.PinnedServer;
             if (pinnedServer == null)
             {
-                throw new InvalidOperationException("UnifiedTargetedFailPointOperation requires a pinned server");
+                throw new InvalidOperationException("UnifiedTargetedFailPointOperation requires a pinned server.");
             }
             var session = NoCoreSession.NewHandle();
 
@@ -73,7 +73,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         session = _entityMap.GetSession(sessionId);
                         break;
                     default:
-                        throw new FormatException($"Invalid TargetedFailPointOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid TargetedFailPointOperation argument name: '{argument.Name}'.");
                 }
             }
 

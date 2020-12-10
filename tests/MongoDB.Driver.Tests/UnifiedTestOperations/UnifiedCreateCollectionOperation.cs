@@ -108,7 +108,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         session = _entityMap.GetSession(sessionId);
                         break;
                     default:
-                        throw new FormatException($"Invalid CreateCollectionOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid CreateCollectionOperation argument name: '{argument.Name}'.");
                 }
             }
 

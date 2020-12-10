@@ -76,7 +76,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
             if (arguments != null)
             {
-                throw new FormatException("ListDatabasesOperation is not expected to contain arguments");
+                throw new FormatException("ListDatabasesOperation is not expected to contain arguments.");
             }
 
             return new UnifiedListDatabasesOperation(client);

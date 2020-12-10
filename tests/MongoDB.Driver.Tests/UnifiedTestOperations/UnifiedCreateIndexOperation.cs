@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         session = _entityMap.GetSession(sessionId);
                         break;
                     default:
-                        throw new FormatException($"Invalid CreateIndexOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid CreateIndexOperation argument name: '{argument.Name}'.");
                 }
             }
 

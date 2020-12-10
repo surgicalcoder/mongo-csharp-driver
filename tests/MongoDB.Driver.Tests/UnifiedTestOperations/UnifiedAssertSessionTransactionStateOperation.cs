@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         coreTransactionState = (CoreTransactionState)Enum.Parse(typeof(CoreTransactionState), argument.Value.AsString, ignoreCase: true);
                         break;
                     default:
-                        throw new FormatException($"Invalid AssertSessionTransactionStateOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid AssertSessionTransactionStateOperation argument name: '{argument.Name}'.");
                 }
             }
 

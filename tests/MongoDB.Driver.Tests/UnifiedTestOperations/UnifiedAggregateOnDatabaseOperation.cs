@@ -94,7 +94,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         pipeline = new BsonDocumentStagePipelineDefinition<NoPipelineInput, BsonDocument>(stages);
                         break;
                     default:
-                        throw new FormatException($"Invalid AggregateOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid AggregateOperation argument name: '{argument.Name}'.");
                 }
             }
 

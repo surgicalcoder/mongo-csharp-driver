@@ -49,7 +49,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
             if (arguments != null)
             {
-                throw new FormatException("EndSessionOperation is not expected to contain arguments");
+                throw new FormatException("EndSessionOperation is not expected to contain arguments.");
             }
 
             return new UnifiedEndSessionOperation(session);

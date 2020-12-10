@@ -87,7 +87,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         id = argument.Value.AsObjectId;
                         break;
                     default:
-                        throw new FormatException($"Invalid GridFsDeleteOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid GridFsDeleteOperation argument name: '{argument.Name}'.");
                 }
             }
 

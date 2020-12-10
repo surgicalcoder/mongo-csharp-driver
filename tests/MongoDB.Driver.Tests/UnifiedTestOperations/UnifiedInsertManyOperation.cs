@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         session = _entityMap.GetSession(argument.Value.AsString);
                         break;
                     default:
-                        throw new FormatException($"Invalid InsertManyOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid InsertManyOperation argument name: '{argument.Name}'.");
                 }
             }
 

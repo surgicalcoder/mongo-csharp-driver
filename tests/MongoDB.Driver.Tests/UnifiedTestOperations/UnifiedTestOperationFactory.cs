@@ -15,9 +15,8 @@
 
 using System;
 using MongoDB.Bson;
-using MongoDB.Driver.Tests.UnifiedTestOperations;
 
-namespace MongoDB.Driver.Tests.Specifications.unified_test_format
+namespace MongoDB.Driver.Tests.UnifiedTestOperations
 {
     public class UnifiedTestOperationFactory
     {

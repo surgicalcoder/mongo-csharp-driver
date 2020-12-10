@@ -58,7 +58,6 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
             try
             {
                 var cursor = await _client.WatchAsync(_pipeline, _options, cancellationToken);
-                await cursor.MoveNextAsync();
                 var changeStream = cursor.ToEnumerable().GetEnumerator();
 
                 return OperationResult.FromChangeStream(changeStream);
@@ -99,7 +98,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         pipeline = new BsonDocumentStagePipelineDefinition<ChangeStreamDocument<BsonDocument>, ChangeStreamDocument<BsonDocument>>(stages);
                         break;
                     default:
-                        throw new FormatException($"Invalid CreateChangeStreamOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid CreateChangeStreamOperation argument name: '{argument.Name}'.");
                 }
             }
 

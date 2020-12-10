@@ -105,7 +105,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         options = options.With(writeConcern: WriteConcern.FromBsonDocument(argument.Value.AsBsonDocument));
                         break;
                     default:
-                        throw new FormatException($"Invalid WithTransactionOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid WithTransactionOperation argument name: '{argument.Name}'.");
                 }
             }
 

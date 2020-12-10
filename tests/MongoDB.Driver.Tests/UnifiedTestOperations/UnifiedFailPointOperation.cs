@@ -68,7 +68,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         failPointCommand = argument.Value.AsBsonDocument;
                         break;
                     default:
-                        throw new FormatException($"Invalid FailPointOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid FailPointOperation argument name: '{argument.Name}'.");
                 }
             }
 

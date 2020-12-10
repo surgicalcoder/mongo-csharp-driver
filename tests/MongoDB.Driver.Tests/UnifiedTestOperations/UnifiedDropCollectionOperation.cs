@@ -86,7 +86,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
                         collectionName = argument.Value.AsString;
                         break;
                     default:
-                        throw new FormatException($"Invalid DropCollectionOperation argument name: '{argument.Name}'");
+                        throw new FormatException($"Invalid DropCollectionOperation argument name: '{argument.Name}'.");
                 }
             }
 
