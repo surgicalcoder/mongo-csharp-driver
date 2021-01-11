@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
@@ -23,8 +22,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
-using MongoDB.Driver.Core.Misc;
 using MongoDB.Libmongocrypt;
+using MongoDB.Shared;
 
 namespace MongoDB.Driver.Encryption
 {
@@ -144,6 +143,18 @@ namespace MongoDB.Driver.Encryption
             return result;
         }
 
+        protected void ThrowIfUnsupportedPlatform()
+        {
+            var currentOperatingSystem = OperatingSystemHelper.CurrentOperatingSystem;
+            if (currentOperatingSystem != OperatingSystemPlatform.Windows)
+            {
+#if NETSTANDARD1_5
+                // The non-windows operating systems have limitations on using socket and SslStream methods with .netstandard1.5
+                throw new PlatformNotSupportedException($"Field-level encryption is not supported on {currentOperatingSystem} with .NET Standard 1.5.");
+#endif
+            }
+        }
+
         // private methods
         private IMongoCollection<BsonDocument> GetKeyVaultCollection()
         {
@@ -221,12 +232,20 @@ namespace MongoDB.Driver.Encryption
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             ParseKmsEndPoint(request.Endpoint, out var host, out var port);
+
+            // the way we use this method doesn't work on Linux with .netstandard1.5,
+            // to make it work on that platform, we need to resolve the host and use the IP address.
+            // Since that platform is not supported on libmongocrypt level anyway, instead of fixing it,
+            // we rely on throwing a PlatformNotSupported exception in the previous steps
             socket.Connect(host, port);
 
             using (var networkStream = new NetworkStream(socket, ownsSocket: true))
             using (var sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false))
             {
 #if NETSTANDARD1_5
+                // the way we use this method doesn't work on MacOS with .netstandard1.5.
+                // Since that platform is not supported on libmongocrypt level anyway, instead of fixing it,
+                // we rely on throwing a PlatformNotSupported exception in the previous steps
                 sslStream.AuthenticateAsClientAsync(host).ConfigureAwait(false).GetAwaiter().GetResult();
 #else
                 sslStream.AuthenticateAsClient(host);
@@ -251,6 +270,10 @@ namespace MongoDB.Driver.Encryption
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             ParseKmsEndPoint(request.Endpoint, out var host, out var port);
 #if NETSTANDARD1_5
+            // the way we use this method doesn't work on Linux with .netstandard1.5,
+            // to make it work on that platform, we need to resolve the host and use the IP address.
+            // Since that platform is not supported on libmongocrypt level anyway, instead of fixing it,
+            // we rely on throwing a PlatformNotSupported exception in the previous steps
             await socket.ConnectAsync(host, port).ConfigureAwait(false);
 #else
             await Task.Factory.FromAsync(socket.BeginConnect(host, port, null, null), socket.EndConnect).ConfigureAwait(false);
@@ -259,6 +282,9 @@ namespace MongoDB.Driver.Encryption
             using (var networkStream = new NetworkStream(socket, ownsSocket: true))
             using (var sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false))
             {
+                // the way we use this method doesn't work on MacOS with .netstandard1.5.
+                // Since that platform is not supported on libmongocrypt level anyway, instead of fixing it,
+                // we rely on throwing a PlatformNotSupported exception in the previous steps
                 await sslStream.AuthenticateAsClientAsync(host).ConfigureAwait(false);
 
                 var requestBytes = request.Message.ToArray();

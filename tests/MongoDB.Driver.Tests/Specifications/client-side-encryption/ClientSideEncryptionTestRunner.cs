@@ -21,6 +21,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Encryption;
+using MongoDB.Driver.TestHelpers;
 using MongoDB.Driver.Tests.Specifications.Runner;
 using Xunit;
 
@@ -36,6 +37,13 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
         [ClassData(typeof(TestCaseFactory))]
         public void Run(JsonDrivenTestCase testCase)
         {
+            RequirePlatform
+                .Check()
+                .SkipWhen(SupportedOperatingSystem.Linux, SupportedTargetFramework.NetStandard15)
+                .SkipWhen(() => testCase.Name.Contains("gcpKMS.json"), SupportedOperatingSystem.Linux, SupportedTargetFramework.NetStandard20) // gcp is supported starting from netstandard2.1
+                .SkipWhen(SupportedOperatingSystem.MacOS, SupportedTargetFramework.NetStandard15)
+                .SkipWhen(() => testCase.Name.Contains("gcpKMS.json"), SupportedOperatingSystem.MacOS, SupportedTargetFramework.NetStandard20); // gcp is supported starting from netstandard2.1
+
             SetupAndRunTest(testCase);
         }
 
@@ -165,7 +173,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
         {
             var extraOptions = new Dictionary<string, object>()
             {
-                { "mongocryptdSpawnPath", Environment.GetEnvironmentVariable("MONGODB_BINARIES") ?? string.Empty }
+                { "mongocryptdSpawnPath", GetEnvironmentVariableOrDefaultOrThrowIfNothing("MONGODB_BINARIES", string.Empty) }
             };
 
             var kmsProviders = new ReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>(new Dictionary<string, IReadOnlyDictionary<string, object>>());
